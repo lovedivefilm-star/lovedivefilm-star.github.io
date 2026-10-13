@@ -18,7 +18,7 @@
 
 | 요소 | 따온 곳 | 바꾼 점 | 토큰 |
 |---|---|---|---|
-| 방 사이 전환 — 바탕색 패널로 덮였다 열림(0.46초) | Paragon 방 전환 패널 0.4s(정밀 §5-5) + EddyOS 나가기 0.2s sine.inOut ∥ 들어오기 0.26s sine.out(§5-4) | 둘을 0.5초 규약 안에서 하나로 — 브라우저 문서 간 뷰 전환(CSS `@view-transition`). 도착 연출 · 흰→검정 번쩍임 없음. 움직임 줄이기면 전환 없음 | `--dur-vt-close` `--ease-vt-close` `--dur-vt-open` `--ease-vt-open` |
+| 방 사이 전환 — 블록 디졸브(2차) | Josh Goldsmith(정밀 `joshgoldsmith.md` §5: 고정 덮개 16열×9행 · 칸마다 `vanish 1ms step-end <0–450ms 난수>` · 새 방은 바로 그려짐) — EddyOS · Paragon 전환 수치보다 우선(2차 지시) | 칸 색을 우리 블랙에서 덮이게 0.22 → 0.92, 칸마다 「오직 당신의 것」 대본 첫머리 글자를 읽는 순서로 한 자씩(「글자 언어는 전환에만」). 사이트 안 링크 · ESC · ← → 로 넘어왔을 때만, 움직임 줄이기면 없음. 1차의 패널 덮기(뷰 전환)는 걷어 냄 | `--dissolve-cols` `--dissolve-rows` `--dissolve-cell` `--dur-dissolve-total` · 지연 최댓값 `Base.astro` DMAX |
 | 홈 첫 진입 — 가운데 1px 선이 자라고 → 사라지고 → 위아래 시트가 갈라짐 | 오리진킷 Hairline Loader(정밀 `오리진킷.md` §6-B 「첫 진입 1.2초대 안」) | 같은 세션 첫 방문 한 번 · 아무 입력이면 끝 · 상단 바(연락)는 덮지 않음 · 큰 숫자는 뺐다 | `--dur-hair-line` `--ease-hair-line` `--dur-hair-fade` `--dur-hair-split` `--ease-hair-split` |
 | 작품 제목 등장 — 가운데에서 양옆으로 열림 | 오리진킷 Mask Text Reveal(§6-C: inset(0 50%) → inset(0), cubic-bezier(.42,0,.58,1) 1.0s 지연 0.09s) | 작품 방 머리 제목에만(단계 제목은 아래 Paragon 줄 리빌) | `--dur-title-mask` `--delay-title-mask` `--ease-title-mask` |
 
@@ -33,7 +33,7 @@
 | ② 작품 안 목차(`data-toc`) — 옆에 붙어 따라오는 번호 목록 · 지금 단계 행만 펼쳐짐 | Aaru 질문 구역(정밀 `Aaru.md` §5-1: sticky `max(80px,(100svh−725px)/2)` · 행 `40px 1fr` gap 40 · padding 20 0 · 비활성 .3 → 1 .3s linear · 펼침 0fr→1fr 0.5s · 단계 윗변이 52% 선) · Yuya 제작 단계 목차(`컨셉레퍼런스_웹.md` 3) | 01 영상 · 02 대본 · 03 생성 · 04 편집 · 05 크레딧(만든 순서). 펼친 줄은 사실(길이 · 줄 수 · 파일 · 버전)만. 지금 단계 번호만 포인트 색 | `--toc-top` `--toc-cols` `--toc-gap` `--toc-pad` `--toc-dim` `--toc-num` `--dur-toc` `--dur-toc-open` `--ease-toc-open` `--toc-line` |
 | ③ 단계(`data-step`) — 단계마다 이미지 한 장 + 한 줄 설명 | Google DeepMind 「Behind ANCESTRA」(`컨셉레퍼런스_영상.md` 6) | 설명 문구는 `[작가 문구 자리]`, 사실 줄만 씀 | — |
 | ③ 단계 제목 등장 — 줄 마스크 안에서 올라옴 | Paragon 스크롤 줄 리빌(정밀 §5-7: yPercent 110→0 · 0.6s power4.out) | 첫 스크롤 뒤에만(스크롤 전 화면 · 전체 캡처는 다 보임) | `--dur-line-reveal` `--ease-line-reveal` |
-| 01 영상 — 사이트 안 유튜브 | JM 포폴 · lite-youtube-embed(썸네일 → 그 자리 재생) | 포스터(완성본 프레임) + 재생 단추 → 그 자리 `youtube-nocookie` iframe. 풀영상을 틀면 후킹 클립은 멈춤 | — |
+| 01 영상 — 사이트 안 유튜브(2차) | 넓은 검정 구역: Brady Perron(정밀 `bradyperron.md` §5 — 정보와 분리된 풀폭 16:9 · 세로는 가운데 상자) · 재생 표시: Adam Bricker 가운데 원 120×120 1px 선(`adambricker.md` §5) · 아래 정보 한 줄: Jason Bergh · Brady(영상 밖) · 그 자리 재생: JM 포폴 · lite-youtube-embed | 위아래 1px 괘선으로 구역을 가름(확정 팔레트에 바탕보다 어두운 색이 없어서). 재생 표시는 포스터 단계에만(누르면 iframe 으로 통째 바뀜). 진행선 · 시간은 유튜브 IFrame API 가 필요해 생략. 풀영상을 틀면 후킹 클립은 멈춤 | `--play-ring` |
 | 02 대본 — 종이 한 장 | Pixar Script to Screen · Screenplayed | 원문 줄 그대로(줄 단위로만 고름) | — |
 | 03 생성 · 04 편집 — 작업대(탭 → 재생) | zkPass 「Three ways to verify」 작업대(정밀 §5-3: 소등 · 이전 결과 380ms → 명령줄 700ms → 노드 260ms 간격 → 결과 380ms · 노드 10×10 · 점선 6/6 연결선 380ms cubic-bezier(.22,1,.36,1)) · Aaru 탭(§5-3) · EddyOS git 노드(§5-8) | 명령줄 · 노드 이름은 **작가 실제 파일 · 버전만**(`_분석\제작자료_목록.md`, 작품 폴더 이름은 빼고 그 아래부터). 지어낸 명령 · 시간 · 중간 버전 없음 | `--dur-bench-fade` `--dur-bench-cmd` `--bench-node-gap` `--dur-bench-link` `--ease-bench-link` `--bench-node` `--bench-dash` |
 | 03 생성 — 시트 | 학원 예시 김병석 과정 캡처 · EddyOS 필름스트립 | 작가 허락분 **시트만**(콘티 · 계측 · 생성 결과 제외), 누르면 크게 보기 | — |
@@ -46,8 +46,8 @@
 
 | 요소 | 따온 곳 | 바꾼 점 | 토큰 |
 |---|---|---|---|
-| 카드 2×2 — 올린 것만 진하고 나머지 흐림 | Brady Perron(`믹스_awwwards.md` E5) | 16:9 포스터 + 제목 + 「모작」(마인드헌터) + `[툴 확인 후]` · `[출처 자리]`(작가 지시로 비움) | — |
-| 카드 → 모달 재생 | Paragon 라이트박스(정밀 §5-6: 바탕 98% · 0.4s 지연 0.2s · 안쪽 86px · 닫기 48px 원 · 위/오른쪽 29px · ESC) + 폭 `min(960px,100vw−40px)`(EddyOS §5-9) | 누르는 즉시 그 안에서 재생. 닫기는 화면 모서리, 제목은 영상 아래 — 영상 위에는 아무것도 없음. 닫으면 iframe 을 지워 소리가 멈춤 | `--modal-w` `--modal-pad` `--modal-x` `--modal-x-inset` `--dur-modal` `--delay-modal` `--scrim-modal` |
+| 카드 2×2(2차) — 머리줄(번호 모노 · + · 연도) / 포스터 / 제목 · 분류 / 크레딧 2줄 · 칸 사이 1px 세로선 | Adam Bricker(정밀 `adambricker.md` §5 — 호버 시 번호가 아래서 올라옴 0.5s `cubic-bezier(.19,1,.22,1)` · + 1.5s `cubic-bezier(.87,0,.13,1)`) · 나머지 카드 .5 0.25s | 분류는 작가 유튜브 제목의 말 그대로(Kinetic typography · Title sequence · Fan AI CF · Fan MV). 포스터 위 덮개 · 그라데이션 · 재생 단추 없음. 「모작」 · `[툴 확인 후]` · `[출처 자리]` 유지 | `--card-*` `--ease-expo-out` `--ease-expo-inout` |
+| 카드 → 모달 재생(2차) | Josh Goldsmith 플레이어(정밀 `joshgoldsmith.md` §5: 백드롭 0.24s · 영상 뷰포트 86% · 바깥 우상단 ✕ 33×41) | 누르는 즉시 그 안에서 재생. ✕ 는 영상 바깥 위, 제목은 영상 아래 — 영상 위에는 아무것도 없음. 영상 아래 2px 진행선은 유튜브 IFrame API 가 필요해 생략. 닫으면 iframe 을 지워 소리가 멈춤 | `--modal-w` `--modal-x-w` `--modal-x-h` `--dur-modal` `--scrim-modal` |
 
 ## 5. 색 · 글꼴
 
@@ -58,5 +58,20 @@
 
 ## 6. 넣지 않은 것(정밀 분석의 「가져오지 않을 것」 포함)
 
-영상 위 글자 · 효과 · 대본 덮기(v2 반려) · CRT 오버레이 · 부팅 화면 · 소리 · 앰버 단색 · WebGL(EddyOS) · 영상 위 흰 배너 · 코랄 Play 라벨 · 로더 · 흰→검정 번쩍임(Paragon) · 픽셀 스윕 · 영상 위 컨트롤(Tamás) · 라임 · 블루 색면 확장 · 고정 무대 3,600px(zkPass · Aaru) · 공모전 이름 · 프리미어평가 · 소개 · 경력 방 · 증명사진.
-홈 가운데 오브제(글자로 짠 만년필)는 다른 에이전트 전담 — 홈에는 `[data-glyph-slot]` 자리만.
+영상 위 글자 · 효과 · 대본 덮기(v2 반려) · CRT 오버레이 · 부팅 화면 · 소리 · 앰버 단색 · WebGL(EddyOS) · 영상 위 흰 배너 · 코랄 Play 라벨 · 로더 · 흰→검정 번쩍임(Paragon) · 픽셀 스윕 · 영상 위 컨트롤(Tamás) · 라임 · 블루 색면 확장 · 고정 무대 3,600px(zkPass · Aaru) · 그레인 · 큐브 · 카드 위 모자이크 · 영상 위 그라데이션/글자 · 프리로더(영상 포폴 4곳) · 공모전 이름 · 프리미어평가 · 소개 · 경력 방 · 증명사진.
+홈 가운데 오브제(글자로 짠 만년필)는 7절 — 홈에는 `[data-glyph-slot]` 자리.
+
+## 7. 홈 가운데 오브제 — 글자로 짠 오브제(GlyphMorph)
+
+부품 `src/components/GlyphMorph.astro` · 엔진 `src/scripts/glyph-morph.js`(Canvas 2D, WebGL 없음) · 데이터 `public/media/glyph/`(굽기 `scripts/glyph-bake.py`, 미리보기 한 파일 `scripts/glyph-preview.py` → `시안\글자오브제\index.html`). 미디어 출처는 `public/media/출처.json` 의 `glyph/*`.
+
+| 요소 | 따온 곳 | 바꾼 점 |
+|---|---|---|
+| 작은 글자 격자로 짠 사물 — 밝기 4층(층 비율 36.8 : 33.0 : 24.6 : 5.5 · 투명도 .55 → .80 → .97 → 1 · 굵기 400 → 500 → 500 → 600 · 위 두 층 광채 1px .3 / 3px .35 + 7px .4) · 칸의 일부만 글자(빈칸이 결) · 오브제 영역 스캔라인(1px 선 / 3px 간격, 2.4%) | zkPass 히어로 「글자로 짠 손」(정밀 `zkPass.md`, `믹스_추천3.md` 2-1) | 라틴 ASCII 램프 대신 **작가 대본 세 편의 한글 음절**(잉크 면적으로 15단 줄 세움 · 107자). 칸은 정사각 4~6px(격자 176×144 / 128×105 / 72×59 중 상자에 맞는 것). 글자를 놓을지는 밝기 비례 확률을 오차 확산으로(고르게 성긴 결). 글꼴은 이 PC 의 Pretendard 로 글자 판(atlas.png)에 미리 구워 실음 — PC 마다 폭이 달라지지 않게. 색은 변수(`--light` 한 색의 투명도 4단 · 강조색 광채는 쓰지 않음). 스캔라인은 가장자리를 흐려 상자 테두리가 안 보이게 |
+| 사진을 글자 · 점으로 번역한 초상 | EddyOS 초상(`믹스_추천3.md` 1-2) | 완성본 프레임을 글자로. 인물은 직접 그린 윤곽 마스크로 배경을 비우고 명암은 인물 안에서만 잼 |
+| 커서 밀어내기 — 반경 120px · smoothstep² · push 0.8×(1−e^(−v/700)) · 오를 때 18/s 내릴 때 5/s · 변위 (8+난수×14)px/max(거리, 28) | EddyOS 초상 I-08(정밀 `EddyOS.md`) | 머무는 동안 커서 둘레 칸만 다시 그린다 |
+| 커서 렌즈 — 지나간 자리에 원본(가우시안 1/e 54px · 컷 2.5배 · 반값 ≈0.3s) | EddyOS 초상 I-09 | 장면 · 인물일 때 그 완성본 프레임이 비친다(유체 대신 감쇠하는 원 여러 개) |
+| 형태 전환 1.3s power2.inOut · 첫 등장 power1.out · 글자 교체 30fps 스텝 · 좌우 흔들림 | EddyOS 포즈 전환 I-07 · 등장 I-05 · 흔들림 I-11 · 30fps 규칙 §2-X | 흔들림은 3D yaw ±11° 대신 2D 회전 ±3.5° · 20s(CSS) |
+| 점 필드가 퍼졌다가 다음 형태로 재편성 | Aaru 「Start with the world」(`믹스_추천3.md` 3-3 ⑤, 450ms 퍼짐 → 1.6s 정돈) | 점 대신 대본 글자. 떠나는 형태는 원점(만년필이면 촉 끝)에서 파도처럼 지워지고, 나는 글자(최대 6,500)가 휘어 날아가 도착 형태가 같은 원점에서 드러남 |
+| 펜 툴 리그 — 지연된 포인터의 앵커 9×9 · 양쪽 핸들(오브제 폭 7.5%, 점 지름 7 · 선 2px) · 각도 = 이동 방향 6/s 최단 호 + ±20° 흔들림(약 7초) · 「x%, y%」(mono 11px · .08em, 앵커에서 22px 수직 아래쪽) · 「n°」(오른쪽 핸들 +10, −16) · 나갈 때 0.3s power2.out | 오리진킷 Vector Wordmark 3(정밀 `오리진킷.md` 2-B · 6절 A) | 만년필일 때만. 색 = `--lamp`(앵커 · 핸들) · `--seat-text`(숫자, 글자 결 위에서 읽히게 바탕색 칩). 윤곽선은 그리지 않는다(반려된 「촉 윤곽선 + 문장」 모양이 다시 나오지 않게). 가짜 포인터 스윕 없음 |
+| 형태 — ① 만년필 ② 장면 ③ 인물 ④ 인물 | ① 직접 그림(Pillow, 촉 · 숨구멍 · 틈 · 그립 · 고리 · 몸통 일부) ② 버터! 00:00.5 노을 바다 ③ 오직 당신의 것 02:52.5 한설 ④ 버터! 00:31.0 웃는 얼굴 — 전부 `작업물 완성본/` | 사진 · 유료 생성 없음. 장면 · 인물은 완성본 프레임만 |

@@ -20,7 +20,7 @@ h1, h2, .door .nm, .wtitle, .wnav .t, .next-big .t, .home-name, .card .tt { word
 .ph-block { display: block; padding: 16px 14px; }
 
 /* ── 상단 바: Paragon(정밀 §5-1) — fixed · 배경 없음 · 박스마다 면 + 1px 테두리 이어 붙임 · 연락은 숨기지 않음 ── */
-.site-head { position: fixed; top: var(--bar-top); left: var(--bar-x); right: var(--bar-x); z-index: 60; pointer-events: none; view-transition-name: topbar; }
+.site-head { position: fixed; top: var(--bar-top); left: var(--bar-x); right: var(--bar-x); z-index: 60; pointer-events: none; }
 .site-head nav { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
 .tb-left, .tb-right { display: flex; min-width: 0; pointer-events: auto; }
 .tb-right { flex: 0 0 auto; }
@@ -61,7 +61,7 @@ main { display: block; padding-top: var(--top); }
 .home-name { margin: 0; font-family: var(--display); font-weight: var(--display-weight); font-size: clamp(34px, 3.6vw, 56px); line-height: 1.1; letter-spacing: var(--display-tracking); }
 
 /* 가운데 오브제 자리 — 글자로 짠 만년필(GlyphMorph, 다른 에이전트 전담)이 들어온다 */
-.glyph-slot { display: grid; place-items: center; width: min(44vw, 440px); height: min(56svh, 520px); }
+.glyph-slot { display: grid; place-items: center; width: min(40vw, 560px); height: min(62svh, 560px); }
 .glyph-slot:empty { border: 1px dashed var(--rule-strong); }
 .glyph-slot:empty::after { content: "[오브제 자리 — 글자로 짠 만년필]"; font-size: 12.5px; color: var(--seat-low); }
 
@@ -193,6 +193,13 @@ main { display: block; padding-top: var(--top); }
 [data-motion].did-scroll .step:not(.seen) .step-h .facts, [data-motion].did-scroll .step:not(.seen) .step-h .cap { opacity: var(--step-reveal-from); }
 .step-media { margin-left: 52px; }
 .step-media.v .player { height: min(calc(100svh - var(--top) - 96px), 720px); max-width: 100%; }
+/* 풀영상 — Brady Perron 식 정보와 분리된 넓은 검정 구역(정밀 bradyperron.md §5): 16:9 는 칸 폭 가득, 9:16 은 세로 상자를 가운데. 아래 정보 한 줄은 영상 밖(Bergh · Brady) */
+.video-band { margin-left: 0; padding: var(--s-7) var(--s-6) var(--s-4); background: var(--room); border-block: 1px solid var(--rule); }
+.video-band.v .player { height: min(calc(100svh - var(--top) - 140px), 720px); margin: 0 auto; }
+.video-band.h .player { width: 100%; }
+.video-cap { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin: 14px 0 0; font-size: 13px; color: var(--seat-text); }
+.video-cap .t { color: var(--light); }
+.video-cap .m { font-family: var(--mono); font-size: 12px; }
 
 /* 사이트 안 유튜브 — 포스터 + 재생 → 그 자리 iframe */
 .player { position: relative; overflow: hidden; background: var(--room); }
@@ -200,9 +207,10 @@ main { display: block; padding-top: var(--top); }
 .player.h { width: 100%; aspect-ratio: 16 / 9; }
 .player .poster { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
 .player .poster img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.play { position: absolute; left: 50%; top: 50%; display: grid; place-items: center; width: 62px; height: 62px; margin: -31px 0 0 -31px; border-radius: 50%; border: 1px solid var(--light); background: var(--scrim-soft); transition: background var(--t) var(--ease); }
-.play svg { width: 16px; height: 16px; margin-left: 3px; fill: var(--light); }
-.poster:hover .play, .poster:focus-visible .play, .card:hover .play, .card:focus-visible .play { background: var(--scrim-hover); }
+.play { position: absolute; left: 50%; top: 50%; display: grid; place-items: center; align-content: center; gap: 6px; width: var(--play-ring); height: var(--play-ring); margin: calc(var(--play-ring) / -2) 0 0 calc(var(--play-ring) / -2); border-radius: 50%; border: 1px solid var(--light); background: var(--scrim-soft); transition: background var(--t) var(--ease); }
+.play svg { width: 14px; height: 14px; margin-left: 3px; fill: var(--light); }
+.play-t { font-size: 12px; letter-spacing: .12em; color: var(--light); }
+.poster:hover .play, .poster:focus-visible .play { background: var(--scrim-hover); }
 .player iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 
 /* 대본 한 장 — Pixar Script to Screen · Screenplayed */
@@ -290,28 +298,40 @@ main { display: block; padding-top: var(--top); }
 .tools { display: grid; grid-template-columns: minmax(200px, 280px) minmax(0, 1fr); gap: var(--g); min-height: calc(100svh - var(--top)); padding: 30px var(--g) 48px; }
 .side h1 { margin: 6px 0 14px; font-family: var(--display); font-weight: var(--display-weight); letter-spacing: var(--display-tracking); font-size: clamp(28px, 2.8vw, 40px); line-height: 1.2; }
 .side .meta { display: block; margin: 14px 0 0; font-size: 12px; color: var(--seat-text); }
-.cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 24px; align-content: start; max-width: 1040px; }
-.card { display: block; width: 100%; transition: opacity var(--t) var(--ease); }
-.cards:hover .card:not(:hover) { opacity: .55; }
+.cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--s-7); align-content: start; max-width: 1100px; }
+.card { display: block; width: 100%; padding: 0 var(--s-5) var(--s-2); transition: opacity var(--dur-card-dim) var(--ease); }
+.card:nth-child(2n) { border-left: 1px solid var(--rule); }
+.cards:hover .card:not(:hover), .cards:focus-within .card:not(:focus-visible):not(:hover) { opacity: var(--card-dim); }
+.card-head { display: flex; align-items: center; gap: 10px; height: 18px; margin-bottom: 10px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--seat-text); }
+.card-head .n-mask { display: inline-block; overflow: hidden; height: 14px; }
+.card-head .n { display: inline-block; transform: translateY(var(--card-n-shift)); transition: transform var(--dur-card-n) var(--ease-expo-out); }
+.card:hover .n, .card:focus-visible .n { transform: none; }
+.card-head .plus { position: relative; width: 9px; height: 9px; transform: scale(0); transition: transform var(--dur-card-plus) var(--ease-expo-inout); }
+.card-head .plus::before, .card-head .plus::after { content: ""; position: absolute; background: var(--light); }
+.card-head .plus::before { left: 4px; top: 0; bottom: 0; width: 1px; }
+.card-head .plus::after { top: 4px; left: 0; right: 0; height: 1px; }
+.card:hover .plus, .card:focus-visible .plus { transform: scale(1); }
+.card-head .y { margin-left: auto; }
 .card .thumb { position: relative; display: block; aspect-ratio: 16 / 9; overflow: hidden; background: var(--room); }
 .card .thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.card .row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-top: 10px; }
-.card .tt { display: flex; align-items: center; gap: 8px; font-size: 16px; }
-.card .tag { padding: 0 6px; border: 1px solid var(--rule-strong); border-radius: 2px; font-size: 11px; line-height: 18px; }
-.card .dur { font-family: var(--mono); font-size: 11.5px; color: var(--seat-text); white-space: nowrap; }
-.card .sub { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 6px; font-size: 11.5px; color: var(--seat-text); }
-.card .sub .ph { padding: 0 6px; font-size: 11px; }
+.card .row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-top: 14px; }
+.card .tt { display: flex; align-items: center; gap: 8px; font-family: var(--display); font-weight: var(--display-weight); letter-spacing: var(--display-tracking); font-size: var(--card-title); line-height: 1.2; }
+.card .tag { padding: 0 6px; border: 1px solid var(--rule-strong); border-radius: 2px; font-family: var(--sans); font-weight: 400; letter-spacing: 0; font-size: 11px; line-height: 18px; }
+.card .cat { font-family: var(--mono); font-size: 11px; color: var(--seat-text); white-space: nowrap; }
+.card .cr { display: grid; gap: 4px; margin-top: 10px; font-size: 11.5px; line-height: 1.2; color: var(--seat-text); }
+.card .cr .ph { padding: 0 6px; font-size: 11px; }
 
 /* 모달 · 크게 보기 — 닫기 단추는 영상 아래(영상 위에 아무것도 얹지 않음) */
-.modal, .lightbox { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: var(--modal-pad); }
+.modal, .lightbox { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; }
+.lightbox { padding: var(--modal-pad); }
 .modal[hidden], .lightbox[hidden] { display: none; }
 .modal-bd, .lb-bd { position: absolute; inset: 0; background: var(--scrim-modal); }
-[data-motion] .modal:not([hidden]) .modal-bd { animation: fade-in var(--dur-modal) ease var(--delay-modal) both; }
-.modal-x { position: fixed; top: var(--modal-x-inset); right: var(--modal-x-inset); z-index: 2; display: grid; place-items: center; width: var(--modal-x); height: var(--modal-x); border-radius: 50%; background: color-mix(in srgb, var(--light) 10%, transparent); }
+[data-motion] .modal:not([hidden]) .modal-bd { animation: fade-in var(--dur-modal) ease both; }
+.modal-x { position: absolute; top: calc(var(--modal-x-h) * -1 - 12px); right: 0; z-index: 2; display: grid; place-items: center; width: var(--modal-x-w); height: var(--modal-x-h); }
 .modal-x span { position: relative; width: 18px; height: 18px; }
 .modal-x span::before, .modal-x span::after { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1.5px; margin-left: -.75px; background: var(--light); transform: rotate(45deg); }
 .modal-x span::after { transform: rotate(-45deg); }
-.modal-box { position: relative; width: min(var(--modal-w), calc((100svh - var(--modal-pad) * 2 - 40px) * 16 / 9)); }
+.modal-box { position: relative; width: min(var(--modal-w), calc((100svh - 160px) * 16 / 9)); }
 .modal-cap { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin: 12px 0 0; font-size: 14px; color: var(--seat-text); }
 .modal-t { color: var(--light); }
 .lb-box figcaption { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 10px; font-size: 13px; color: var(--seat-text); }
@@ -319,17 +339,12 @@ main { display: block; padding-top: var(--top); }
 .lb-box { position: relative; margin: 0; max-width: min(1200px, 100%); }
 .lb-box img { display: block; max-width: 100%; max-height: calc(100svh - var(--modal-pad) * 2); margin: 0 auto; }
 
-/* ── 방 전환: 패널 덮기 — Paragon 0.4s 를 EddyOS 수치(나가기 0.2s ∥ 들어오기 0.26s)로 하나로(정밀 Paragon §5-5 · EddyOS §5-4) ── */
-@media (prefers-reduced-motion: no-preference) {
-  @view-transition { navigation: auto; }
-}
-::view-transition { background: var(--curtain); }
-::view-transition-old(root) { animation: vt-out var(--dur-vt-close) var(--ease-vt-close) both; }
-::view-transition-new(root) { animation: vt-in var(--dur-vt-open) var(--ease-vt-open) calc(var(--dur-vt-close) + var(--dur-vt-gap)) both; }
-::view-transition-group(topbar), ::view-transition-new(topbar) { animation: none; }
-::view-transition-old(topbar) { display: none; }
-@keyframes vt-out { from { opacity: 1; } to { opacity: 0; } }
-@keyframes vt-in { from { opacity: 0; } to { opacity: 1; } }
+/* ── 방 전환: Josh Goldsmith 블록 디졸브(정밀 joshgoldsmith.md §5) — 16×9 칸이 0~450ms 난수 지연으로 1ms step-end 소멸, 새 방은 바로 그려져 있음 ── */
+.dissolve { display: none; }
+[data-dissolve] .dissolve { display: grid; position: fixed; inset: 0; z-index: 90; grid-template-columns: repeat(var(--dissolve-cols), 1fr); grid-template-rows: repeat(var(--dissolve-rows), 1fr); pointer-events: none; }
+.dissolve i { display: grid; place-items: center; background: var(--dissolve-cell); color: var(--seat-low); font-family: var(--serif-script); font-size: min(4.6vh, 2.8vw); font-style: normal; line-height: 1; }
+[data-dissolve] .dissolve i { animation: vanish 1ms step-end var(--d) forwards; }
+@keyframes vanish { 100% { opacity: 0; } }
 
 /* ── 반응형 ─────────────────────────────────────────────────────────────── */
 @media (max-width: 1100px) {

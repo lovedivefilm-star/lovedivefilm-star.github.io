@@ -63,8 +63,9 @@ const [lead, ...restSheets] = work.sheets ?? [];
             <p class="facts">풀영상 {work.duration} · {work.ratio} · 사이트 안 재생</p>
             <p class="cap"><Placeholder kind="author-copy" /></p>
           </header>
-          <div class:list={['step-media', isV ? 'v' : 'h']}>
+          <div class:list={['step-media', 'video-band', isV ? 'v' : 'h']}>
             <VideoPlayer youtubeId={work.youtubeId} ratio={work.ratio} title={work.title} poster={work.poster} />
+            <p class="video-cap"><span class="t">{work.title}</span><span class="m">{work.year} · {work.duration} · {work.ratio}</span></p>
           </div>
         </section>
 

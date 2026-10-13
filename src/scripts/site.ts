@@ -84,6 +84,29 @@ function closeOverlays(): boolean {
 }
 const overlayOpen = () => (modal && !modal.hidden) || (lightbox && !lightbox.hidden);
 
+/* 방 전환(블록 디졸브) — 사이트 안 다른 방으로 가는 링크를 누르면 다음 그림에 디졸브를 켠다 */
+const markNav = () => {
+  try {
+    sessionStorage.setItem('yk-nav', '1');
+  } catch {
+    /* 저장소가 막혀 있으면 전환 없이 */
+  }
+};
+document.addEventListener(
+  'click',
+  (e) => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const a = (e.target as Element | null)?.closest<HTMLAnchorElement>('a[href]');
+    if (!a || a.target === '_blank' || a.hasAttribute('download')) return;
+    const u = new URL(a.href, location.href);
+    if (u.origin !== location.origin || (u.pathname === location.pathname && u.hash)) return;
+    if (u.pathname === location.pathname && u.search === location.search) return;
+    markNav();
+  },
+  true,
+);
+if (root.hasAttribute('data-dissolve')) setTimeout(() => root.removeAttribute('data-dissolve'), motionMs('--dur-dissolve-total', 520));
+
 document.addEventListener('click', (e) => {
   const t = e.target as Element | null;
   if (!t) return;
@@ -126,7 +149,10 @@ document.addEventListener('keydown', (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey || e.defaultPrevented) return;
   if (e.key === 'Escape') {
     if (closeOverlays()) return;
-    if (location.pathname !== '/') location.href = '/';
+    if (location.pathname !== '/') {
+      markNav();
+      location.href = '/';
+    }
     return;
   }
   if (overlayOpen()) return;
@@ -135,7 +161,10 @@ document.addEventListener('keydown', (e) => {
   const work = $('[data-work]');
   if (work && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
     const to = e.key === 'ArrowLeft' ? work.dataset.prev : work.dataset.next;
-    if (to) location.href = to;
+    if (to) {
+      markNav();
+      location.href = to;
+    }
   }
 });
 
@@ -459,7 +488,8 @@ function initToc() {
     for (const s of steps) if (s.getBoundingClientRect().top <= line) (k = s.dataset.step ?? k), (entered = true);
     setCur(k);
     const item = items.find((a) => a.dataset.tocItem === k);
-    setLabel(entered && item ? (item.textContent ?? '').replace(/\s+/g, ' ').trim() : firstLabel);
+    const lab = item ? `${item.querySelector('.n')?.textContent ?? ''} ${item.querySelector('.t')?.textContent ?? ''}`.trim() : '';
+    setLabel(entered && lab ? lab : firstLabel);
   };
   addEventListener(
     'scroll',

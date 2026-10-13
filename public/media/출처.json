@@ -35,8 +35,8 @@
   "sheets/bt_sheet_3.jpg": { "source": "시트: G:/내 드라이브/ai 단편 영화/버터_트레일러_공모전/인물/지현/#1지현_정본시트.png" },
 
   "glyph/pen.png": { "source": "직접 그림 — 만년필(촉 · 숨구멍 · 틈 · 그립 · 고리 · 몸통 일부)을 scripts/glyph-bake.py 가 Pillow 로 그린 그레이스케일. 사진 · 생성 없음", "time": "—", "note": "홈 글자 오브제(GlyphMorph) 형태 ① 만년필의 원본" },
-  "glyph/atlas.png": { "source": "직접 그림 — 대본 음절 글리프 아틀라스. 글자 = 대본 원문 _분석/대본/oneandonly_대본.txt · firstimpression_대본.txt · butter_트레일러대본.txt 의 한글 음절 · 문장부호, 글꼴 Pretendard Variable(wght 560)로 scripts/glyph-bake.py 가 렌더", "time": "—", "note": "음절마다 잉크 면적을 재서 밝기 단계(31)로 줄 세운 판" },
-  "glyph/frame_butter_0016.jpg": { "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4", "time": "00:16.0", "note": "글자 오브제 형태 ② 장면(노을 해변 · 두 사람 실루엣). 1920×1080 에서 (540,160)–(1300,782) 자름" },
+  "glyph/atlas.png": { "source": "직접 그림 — 대본 음절 글리프 아틀라스. 글자 = 대본 원문 _분석/대본/oneandonly_대본.txt · firstimpression_대본.txt · butter_트레일러대본.txt 의 한글 음절 · 문장부호, 글꼴 Pretendard Variable(wght 400 · 500 · 600 세 벌)로 scripts/glyph-bake.py 가 렌더", "time": "—", "note": "음절마다 잉크 면적을 재서 밝기 단계(15)로 줄 세운 판(107자)" },
+  "glyph/frame_butter_0000.jpg": { "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4", "time": "00:00.5", "note": "글자 오브제 형태 ② 장면(노을 바다 — 해가 수평선에 걸린 첫 컷). 1920×1080 에서 (480,138)–(1462,941) 자름" },
   "glyph/frame_butter_0031.jpg": { "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4", "time": "00:31.0", "note": "글자 오브제 형태 ④ 인물(웃는 얼굴 클로즈업). (520,138)–(1500,940) 자름" },
   "glyph/frame_oneandonly_0252.jpg": { "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4", "time": "02:52.5", "note": "글자 오브제 형태 ③ 인물(한설, 한복 · 노을빛 정면, 번인 자막 없는 프레임). 720×1280 에서 (20,80)–(700,880) 자름" }
 }

@@ -78,6 +78,8 @@ export type Work = {
   sheets?: { src: string; caption: string }[];
   /* 툴 */
   label?: string;
+  /** 툴 카드 분류 — 작가 유튜브 영상 제목에 쓴 말 그대로 */
+  category?: string;
   sourceNote?: string | null;
 };
 
@@ -289,6 +291,8 @@ export const WORKS: Work[] = [
     creditNote: '단독 · 출처 칸(비움)',
     duration: '0:38',
     poster: '/media/poster_kinetic.jpg',
+    year: '2026',
+    category: 'Kinetic typography',
     sourceNote: null,
   },
   {
@@ -300,6 +304,8 @@ export const WORKS: Work[] = [
     creditNote: '단독 · 「모작」 · 출처 칸(비움)',
     duration: '0:37',
     poster: '/media/poster_mindhunter.jpg',
+    year: '2026',
+    category: 'Title sequence',
     label: '모작',
     sourceNote: null,
   },
@@ -312,6 +318,8 @@ export const WORKS: Work[] = [
     creditNote: '단독 · 출처 칸(비움)',
     duration: '0:34',
     poster: '/media/poster_curlyshyll.jpg',
+    year: '2026',
+    category: 'Fan AI CF',
     sourceNote: null,
   },
   {
@@ -323,6 +331,8 @@ export const WORKS: Work[] = [
     creditNote: '단독 · 출처 칸(비움)',
     duration: '4:03',
     poster: '/media/poster_musicvideo.jpg',
+    year: '2026',
+    category: 'Fan MV',
     sourceNote: null,
   },
 ];

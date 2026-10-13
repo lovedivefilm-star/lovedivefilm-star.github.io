@@ -5,6 +5,7 @@
  */
 import Base from '../layouts/Base.astro';
 import Placeholder from '../components/Placeholder.astro';
+import GlyphMorph from '../components/GlyphMorph.astro';
 import { MAIN_WORKS, TOOL_WORKS } from '../data/works';
 import { SITE } from '../data/site';
 
@@ -26,8 +27,8 @@ const doors = [
   <section class="home" aria-label="처음">
     <div class="intro" aria-hidden="true"><i class="half t"></i><i class="half b"></i><i class="hair"></i><span class="ticks">{Array.from({ length: 11 }, () => <i></i>)}</span></div>
     <div class="home-center">
-      <!-- 가운데 오브제 자리 — 글자로 짠 만년필(GlyphMorph, 다른 에이전트 전담)이 여기 들어온다. 크기는 global.css .glyph-slot -->
-      <div class="glyph-slot" data-glyph-slot></div>
+      <!-- 가운데 오브제 — 대본 음절로 짠 만년필 → 장면 → 인물(GlyphMorph). 크기는 global.css .glyph-slot -->
+      <div class="glyph-slot" data-glyph-slot><GlyphMorph /></div>
       <p class="home-name">{SITE.name}</p>
       <Placeholder kind="author-copy" />
     </div>

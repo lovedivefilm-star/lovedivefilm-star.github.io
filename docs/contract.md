@@ -33,7 +33,7 @@
 - 홈 출입구 `data-door="oneandonly|firstimpression|butter|tools"`.
 - 영상 자리 `data-video` (+ `data-ratio="9:16|16:9"` · `data-youtube-id`). 재생 전 포스터, 누르면 그 자리에 `iframe`(youtube-nocookie).
 - 대본 `data-script` · 크레딧 `data-credit` · 과정 `data-process` · 작가 문구 자리 `data-placeholder="author-copy"`.
-- 툴 카드 `/tools/` 안 `[data-work="<slug>"]` · 모달 `[data-modal]`(또는 `dialog[open]`) · 재생 표시는 `button` · 목차 항목 `data-toc-item="<단계>"`.
+- 툴 카드 `/tools/` 안 `[data-tool="<slug>"]`(또는 `[data-work="<slug>"]`) · 모달 `[data-modal]`(또는 `dialog[open]`) · 재생 표시는 `button` · 목차 항목 `data-toc-item="<단계>"`.
 - 작품 상세 최상위 `data-work="<slug>"` · 후킹 구역 `data-hook`(로컬 클립 `<video>` + 대본) · 작품 안 목차 `data-toc`(항목 `data-toc-item` → 단계 `data-step="video|script|generate|edit|credit"`, 지금 단계에 `aria-current="step"`).
 
 ## 4. 백테스트 기준 — 작가가 지적한 것 (실패하면 고친다)

@@ -28,7 +28,7 @@
   /* 막(재생 단추 바탕 · 모달 뒤) */
   --scrim-soft:  rgba(0, 0, 0, .35);
   --scrim-hover: rgba(0, 0, 0, .6);
-  --scrim-modal: color-mix(in srgb, var(--room) 98%, transparent);  /* 툴 모달 뒤 98%(Paragon 라이트박스, 정밀 Paragon.md §5-6) */
+  --scrim-modal: color-mix(in srgb, var(--room) 96%, transparent);  /* 툴 모달 뒤 — Josh 의 어두운 배경(블러 대신 짙은 막) */
 
   /* 대본 글자 — 어두운 칸 위(후킹) */
   --hook-paper: var(--panel);
@@ -96,8 +96,8 @@
   --spec-value-lh: 1.7;
   --spec-max: 860px;
 
-  /* ── 툴 모달 폭 — EddyOS 정밀 §5-9 「우리 제안」 ── */
-  --modal-w: min(960px, calc(100vw - 40px));
+  /* ── 툴 모달 폭 — Josh 영상 뷰포트 86%(정밀 joshgoldsmith.md §5) ── */
+  --modal-w: 86vw;
 
   /* ── 움직임 — 지속시간 · easing 은 여기만. 스크립트도 이 값을 읽는다(src/scripts/site.ts motionMs) ──
      출처: EddyOS 정밀 분석 _분석/레퍼런스/정밀/EddyOS.md §5 「우리 제안」 열 · refero 4-4(Sequel easing). */
@@ -121,30 +121,17 @@
   --dur-bar-hover: .4s;
   --ease-bar-hover: ease;
 
-  /* 방 전환: 패널(바탕색) 덮기 — Paragon 0.4s power2.out 를 EddyOS 수치(나가기 0.2s ∥ 들어오기 0.26s, sine)로 하나로 합쳐 0.46초.
-     도착 연출 · 흰→검정 번쩍임은 가져오지 않는다(Paragon §5-5). */
-  --dur-vt-close: 200ms;
-  --ease-vt-close: var(--ease-sine-inout);
-  --dur-vt-gap: 0ms;
-  --dur-vt-open: 260ms;
-  --ease-vt-open: var(--ease-sine-out);
+  /* 방 전환: Josh Goldsmith 블록 디졸브(정밀 joshgoldsmith.md §5) — 16×9 칸 · 칸마다 0~450ms 난수 지연 · 1ms step-end 소멸 · 0.5초 안
+     (EddyOS · Paragon 전환 수치보다 우선 — 2차 지시). 지연 최댓값은 Base.astro DMAX(450)와 같이 바꾼다 */
+  --dissolve-cols: 16;
+  --dissolve-rows: 9;
+  --dissolve-cell: color-mix(in srgb, var(--curtain) 92%, transparent);   /* 우리 블랙에서 보이게 0.22 → 0.92 */
+  --dur-dissolve-total: 520ms;   /* 칸이 다 꺼진 뒤 덮개를 걷는 때 */
 
-  /* 작품 방 후킹 — zkPass 명령줄(정밀 zkPass.md §5-2): 한 줄 총 시간 고정(글자 수와 무관) · 줄 사이 즉시 · 캐럿 7×14 블록 0.85s steps(2)
-     (EddyOS 34ms/글자 대신 — 작가 「더 빨라도 된다」). 화면이 1.5초 안에 열린다. */
-  --dur-type-line: 700ms;
-  --dur-type-tick: 33.3ms;
-  --caret-w: 7px;
-  --caret-h: 14px;
-  --dur-caret: .85s;
-  --hook-open-by: 1500ms;
-  --dur-hook-open: 450ms;
-  --dur-desc: .4s;                         /* 끝난 뒤 설명 한 줄 */
-  --ease-desc: cubic-bezier(.4, 0, .2, 1);
-
-  /* 작품 제목 등장 — 오리진킷 Mask Text Reveal(정밀 오리진킷.md §6-C): inset(0 50%) → inset(0), 1.0s 지연 0.09s */
-  --dur-title-mask: 1s;
-  --delay-title-mask: 90ms;
-  --ease-title-mask: cubic-bezier(.42, 0, .58, 1);
+  /* 전역 곡선(영상 포폴 4곳 정밀): expo inOut · expo out · quart-ish inOut */
+  --ease-expo-inout: cubic-bezier(0.87, 0, 0.13, 1);
+  --ease-expo-out: cubic-bezier(0.19, 1, 0.22, 1);
+  --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
 
   /* 홈 첫 진입 — 오리진킷 Hairline Loader 압축(§6-B 「첫 진입 1.2초대 안」): 선 0.7s power2.inOut → 선 소멸 0.15s 선형 → 시트 갈라짐 0.7s power4.inOut */
   --dur-hair-line: 700ms;
@@ -207,10 +194,22 @@
   --step-reveal-shift: 14px;
   --step-reveal-from: .55;
 
-  /* 툴 모달 — Paragon 라이트박스(§5-6): 바탕 0.4s · 지연 0.2s · 안쪽 86px · 닫기 48px 원 · 모서리에서 29px */
-  --dur-modal: 400ms;
-  --delay-modal: 200ms;
-  --modal-pad: 86px;
-  --modal-x: 48px;
-  --modal-x-inset: 29px;
+  /* 툴 모달 — Josh Goldsmith 플레이어(정밀 joshgoldsmith.md §5): 백드롭 0.24s · 영상 뷰포트 86% · 바깥 우상단 ✕ 33×41 */
+  --dur-modal: 240ms;
+  --modal-x-w: 33px;
+  --modal-x-h: 41px;
+  --modal-pad: 86px;            /* 시트 크게 보기(lightbox) 안쪽 */
+
+  /* 툴 카드 — Adam Bricker(정밀 adambricker.md §5): 번호 13.5px 아래서 0.5s expo-out · + 1.5s expo-inOut · 나머지 .5 0.25s */
+  --card-dim: .5;
+  --dur-card-dim: .25s;
+  --card-n-shift: 13.5px;
+  --dur-card-n: .5s;
+  --dur-card-plus: 1.5s;
+  --card-title: clamp(22px, 1.9vw, 28px);
+
+  /* 풀영상 재생 표시 — Bricker 가운데 원 120×120 1px 선(포스터 단계에서만) */
+  --play-ring: 120px;
+
+
 }
