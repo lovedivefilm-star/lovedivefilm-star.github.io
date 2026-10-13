@@ -58,6 +58,15 @@ export const SEL = {
   process: '[data-process]',
   authorCopy: '[data-placeholder="author-copy"]',
   work: (slug: string) => `[data-work="${slug}"]`,
+  // 작품 방 최종 구조(docs/work-room.md 4절 · contract.md 3절)
+  overview: '[data-overview]',
+  toc: '[data-toc]',
+  tocItem: '[data-toc-item]',
+  step: '[data-step]',
+  paperLine: '[data-pp-line]',
+  playScene: '[data-process] [data-play-at]',
+  verbatim: '[data-work] [data-src]',
+  confirm: '[data-confirm]',
   // ── 3절에 정의가 없어 시험이 "가정"한 표식 (제작과 맞출 것 · 맞춰지면 contract.md 3절에 추가) ──
   // /tools/ 의 카드: data-work="<slug>" (또는 data-tool="<slug>")
   toolCard: '[data-work], [data-tool]',
@@ -492,14 +501,14 @@ export function readSources(jsonText: string): Map<string, string> {
   return map;
 }
 
-/** public/media/출처.json 을 읽는다. 없거나 깨졌으면 error 에 이유. */
+/** src/data/media-sources.json(미디어 출처 기록 — 사이트에 실리지 않게 public 밖, 10-13) 을 읽는다. 없거나 깨졌으면 error 에 이유. */
 export function loadSources(): { map: Map<string, string>; error: string | null } {
-  const file = path.join(MEDIA_DIR, '출처.json');
-  if (!fs.existsSync(file)) return { map: new Map(), error: 'public/media/출처.json 이 없음' };
+  const file = path.join(SRC_DIR, 'data', 'media-sources.json');
+  if (!fs.existsSync(file)) return { map: new Map(), error: 'src/data/media-sources.json 이 없음' };
   try {
     return { map: readSources(fs.readFileSync(file, 'utf8')), error: null };
   } catch (e) {
-    return { map: new Map(), error: `public/media/출처.json 을 읽을 수 없음: ${(e as Error).message}` };
+    return { map: new Map(), error: `src/data/media-sources.json 을 읽을 수 없음: ${(e as Error).message}` };
   }
 }
 
@@ -538,7 +547,11 @@ export function hookProbe(): {
 }
 
 // ───────────────────────── 작품 안 목차 (data-toc / data-toc-item / data-step) ─────────────────────────
-export const STEPS = ['video', 'script', 'generate', 'edit', 'credit'] as const;
+// 최종 구조(docs/work-room.md 4절): 목차 = 과정 6단계, 단계 = 과정 패널 6개. 과정 데이터가 있는 작품에만 있다.
+export const STEPS = ['plan', 'script', 'sheet', 'segment', 'generate', 'edit'] as const;
+export { PROCESS_READY, WORK_ROOMS } from '../src/data/process/index';
+/** 작가 원문 대조 문서 폴더 — `<slug>.md`(시험 W-a) */
+export const PROCESS_DOC_DIR = process.env.QA_PROCESS_DOC_DIR ?? 'G:/내 드라이브/포폴 웹사이트 만들기/_분석/작품과정';
 
 /**
  * 목차 항목 ↔ 단계 짝짓기 규칙(3절은 「항목 → 단계」 라고만 적혀 있다):
@@ -592,5 +605,8 @@ export function scrollToStep(key: string): boolean {
   return true;
 }
 
-/** 출처 문구가 「완성본 파일명 · 시점」 또는 「작가 캡처」 · 「시트」 꼴인가. */
-export const SOURCE_FORM = /작가\s*캡처|시트|완성본|직접\s*그림|\.(mp4|mov|mkv|webm|m4v)/i;
+/**
+ * 출처 문구가 「완성본 파일명 · 시점」 또는 「작가 캡처」 · 「시트」 꼴인가.
+ * 작품 방 최종 구조(docs/work-room.md 4절)에서 허용한 미디어 갈래를 더했다: 콘티 · 블로킹맵 · 프리비즈 스틸 · 합성 소스 · 기획안 쪽 · 대본 쪽(contract.md 4절 9).
+ */
+export const SOURCE_FORM = /작가\s*캡처|시트|완성본|직접\s*그림|콘티|블로킹맵|프리비즈|합성\s*소스|기획안\s*쪽|대본\s*쪽|\.(mp4|mov|mkv|webm|m4v)/i;

@@ -1,0 +1,72 @@
+---
+/**
+ * 완성본 + 개요 — 후킹 바로 아래(docs/work-room.md 4-1 ②). 다 보여 주는 건 이 풀영상 하나.
+ * 16:9 = 영상 아래 개요 / 9:16 = 영상 옆 개요(영상은 그 구역 안에서 붙어 있다).
+ * 따온 곳:
+ *  · 풀영상 — Brady Perron 넓은 검정 구역 · Bricker 재생 원 · 아래 정보 한 줄(영상 밖) — 기존 01 영상 그대로(VideoPlayer)
+ *  · 작품 소개 — 이재학 서사 카드(케이스스터디 CS-12: 첫 줄 20px/32.5 → 문단 18px/29.25 · 폭 697 ≈ 38자 · 문단 간격 20)
+ *  · 사양표 — EddyOS 상세 점선 사양표(CS-05 · 기존 .spec) + 툴 칸 = 이재학 TOOLS 카드 접두 「Image: / Video: / Edit: / Sound:」(CS-02) · 두 칸 사이 48(CS-02)
+ *  · 1인칭 역할 한두 문장 = EddyOS(CS-05) — 작가가 쓴다 → [작가 문구 자리]
+ *  · 「작업 범위」 한 줄 = 이재학(CS-12) — 과정 6단계 이름, 누르면 그 단계로(Yuya 「단계가 곧 목차」 CS-18). 과정 데이터가 있을 때만
+ *  · 9:16 영상 옆 배치 = Polly Courtney 고정 소개 + 흐름(CS-20) · JM 고정 패널(CS-19)
+ * 글: 소개는 작가 원문(data-src = 원문 md 의 절 — 시험 (a)), 사양 · 툴은 사실.
+ */
+import VideoPlayer from './VideoPlayer.astro';
+import Placeholder from './Placeholder.astro';
+import type { Work } from '../data/works';
+import { STAGES, type WorkRoom } from '../data/process/types';
+
+type Props = { work: Work; room?: WorkRoom };
+const { work, room } = Astro.props;
+const isV = work.ratio === '9:16';
+const o = room?.overview;
+---
+
+<section class:list={['final', isV ? 'v' : 'h']} id="full" data-overview data-path="완성본" aria-label={`${work.title} — 완성본 · 개요`}>
+  <div class="final-video">
+    <VideoPlayer youtubeId={work.youtubeId} ratio={work.ratio} title={work.title} poster={work.poster} />
+    <p class="video-cap"><span class="t">{work.title}</span><span class="m">{work.year} · {work.duration} · {work.ratio}</span></p>
+  </div>
+
+  {o && (
+    <div class="ov">
+      <div class="ov-story">
+        <p class="label ov-k"><span aria-hidden="true">[ </span>작품 소개<span aria-hidden="true"> ]</span></p>
+        {o.intro.map((p) => (
+          <p class:list={['ov-p', { lead: p.lead }]} data-src={p.src}>{p.t}</p>
+        ))}
+        <div class="ov-role"><Placeholder kind="author-copy" text="작가 문구 자리 — 내가 한 일 한두 문장" block /></div>
+      </div>
+
+      <div class="ov-side">
+        <dl class="spec ov-spec">
+          {o.spec.map((r, k) => (
+            <div class="spec-row" style={`--i:${k}`} data-spec={r.key}>
+              <dt>{r.k}</dt>
+              <dd>{r.v}</dd>
+            </div>
+          ))}
+          <div class="spec-row" style={`--i:${o.spec.length}`} data-spec="tools">
+            <dt>툴</dt>
+            <dd>
+              <ul class="ov-tools">
+                {o.tools.map((t) => <li><span class="pre">{t.k}:</span> {t.v}</li>)}
+              </ul>
+            </dd>
+          </div>
+        </dl>
+
+        {room?.process && (
+          <nav class="ov-flow" aria-label="작업 범위 — 누르면 그 단계로">
+            <p class="ov-flow-k">작업 범위</p>
+            <ol>
+              {STAGES.map((s) => (
+                <li><a href={`#stage-${s.key}`}><span class="n">{s.no}</span>{s.name}</a></li>
+              ))}
+            </ol>
+          </nav>
+        )}
+      </div>
+    </div>
+  )}
+</section>

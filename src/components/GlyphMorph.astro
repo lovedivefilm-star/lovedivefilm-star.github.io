@@ -8,7 +8,7 @@
  * 쓰는 법(홈): <div class="glyph-slot" data-glyph-slot><GlyphMorph /></div> — 부품은 부모 상자를 채우고 그 안에 격자를 맞춘다.
  * 색은 CSS 변수로 받는다(하드코딩 없음): --glyph-ink · --glyph-alphas · --glyph-accent · --glyph-label.
  *   기본값은 사이트 토큰(--light · --lamp · --seat-text) — 토큰을 바꾸면 따라 바뀐다.
- * 데이터: public/media/glyph/(glyph-data.json · atlas.png · frame_*.jpg) — scripts/glyph-bake.py 가 굽는다. 출처는 public/media/출처.json.
+ * 데이터: public/media/glyph/(glyph-data.json · atlas.png · frame_*.jpg) — scripts/glyph-bake.py 가 굽는다. 출처는 src/data/media-sources.json.
  * 움직임 줄이기: 만년필 한 장으로 정지. 탭이 숨거나 화면 밖이면 멈춘다.
  */
 type Props = { class?: string; label?: string };

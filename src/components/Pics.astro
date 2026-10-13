@@ -1,0 +1,41 @@
+---
+/**
+ * 그림 묶음 — 줄마다 높이가 같게(비율대로 칸 폭을 나눔), 줄 수에 따라 한 줄 최대 높이를 정해 패널이 한 화면 안에 들게.
+ * 누르면 크게 보기(기존 라이트박스 — Paragon STILLS 「확대는 즉시」 CS-29). 캡션은 그림 아래 한 줄(Veo 「Input image」 12px CS-24 · 김병석 캡처 2×2 에 캡션을 더함 CS-26).
+ * 아래 구역 그림이라 전부 lazy.
+ */
+import type { Pic } from '../data/process/types';
+
+type Props = { pics: Pic[]; maxSum?: number; cls?: string };
+const { pics, maxSum = 3.6, cls } = Astro.props;
+const ar = (p: Pic) => p.w / p.h;
+const rows: Pic[][] = [];
+let sum = 0;
+for (const p of pics) {
+  if (rows.length && sum + ar(p) <= maxSum) {
+    rows[rows.length - 1].push(p);
+    sum += ar(p);
+  } else {
+    rows.push([p]);
+    sum = ar(p);
+  }
+}
+---
+
+<div class:list={['pics', cls]} data-rows={rows.length}>
+  {rows.map((r) => (
+    <div
+      class="pics-row"
+      style={`--sum:${r.reduce((s, p) => s + ar(p), 0).toFixed(4)};--gapn:${r.length - 1};grid-template-columns:${r.map((p) => `minmax(0, ${(ar(p) * 100).toFixed(2)}fr)`).join(' ')}`}
+    >
+      {r.map((p) => (
+        <figure class="pic" data-kind={p.kind}>
+          <button type="button" class="shot" data-img={p.full ?? p.src} data-cap={p.cap} aria-label={`${p.cap} 크게 보기`}>
+            <img src={p.src} alt={p.cap} width={p.w} height={p.h} loading="lazy" decoding="async" />
+          </button>
+          <figcaption>{p.cap}</figcaption>
+        </figure>
+      ))}
+    </div>
+  ))}
+</div>

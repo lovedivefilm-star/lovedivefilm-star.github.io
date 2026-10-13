@@ -1,0 +1,108 @@
+---
+/**
+ * 과정 — 대본에서 발췌한 한 장면을 6단계로(docs/work-room.md 4-1 ③ · 4-3).
+ * 왼쪽 고정 = 단계 목차 6칸 + 대본 종이(그 장면 발췌) / 오른쪽 흐름 = 단계 패널 6개 → 끝: 대본 구절 ↔ 완성 프레임 짝 + 「▶ 이 장면 보기」.
+ * 패널이 화면에 오면(윗변이 화면 52% 선을 지나면) 목차 칸이 바뀌고(aria-current), 종이에서 그 단계가 다루는 줄만 밝다(나머지 .38).
+ * 따온 곳:
+ *  · 고정 글 + 흐르는 매체 = JM 프로젝트 구역(케이스스터디 CS-19: sticky 패널 · 오른쪽 열이 흐름 · 교체는 한 프레임)
+ *  · 단계 목차 = Aaru 번호 목록(CS-21: 비활성 .3 → 1 · .3s linear · 52% 선) — 세로 목록을 종이 위 6칸 한 줄로
+ *  · 대본 종이 = 시안 히어로_v1 종이(후킹과 같은 종이 · 같은 글꼴 · 화면 쪽 빛 98deg · 지금 줄만 또렷 .38 · 왼쪽 먹선)
+ *  · 끝 짝 = Pixar Script to Screen(장면 70~75% + 대본 띠 25~30%) · 「▶ 그 시각부터」 = Scrite 씬 → 시간(CS-23) — 위 풀영상 iframe start=
+ * 글: 종이 · 세그먼트 · 짝의 대본 줄은 원문 그대로(data-src). 그 밖은 사실 라벨.
+ */
+import StagePanel from './StagePanel.astro';
+import { STAGES, mmss, type SceneProcess, type ScriptLine } from '../data/process/types';
+
+type Props = { p: SceneProcess; title: string; vertical: boolean };
+const { p, title, vertical } = Astro.props;
+
+// 대본 실물의 문단대로 — join 줄은 앞 문단에 이어 쓴다(문장마다 밝힐 수 있게 span 하나씩)
+const paras: { t: ScriptLine['t']; items: { i: number; l: ScriptLine }[] }[] = [];
+p.excerpt.forEach((l, i) => {
+  if (l.join && paras.length) paras[paras.length - 1].items.push({ i, l });
+  else paras.push({ t: l.t, items: [{ i, l }] });
+});
+const endLit = [...new Set(p.pairs.flatMap((q) => q.lines))].sort((a, b) => a - b);
+---
+
+<section class:list={['proc', vertical ? 'v' : 'h']} id="process" data-process aria-labelledby="h-proc">
+  <header class="proc-h">
+    <p class="label"><span aria-hidden="true">[ </span>과정<span aria-hidden="true"> ]</span></p>
+    <h2 id="h-proc" class="proc-t">{p.title}<span class="sub"> — 한 장면이 만들어진 순서</span></h2>
+    <p class="proc-m">{p.script} · 완성본 {mmss(p.range[0], 1)} – {mmss(p.range[1], 1)}</p>
+  </header>
+
+  <div class="proc-body">
+    <aside class="proc-fix">
+      <nav class="proc-toc" data-toc aria-label="과정 6단계 — 누르면 그 단계로">
+        <ol>
+          {STAGES.map((s, k) => (
+            <li>
+              <a href={`#stage-${s.key}`} data-toc-item={s.key} aria-current={k === 0 ? 'step' : undefined}>
+                <span class="n">{s.no}</span><span class="t">{s.short}</span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </nav>
+
+      <article class="pp" data-script data-pp aria-label={`${title} — ${p.script} 발췌`}>
+        <div class="pp-run" aria-hidden="true"><span>{title}</span><span>{p.script}</span></div>
+        <div class="pp-win">
+          <div class="pp-flow">
+            {paras.map((g) => (
+              <p class:list={['b', `b-${g.t}`]}>
+                {g.items.map(({ i, l }, k) => (
+                  <>
+                    {k > 0 && ' '}
+                    {l.t === 'dia' ? (
+                      <span class="ln" data-pp-line={i}><span class="who" data-src={p.src}>{l.who}</span><span data-src={p.src}>{l.s}</span></span>
+                    ) : (
+                      <span class="ln" data-pp-line={i} data-src={p.src}>{l.s}</span>
+                    )}
+                  </>
+                ))}
+              </p>
+            ))}
+          </div>
+        </div>
+        <p class="pp-foot">대본 원문 그대로 · 장면 발췌</p>
+      </article>
+    </aside>
+
+    <div class="proc-flow">
+      {p.stages.map((s) => <StagePanel s={s} p={p} vertical={vertical} />)}
+
+      <section class="proc-end" id="stage-end" data-lit={endLit.join(',')} data-path="완성" aria-labelledby="h-end">
+        <header class="st-h">
+          <span class="st-n">끝</span>
+          <h3 id="h-end" class="st-t"><span class="line"><span class="line-in">완성</span></span></h3>
+          <button type="button" class="play-scene" data-play-at={p.play}>
+            <span aria-hidden="true">▶</span> 이 장면 보기 · {mmss(p.play)}부터
+          </button>
+        </header>
+        <div class="pairs">
+          {p.pairs.map((q) => (
+            <figure class="pair">
+              <blockquote class="pair-q">
+                {q.lines.map((i) => {
+                  const l = p.excerpt[i];
+                  return (
+                    <p class:list={['pq', `pq-${l.t}`]}>
+                      {l.who && <span class="who" data-src={p.src}>{l.who}</span>}
+                      <span data-src={p.src}>{l.s}</span>
+                    </p>
+                  );
+                })}
+              </blockquote>
+              <button type="button" class="shot" data-img={q.pic.full ?? q.pic.src} data-cap={q.pic.cap} aria-label={`${q.pic.cap} 크게 보기`}>
+                <img src={q.pic.src} alt={q.pic.cap} width={q.pic.w} height={q.pic.h} loading="lazy" decoding="async" />
+              </button>
+              <figcaption>{q.pic.cap}</figcaption>
+            </figure>
+          ))}
+        </div>
+      </section>
+    </div>
+  </div>
+</section>

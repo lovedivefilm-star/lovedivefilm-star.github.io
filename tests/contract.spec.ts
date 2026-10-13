@@ -16,6 +16,7 @@ import {
   IMG_VIDEO_EXT,
   MAIN_WORKS,
   MEDIA_DIR,
+  PROCESS_READY,
   PUBLIC_DIR,
   RASTER_VIDEO_EXT,
   ROOMS,
@@ -504,20 +505,40 @@ test.describe('contract 4절 백테스트', () => {
     assertNoProblems('공모전 낱말', problems);
   });
 
+  test('8-b. 사이트에 실리는 파일(public/ 의 글 파일)과 각 방의 HTML 소스(속성 · 숨은 글 포함)에도 공모전 이름이 없다', { tag: '@once' }, async ({ page }) => {
+    // 10-13: 출처 기록(public/media/출처.json)이 주소로 열려 원본 폴더 이름(공모전명)이 새고 있었다 — 화면 글자만 보는 8번으로는 못 잡는다
+    const problems: string[] = [];
+    const check = (label: string, s: string) => {
+      const squeezed = s.replace(/\s+/g, '');
+      for (const w of CONTEST_WORDS_KO) if (squeezed.includes(w)) problems.push(`${label}: 「${w}」`);
+      if (CONTEST_WORD_OYE.test(s)) problems.push(`${label}: 「OYE」`);
+    };
+    for (const f of walkFiles(PUBLIC_DIR).filter((f) => /\.(json|txt|html?|svg|css|js|mjs|xml|md|vtt|srt)$/i.test(f))) {
+      check(`public/${f}`, fs.readFileSync(path.join(PUBLIC_DIR, f), 'utf8'));
+    }
+    for (const room of ROOMS) {
+      if ((await visit(page, room.path)) !== 200) continue;
+      check(`${room.path} HTML`, await page.content());
+    }
+    assertNoProblems('사이트에 실리는 파일의 공모전 낱말', problems);
+  });
+
   test('9. 이미지 · 영상 파일은 전부 public/media/ 에 있고 각각 출처.json 에 출처가 있다', { tag: '@once' }, async ({ page, baseURL }) => {
     const problems: string[] = [];
 
     // (a) public/media/ 파일 ↔ 출처.json
     // 출처를 요구하는 것은 이미지 · 영상 파일. 데이터 파일(.json 등)은 대상이 아니다.
-    const files = walkFiles(MEDIA_DIR).filter((f) => f !== '출처.json' && IMG_VIDEO_EXT.test(f));
-    const srcFile = path.join(MEDIA_DIR, '출처.json');
+    const files = walkFiles(MEDIA_DIR).filter((f) => IMG_VIDEO_EXT.test(f));
+    // 출처 기록은 사이트에 실리지 않게 public 밖(10-13 — 원본 폴더 경로에 공모전 이름이 들어 있다)
+    const srcFile = path.join(SRC_DIR, 'data', 'media-sources.json');
+    if (fs.existsSync(path.join(MEDIA_DIR, '출처.json'))) problems.push('public/media/출처.json 이 남아 있음 — 출처 기록은 src/data/media-sources.json 에만');
     let sources = new Map<string, string>();
-    if (!fs.existsSync(srcFile)) problems.push('public/media/출처.json 이 없음');
+    if (!fs.existsSync(srcFile)) problems.push('src/data/media-sources.json 이 없음');
     else {
       try {
         sources = readSources(fs.readFileSync(srcFile, 'utf8'));
       } catch (e) {
-        problems.push(`public/media/출처.json 을 읽을 수 없음: ${(e as Error).message}`);
+        problems.push(`src/data/media-sources.json 을 읽을 수 없음: ${(e as Error).message}`);
       }
     }
     if (files.length === 0) problems.push('public/media/ 에 파일이 하나도 없음 (포스터 · 증명사진 등이 있어야 함)');
@@ -755,9 +776,13 @@ test.describe('contract 4절 백테스트', () => {
         if (ratio !== w.ratio) problems.push(`${p}: data-ratio="${ratio}" (기대 ${w.ratio})`);
       }
 
-      for (const [name, sel] of [['대본', SEL.script], ['크레딧', SEL.credit], ['과정', SEL.process]] as const) {
+      for (const [name, sel] of [['대본', SEL.script], ['크레딧', SEL.credit], ['개요', SEL.overview]] as const) {
         if ((await page.locator(sel).count()) === 0) problems.push(`${p}: ${name} ${sel} 없음`);
       }
+      // 과정 구역(data-process)은 과정 데이터가 있는 작품에만 — 없는 작품에 빈 구역을 그리지 않는다(work-room.md 4절 · contract.md 4절 +A)
+      const nProc = await page.locator(SEL.process).count();
+      if (PROCESS_READY.includes(w.slug) && nProc !== 1) problems.push(`${p}: 과정 ${SEL.process} ${nProc}개 (과정 데이터가 있으니 1개여야 함)`);
+      if (!PROCESS_READY.includes(w.slug) && nProc !== 0) problems.push(`${p}: 과정 데이터가 없는데 ${SEL.process} 가 ${nProc}개 있음`);
     }
     assertNoProblems(`작품 상세 첫 화면 · 표식 · ${testInfo.project.name}`, problems);
   });
@@ -793,7 +818,7 @@ test.describe('contract 4절 백테스트', () => {
   const mapKey = (key: string) => (key.startsWith('#') ? (STEPS[Number(key.slice(1))] ?? key) : key);
   const sameSet = (a: readonly string[], b: readonly string[]) => JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
 
-  test('+C. 작품 상세 목차: 항목 5 ↔ 단계 5 짝 · 누르면 그 단계가 화면에 옴 · 스크롤하면 aria-current="step" 이 옮겨 감', async ({ page }, testInfo) => {
+  test('+C. 작품 상세 과정 목차: 6칸 ↔ 단계 패널 6 짝 · 누르면 그 패널이 화면에 옴 · 스크롤하면 aria-current="step" 이 옮겨 감 (과정 데이터가 없는 작품은 목차 · 단계가 없다)', async ({ page }, testInfo) => {
     const problems: string[] = [];
     for (const w of MAIN_WORKS) {
       const p = `/works/${w.slug}/`;
@@ -804,17 +829,24 @@ test.describe('contract 4절 백테스트', () => {
       }
       await settle(page, 600);
       const s0 = await page.evaluate(tocState);
+      if (!PROCESS_READY.includes(w.slug)) {
+        // 과정 데이터가 오기 전 — 과정 구역 · 목차 · 단계를 그리지 않는다(work-room.md 4절)
+        if (s0.hasToc || s0.steps.length) problems.push(`${p}: 과정 데이터가 없는데 [data-toc] ${s0.hasToc ? '있음' : '없음'} · [data-step] ${s0.steps.length}개`);
+        testInfo.annotations.push({ type: '과정 데이터 없음', description: `${w.slug} — 목차 시험을 건너뜀` });
+        continue;
+      }
       if (!s0.hasToc) {
         problems.push(`${p}: [data-toc] 없음`);
         continue;
       }
 
-      // (a) 항목 5개 ↔ 단계 5개
+      // (a) 목차 6칸 ↔ 단계 패널 6개(같은 순서)
       const before = problems.length;
       const keys = s0.items.map((i) => mapKey(i.key));
-      if (s0.items.length !== STEPS.length) problems.push(`${p}: [data-toc-item] ${s0.items.length}개 (5개여야 함)`);
-      if (!sameSet(keys, STEPS)) problems.push(`${p}: 목차 항목 [${keys.join(', ')}] 가 단계 [${STEPS.join(', ')}] 와 짝이 안 맞음`);
-      if (!sameSet(s0.steps, STEPS)) problems.push(`${p}: [data-step] 가 [${s0.steps.join(', ')}] (video · script · generate · edit · credit 각 1개여야 함)`);
+      if (s0.items.length !== STEPS.length) problems.push(`${p}: [data-toc-item] ${s0.items.length}개 (6개여야 함)`);
+      if (JSON.stringify(keys) !== JSON.stringify([...STEPS])) problems.push(`${p}: 목차 칸 [${keys.join(', ')}] 가 과정 6단계 [${STEPS.join(', ')}] 순서와 다름`);
+      if (JSON.stringify(s0.steps) !== JSON.stringify([...STEPS])) problems.push(`${p}: [data-step] 가 [${s0.steps.join(', ')}] (plan · script · sheet · segment · generate · edit 순서로 각 1개여야 함)`);
+      if (!sameSet(keys, s0.steps)) problems.push(`${p}: 목차 칸과 패널이 짝이 안 맞음`);
       if (problems.length > before) continue;
 
       // (b) 항목을 누르면 그 단계가 화면 안으로 온다
@@ -860,10 +892,14 @@ test.describe('contract 4절 백테스트', () => {
     assertNoProblems(`작품 안 목차 · ${testInfo.project.name}`, problems);
   });
 
-  test('+D. 작품 상세 목차가 스크롤 중에도 화면 안에 남는다(고정)', { tag: '@desktop' }, async ({ page }, testInfo) => {
+  test('+D. 작품 상세 과정 목차가 과정 구역을 스크롤하는 동안 화면 안에 남는다(고정)', { tag: '@desktop' }, async ({ page }, testInfo) => {
     const problems: string[] = [];
     for (const w of MAIN_WORKS) {
       const p = `/works/${w.slug}/`;
+      if (!PROCESS_READY.includes(w.slug)) {
+        testInfo.annotations.push({ type: '과정 데이터 없음', description: `${w.slug} — 목차 고정 시험을 건너뜀` });
+        continue;
+      }
       const st = await visit(page, p);
       if (st !== 200) {
         problems.push(`${p} → HTTP ${st} (방이 없음)`);
@@ -874,11 +910,13 @@ test.describe('contract 4절 백테스트', () => {
         problems.push(`${p}: [data-toc] 없음`);
         continue;
       }
-      // 단계 구역에 들어선 뒤부터 맨 아래까지 다섯 지점
+      // 첫 단계 패널이 화면 위에 닿은 뒤부터 과정 구역(끝 짝 포함)의 마지막 화면까지 다섯 지점 — 목차는 과정 구역 안에서만 붙어 있다
       const range = await page.evaluate(() => {
         const first = document.querySelector('[data-step]');
-        const start = first ? first.getBoundingClientRect().top + window.scrollY - window.innerHeight * 0.4 : 0;
-        return { start: Math.max(start, 0), max: Math.max(document.documentElement.scrollHeight - window.innerHeight, 0) };
+        const body = document.querySelector('.proc-body');
+        const start = first ? first.getBoundingClientRect().top + window.scrollY - 120 : 0;
+        const end = body ? body.getBoundingClientRect().bottom + window.scrollY - window.innerHeight : 0;
+        return { start: Math.max(start, 0), max: Math.max(end, start, 0) };
       });
       for (let k = 0; k < 5; k++) {
         const y = Math.round(range.start + ((range.max - range.start) * k) / 4);

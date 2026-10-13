@@ -1,7 +1,7 @@
 /**
  * 작품 데이터 — docs/contract.md 2절 표 그대로(한 곳).
  * 글: 대본 줄은 src/data/scripts.ts(원문 줄 그대로) 의 번호로만 가리킨다 — 여기서 문장을 쓰지 않는다.
- * 미디어: public/media/ (출처는 public/media/출처.json).
+ * 미디어: public/media/ (출처는 src/data/media-sources.json).
  */
 import { SCRIPTS, type ScriptLine } from './scripts';
 
@@ -239,7 +239,8 @@ export const WORKS: Work[] = [
     credits: [
       { k: '대본', v: '김영건' },
       { k: '생성 · 편집', v: '김영건 (단독)' },
-      { k: '도구', v: null, ph: TOOL_PH },
+      // 3차(docs/work-room.md 1절 06) — 툴 이름은 _분석/작품과정/butter.md 3절 툴 표에서만
+      { k: '도구', v: 'Midjourney V8.2 · Seedream 5.0 Pro · GPT Image 2 · Seedance 2.0 → 2.5 (Higgsfield) · Premiere Pro · After Effects · ElevenLabs Music v2 · Seed Audio 1.0' },
     ],
     hook: {
       clip: '/media/hook_butter.mp4',

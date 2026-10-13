@@ -250,4 +250,32 @@
   --dur-title-mask: 1s;
   --delay-title-mask: 90ms;
   --ease-title-mask: cubic-bezier(.42, 0, .58, 1);
+
+  /* ── 작품 방 최종 구조(docs/work-room.md 4절) — 값은 _분석/레퍼런스/정밀/케이스스터디.md 의 [이번] 측정값 그대로 ── */
+  /* 완성본 + 개요: 이재학 서사 카드(CS-12 — 첫 줄 20px/32.5 · 문단 18px/29.25 · 폭 697 ≈ 38자 · 문단 간격 20) · 두 칸 간격 48(CS-02) */
+  --ov-story-w: 697px;
+  --ov-gap: 48px;
+  --ov-lead: 20px;
+  --ov-lead-lh: 32.5px;
+  --ov-p: 18px;
+  --ov-p-lh: 29.25px;
+  --ov-p-gap: 20px;
+  /* 과정: JM 고정 글 + 흐르는 매체(CS-19 — 고정 칸 ↔ 흐름 사이 x 64) · 대본 종이 = 후킹 종이(A4, 지금 줄 밖 .38 — 히어로 v1) */
+  --pp-gap: 64px;
+  --pp-max-h: 760px;
+  --pp-dim: .38;
+  /* 단계 패널: 사실 칩 = JM 소프트웨어 칩(CS-03 — 14px/20 · 6×16) · 그림 줄 최대 높이(한 화면 안 — 1줄 / 2줄) */
+  --chip-size: 14px;
+  --chip-lh: 20px;
+  --chip-pad: 6px 16px;
+  --pics-row-1: min(560px, 62svh);
+  --pics-row-2: min(270px, 28svh);
+  /* 작가 원문 인용 = 안윤준 기획 의도 인용 박스(CS-08 — 왼쪽 2px 괘선) · 글 = 이재학 18px/29.25 */
+  --quote-rule: 2px;
+  /* 그림 아래 캡션: Veo 「Input image」 12px(CS-24) */
+  --io-label: 12px;
+  /* 끝 짝: Pixar Script to Screen — 장면 70~75% : 대본 띠 25~30%(가로 그림은 한 줄에 대본 2 : 그림 3) */
+  --pair-cols: minmax(0, 2fr) minmax(0, 3fr);
+  /* 작가 캡처 자리: 김병석(CS-26) — 칸 540×280 · 점선 */
+  --cap2-ratio: 540 / 280;
 }

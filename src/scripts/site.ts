@@ -20,12 +20,14 @@ const $ = <T extends Element = HTMLElement>(s: string, r: ParentNode = document)
 const $$ = <T extends Element = HTMLElement>(s: string, r: ParentNode = document) => Array.from(r.querySelectorAll<T>(s));
 
 /* ───────────── 사이트 안 유튜브 — 그 자리에 iframe ───────────── */
-const ytSrc = (id: string) => `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?autoplay=1&rel=0&playsinline=1`;
-function mountIframe(box: HTMLElement) {
+// start = 그 시각(초)부터 — 과정 끝 「▶ 이 장면 보기」(유튜브 임베드 start 매개변수, 영상 위에는 아무것도 얹지 않는다)
+const ytSrc = (id: string, start?: number) =>
+  `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?autoplay=1&rel=0&playsinline=1${start != null ? `&start=${Math.max(0, Math.floor(start))}` : ''}`;
+function mountIframe(box: HTMLElement, start?: number) {
   const id = box.dataset.youtubeId;
   if (!id) return;
   const f = document.createElement('iframe');
-  f.src = ytSrc(id);
+  f.src = ytSrc(id, start);
   f.title = box.dataset.title || '영상';
   f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
   f.allowFullscreen = true;
@@ -118,6 +120,16 @@ document.addEventListener('click', (e) => {
   if (poster) {
     const box = poster.closest<HTMLElement>('[data-video]');
     if (box) mountIframe(box);
+    return;
+  }
+  // 「▶ 이 장면 보기」 — 이 작품의 풀영상(같은 페이지 · 완성본 + 개요 구역)을 그 시각부터. 영상 자리로 올라간다(Scrite 「씬 → 그 시간」 CS-23)
+  const playAt = t.closest<HTMLElement>('[data-play-at]');
+  if (playAt) {
+    const box = $<HTMLElement>('[data-work] [data-video]');
+    if (box) {
+      mountIframe(box, Number(playAt.dataset.playAt) || 0);
+      box.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
+    }
     return;
   }
   const card = t.closest<HTMLElement>('[data-tool]');
@@ -669,43 +681,80 @@ function initHook(): HookApi | null {
   return api;
 }
 
-/* ───────────── 작품 안 목차 — 지금 단계 켜기(Aaru · Yuya) · 단계 머리 맺힘 ───────────── */
-function initToc() {
-  const toc = $('[data-toc]');
-  if (!toc) return;
-  const items = $$<HTMLAnchorElement>('[data-toc-item]', toc);
-  const steps = items.map((a) => $(`[data-step="${a.dataset.tocItem}"]`)).filter(Boolean) as HTMLElement[];
-  let cur = '';
+/* ───────────── 작품 방 — 과정 6단계(docs/work-room.md 4절) ─────────────
+   단계 패널의 윗변이 화면 52% 선을 지나면(Aaru 활성 판정) ① 목차 칸이 바뀌고(aria-current="step")
+   ② 왼쪽 대본 종이에서 그 단계가 다루는 줄(data-lit)만 또렷 — 나머지 .38(후킹 종이와 같은 규칙) — 교체는 한 프레임(JM)
+   ③ 상단 바의 「지금 단계」 글이 그 구역 이름으로(data-path). 종이가 넘치면 밝은 첫 줄이 보이게 종이 안 글을 올린다(후킹 .flow 와 같은 따라감). */
+function initRoom() {
+  const work = $('[data-work]');
+  if (!work) return;
+  const toc = $('[data-toc]', work);
+  const items = toc ? $$<HTMLAnchorElement>('[data-toc-item]', toc) : [];
+  const panels = $$<HTMLElement>('[data-step]', work);
+  const litZones = $$<HTMLElement>('[data-lit]', work); // 단계 패널 + 끝 짝
+  const paths = $$<HTMLElement>('[data-path]', work);
+  const paper = $('[data-pp]', work);
+  const win = paper ? $('.pp-win', paper) : null;
+  const flow = paper ? $('.pp-flow', paper) : null;
+  const lines = paper ? $$<HTMLElement>('[data-pp-line]', paper) : [];
+  const blocks = paper ? $$<HTMLElement>('.b', paper) : [];
   const pathStep = $('[data-path-step]');
   const firstLabel = pathStep?.textContent ?? '';
+  let curStep = '';
+  let curLit = '';
   let curLabel = '';
+  let shift = -1;
+
   const setLabel = (t: string) => {
     if (!pathStep || t === curLabel) return;
     curLabel = t;
     pathStep.textContent = t;
   };
-  const setCur = (key: string) => {
-    if (key === cur) return;
-    cur = key;
-    items.forEach((a) => {
-      if (a.dataset.tocItem === key) {
-        a.setAttribute('aria-current', 'step');
-        const ol = a.closest('ol');
-        if (ol && ol.scrollWidth > ol.clientWidth) ol.scrollLeft = a.offsetLeft - ol.clientWidth / 2 + a.offsetWidth / 2;
-      } else a.removeAttribute('aria-current');
-    });
+  const setStep = (key: string) => {
+    if (key === curStep) return;
+    curStep = key;
+    items.forEach((a) => (a.dataset.tocItem === key ? a.setAttribute('aria-current', 'step') : a.removeAttribute('aria-current')));
   };
+  const follow = () => {
+    if (!win || !flow) return;
+    const first = lines.find((l) => l.classList.contains('is-lit'));
+    const max = Math.max(0, flow.offsetHeight - win.clientHeight);
+    let want = 0;
+    if (first && max > 0) {
+      // 밝은 첫 줄의 문단 윗변에 맞춘다 — 창 위 끝에 앞 문단이 반만 걸려 잘리지 않게(후킹 follow 와 같은 규칙)
+      const top = (first.closest('.b') as HTMLElement | null)?.offsetTop ?? first.offsetTop;
+      want = Math.max(0, top);
+    }
+    want = Math.round(want);
+    if (want !== shift) {
+      shift = want;
+      flow.style.transform = want ? `translateY(${-want}px)` : '';
+    }
+  };
+  const setLit = (spec: string) => {
+    if (!paper || spec === curLit) return;
+    curLit = spec;
+    const on = new Set(spec.split(',').filter(Boolean).map(Number));
+    lines.forEach((l) => l.classList.toggle('is-lit', on.has(Number(l.dataset.ppLine))));
+    blocks.forEach((b) => b.classList.toggle('has-lit', !!b.querySelector('.is-lit')));
+    paper.classList.toggle('all', lines.every((l) => l.classList.contains('is-lit'))); // 02 대본 — 전부 밝으면 먹선 없음
+    paper.classList.add('live');
+    follow();
+  };
+
   let queued = false;
   const pick = () => {
     queued = false;
     const line = innerHeight * (parseFloat(getComputedStyle(root).getPropertyValue('--toc-line')) || 0.52);
-    let k = steps[0]?.dataset.step ?? '';
-    let entered = false;
-    for (const s of steps) if (s.getBoundingClientRect().top <= line) (k = s.dataset.step ?? k), (entered = true);
-    setCur(k);
-    const item = items.find((a) => a.dataset.tocItem === k);
-    const lab = item ? `${item.querySelector('.n')?.textContent ?? ''} ${item.querySelector('.t')?.textContent ?? ''}`.trim() : '';
-    setLabel(entered && lab ? lab : firstLabel);
+    const last = <T extends HTMLElement>(els: T[]) => {
+      let hit: T | null = null;
+      for (const e of els) if (e.getBoundingClientRect().top <= line) hit = e;
+      return hit;
+    };
+    if (panels.length) setStep((last(panels) ?? panels[0]).dataset.step ?? '');
+    if (litZones.length) setLit((last(litZones) ?? litZones[0]).dataset.lit ?? '');
+    const p = last(paths);
+    setLabel(p?.dataset.path ?? firstLabel);
   };
   addEventListener(
     'scroll',
@@ -717,19 +766,22 @@ function initToc() {
     },
     { passive: true },
   );
-  addEventListener('resize', pick, { passive: true });
+  addEventListener('resize', () => ((shift = -1), pick()), { passive: true });
+  document.fonts?.ready.then(() => ((shift = -1), follow())).catch(() => {});
   pick();
-  // 단계 머리가 화면에 들어오면 천천히 맺힌다(움직임 허용일 때만 CSS 가 숨겨 둔다)
+
+  // 단계 머리가 화면에 들어오면 맺힌다(움직임 허용 + 첫 스크롤 뒤에만 CSS 가 숨겨 둔다 — Paragon 줄 리빌)
   const io = new IntersectionObserver(
     (ents) => {
-      for (const en of ents) if (en.isIntersecting) {
-        en.target.classList.add('seen');
-        io.unobserve(en.target);
-      }
+      for (const en of ents)
+        if (en.isIntersecting) {
+          en.target.classList.add('seen');
+          io.unobserve(en.target);
+        }
     },
     { rootMargin: '0px 0px -12% 0px', threshold: 0.05 },
   );
-  steps.forEach((s) => io.observe(s));
+  [...panels, ...litZones].forEach((s) => io.observe(s));
 }
 
 /* ───────────── 홈 출입구 — 마지막으로 가리킨 출입구를 선택 상태로 유지(EddyOS 정밀 §5-1) ───────────── */
@@ -842,6 +894,6 @@ function initBench() {
 addEventListener('scroll', () => root.classList.add('did-scroll'), { once: true, passive: true });
 
 hookApi = initHook();
-initToc();
+initRoom();
 initDoors();
 initBench();
