@@ -1,10 +1,12 @@
 ---
 /**
  * 작품 방 첫 화면 — 후킹(규약 1절 · data-hook).
- * 따온 곳: 시안/히어로_v1(빈 종이에 씬 헤더 · 대본 줄이 타이핑되고, 그 줄이 나오는 순간 그 장면이 영상으로 흐름 · 4줄 타임라인)
- *          + 오스카 각본상 소개의 「장면 옆 각본」 결 · EddyOS CRT 한 줄(화면이 한 줄에서 열림).
- * v1 피드백 반영: 더 빠르게(화면이 1초 안에 열림, 아무 입력이면 완성 상태) · 종이와 영상을 한 틀에 붙임.
- * 영상 위에는 아무것도 얹지 않는다(재생/일시정지는 타임라인 머리에).
+ * 따온 곳: 시안/히어로_v1(index.html) — 종이 한 장 | 간격(연결선 · 타임코드) | 화면, 아래 4줄 타임라인.
+ *   연출(v1 646~665행): 빈 종이 → 씬 헤더 · 화면 줄 타이핑 → 그 줄 끝에서 화면으로 연결선 → 그 높이에 가는 가로선(슬릿)
+ *   → 화면이 그 선에서 위아래로 열림 + 앰비언트(영상 프레임을 흐리게 화면 뒤 · 둘레로) → 타임라인이 왼→오로 그려짐.
+ *   v1 의 결: 오스카 각본상 소개의 「장면 옆 각본」(결정로그) · EddyOS CRT 한 줄(화면이 한 줄에서 열림).
+ * 작가 10-13: 「대본 써지면서 옆에 파앗 하면서 영상이 떠야지」 → v1 연출로 되돌림(시간은 0.7배 — tokens.css 「후킹」).
+ * 영상 위에는 아무것도 얹지 않는다 — 앰비언트 캔버스는 화면 뒤(z-index −1), 슬릿은 열리기 전 닫힌 자리에만, 재생/일시정지는 타임라인 머리.
  */
 import { hookText, type Work } from '../data/works';
 
@@ -21,12 +23,19 @@ const bounds = [0, ...h.cuts, h.dur];
 const segs = bounds.slice(0, -1).map((a, k) => ({ a, b: bounds[k + 1] }));
 const ticks = Array.from({ length: Math.floor(h.dur) + 1 }, (_, s) => s);
 const isV = work.ratio === '9:16';
+// 화면 비율(가로 ÷ 세로) — 종이 · 간격 · 화면 크기를 CSS 가 이 수로 잰다
+const [aw, ah] = h.aspect.split('/').map((s) => Number(s.trim()));
+const ar = (aw / ah).toFixed(4);
+// 앰비언트 캔버스 — v1 24×42(세로 화면). 가로 화면은 뒤집어 42×24
+const amb = isV ? { w: 24, h: 42 } : { w: 42, h: 24 };
 const smpte = (t: number) => {
   const f = Math.round(t * h.fps);
   const s = Math.floor(f / h.fps);
   const ff = f % h.fps;
   return `00:${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}:${String(ff).padStart(2, '0')}`;
 };
+// 종이 밖 타임코드 — 그 줄이 화면에 처음 걸리는 시각(완성본 기준). 0초에 걸리는 줄은 v1 처럼 비움
+const tcOf = (now?: [number, number][]) => (now && now[0] && now[0][0] > 0 ? smpte(h.offset + now[0][0]) : undefined);
 ---
 
 <section
@@ -35,8 +44,9 @@ const smpte = (t: number) => {
   data-dur={h.dur}
   data-offset={h.offset}
   data-fps={h.fps}
+  data-cut={h.cuts[0] ?? h.dur}
   aria-label={`${work.title} — 첫 장면, 대본과 화면`}
-  style={`--aspect:${h.aspect}`}
+  style={`--aspect:${h.aspect};--ar:${ar}`}
 >
   <header class="hook-head">
     <p class="count" aria-label={`작품 ${work.no} / 03`}><b class="now">{work.no}</b><i aria-hidden="true"></i><b>03</b></p>
@@ -50,72 +60,81 @@ const smpte = (t: number) => {
   </header>
 
   <div class="hook-body">
-  <div class="stage">
-    <article class="paper" data-script aria-label={`${h.label} — 대본 원문`}>
-      <div class="paper-run" aria-hidden="true"><span>{work.title}</span><span>{h.label}</span></div>
-      <div class="flow">
-        {lines.map((l) =>
-          l.ghost ? (
-            <p class:list={['b', 'ghost', `b-${l.line.t}`]}>
-              {l.line.t === 'dia' && <span class="who">{l.line.who}</span>}
-              <span>{l.line.s}</span>
-            </p>
-          ) : (
-            <div
-              class:list={['b', `b-${l.line.t}`]}
-              data-pre={l.pre ? '1' : undefined}
-              data-kf={l.kf ? JSON.stringify(l.kf) : undefined}
-              data-now={l.now ? JSON.stringify(l.now) : undefined}
-            >
-              {l.line.t === 'dia' && <span class="who">{l.line.who}</span>}
-              <span class="tx">{l.line.s}</span>
-            </div>
-          ),
-        )}
+    <div class="stage">
+      <article class="paper" data-script aria-label={`${h.label} — 대본 원문`}>
+        <div class="paper-run" aria-hidden="true"><span>{work.title}</span><span>{h.label}</span></div>
+        <div class="script">
+          <div class="flow">
+            {lines.map((l) =>
+              l.ghost ? (
+                <p class:list={['b', 'ghost', `b-${l.line.t}`]}>
+                  {l.line.t === 'dia' && <span class="who">{l.line.who}</span>}
+                  <span>{l.line.s}</span>
+                </p>
+              ) : (
+                <div
+                  class:list={['b', `b-${l.line.t}`]}
+                  data-line
+                  data-pre={l.pre ? '1' : undefined}
+                  data-kf={l.kf ? JSON.stringify(l.kf) : undefined}
+                  data-now={l.now ? JSON.stringify(l.now) : undefined}
+                  data-tc={tcOf(l.now)}
+                >
+                  {l.line.t === 'dia' && <span class="who">{l.line.who}</span>}
+                  <span class="tx">{l.line.s}</span>
+                </div>
+              ),
+            )}
+          </div>
+        </div>
+        <p class="paper-foot">대본 원문 그대로 · 줄 단위 발췌</p>
+      </article>
+
+      <div class="link" aria-hidden="true"></div>
+
+      <figure class="screen">
+        <canvas class="ambient" data-hook-ambient width={amb.w} height={amb.h} aria-hidden="true"></canvas>
+        <div class="frame" data-hook-frame>
+          <video
+            src={h.clip}
+            poster={h.poster}
+            muted
+            playsinline
+            loop
+            preload="auto"
+            aria-label={`${work.title} 첫 장면 ${Math.round(h.dur)}초, 소리 없음`}
+          ></video>
+        </div>
+        <div class="slit" aria-hidden="true"></div>
+      </figure>
+    </div>
+
+    <div class="tl" aria-label="장면 타임라인 — 지문 · 대사 · 생성 · 편집">
+      <div class="tl-head">
+        <span class="tl-tc" aria-hidden="true">{smpte(h.offset)}</span>
+        <span class="tl-spec">{h.spec}</span>
+        <button type="button" class="tl-toggle" aria-pressed="false">일시정지</button>
       </div>
-      <p class="paper-foot">대본 원문 그대로 · 줄 단위 발췌</p>
-    </article>
-
-    <figure class="screen">
-      <video
-        src={h.clip}
-        poster={h.poster}
-        muted
-        playsinline
-        loop
-        preload="auto"
-        aria-label={`${work.title} 첫 장면 ${Math.round(h.dur)}초, 소리 없음`}
-      ></video>
-    </figure>
-  </div>
-
-  <div class="tl" aria-label="장면 타임라인 — 지문 · 대사 · 생성 · 편집">
-    <div class="tl-head">
-      <span class="tl-tc" aria-hidden="true">{smpte(h.offset)}</span>
-      <span class="tl-spec">{h.spec}</span>
-      <button type="button" class="tl-toggle" aria-pressed="false">일시정지</button>
+      <div class="tl-body">
+        <div class="ruler" aria-hidden="true">{ticks.map((s) => <i style={`left:${pct(s)}`}></i>)}</div>
+        <div class="lane"><span class="lane-k">지문</span><div class="lane-t">
+          {actLane.map((r) => <i class="blk" data-i={r.i} data-a={r.a} data-b={r.b} style={`left:${pct(r.a)};width:${pct(r.b - r.a)}`}></i>)}
+        </div></div>
+        <div class="lane"><span class="lane-k">대사</span><div class="lane-t">
+          {diaLane.map((r) => <i class="blk" data-i={r.i} data-a={r.a} data-b={r.b} style={`left:${pct(r.a)};width:${pct(r.b - r.a)}`}></i>)}
+        </div></div>
+        <div class="lane"><span class="lane-k">생성</span><div class="lane-t">
+          {segs.map((s, k) => (
+            <i class="seg" style={`left:${pct(s.a)};width:${pct(s.b - s.a)}`}>{k === 0 && <span>[제작 자료 자리: 프롬프트 버전 · 테이크]</span>}</i>
+          ))}
+        </div></div>
+        <div class="lane"><span class="lane-k">편집</span><div class="lane-t">
+          <img class="strip" src={h.strip} alt="" loading="lazy" decoding="async" />
+          {h.cuts.map((c) => <i class="cut" style={`left:${pct(c)}`}></i>)}
+        </div></div>
+        <div class="playhead" aria-hidden="true"><i></i></div>
+      </div>
     </div>
-    <div class="tl-body">
-      <div class="ruler" aria-hidden="true">{ticks.map((s) => <i style={`left:${pct(s)}`}></i>)}</div>
-      <div class="lane"><span class="lane-k">지문</span><div class="lane-t">
-        {actLane.map((r) => <i class="blk" data-i={r.i} data-a={r.a} data-b={r.b} style={`left:${pct(r.a)};width:${pct(r.b - r.a)}`}></i>)}
-      </div></div>
-      <div class="lane"><span class="lane-k">대사</span><div class="lane-t">
-        {diaLane.map((r) => <i class="blk" data-i={r.i} data-a={r.a} data-b={r.b} style={`left:${pct(r.a)};width:${pct(r.b - r.a)}`}></i>)}
-      </div></div>
-      <div class="lane"><span class="lane-k">생성</span><div class="lane-t">
-        {segs.map((s, k) => (
-          <i class="seg" style={`left:${pct(s.a)};width:${pct(s.b - s.a)}`}>{k === 0 && <span>[제작 자료 자리: 프롬프트 버전 · 테이크]</span>}</i>
-        ))}
-      </div></div>
-      <div class="lane"><span class="lane-k">편집</span><div class="lane-t">
-        <img class="strip" src={h.strip} alt="" loading="lazy" decoding="async" />
-        {h.cuts.map((c) => <i class="cut" style={`left:${pct(c)}`}></i>)}
-      </div></div>
-      <div class="playhead" aria-hidden="true"><i></i></div>
-    </div>
-  </div>
-
   </div>
 
   <a class="cue" href="#full"><span aria-hidden="true">↓</span> 풀영상 · 크레딧 · 과정</a>

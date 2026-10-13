@@ -937,4 +937,120 @@ test.describe('contract 4절 백테스트', () => {
     }
     assertNoProblems(`목차 가로 넘침 · ${testInfo.project.name}`, [...new Set(problems)]);
   });
+
+  // 작가 10-13 「대본 써지면서 옆에 파앗 하면서 영상이 떠야지」 — 시안 히어로_v1 연출(종이 | 간격 | 화면, 줄 → 연결선 → 슬릿 → 열림 + 앰비언트)
+  test('+F. 후킹(히어로 v1): (a) 처음엔 화면이 닫혀 있고 대본 첫 줄이 다 쳐진 뒤 열린다 (b) 열린 뒤 앰비언트가 보이고 영상 가운데 맨 위는 video (c) 종이와 화면 사이 가로 간격 ≥ 60px', async ({ page }, testInfo) => {
+    const problems: string[] = [];
+    // 프레임마다 표본: 화면(클립 틀)의 보이는 높이 · 대본 첫 줄이 쳐진 글자 수 — 페이지 스크립트보다 먼저 심는다
+    await page.addInitScript(() => {
+      type S = { t: number; vis: number; h: number; typed: number; len: number };
+      const w = window as unknown as { __hookS: S[] };
+      w.__hookS = [];
+      const tick = () => {
+        const hook = document.querySelector<HTMLElement>('[data-hook]');
+        const fr = hook?.querySelector<HTMLElement>('[data-hook-frame]');
+        if (hook && fr) {
+          const r = fr.getBoundingClientRect();
+          let vis = r.height;
+          const m = /inset\(([^)]*)\)/.exec(getComputedStyle(fr).clipPath);
+          if (m) {
+            const p = m[1].trim().split(/\s+/);
+            const px = (s: string) => (s.endsWith('%') ? (parseFloat(s) / 100) * r.height : parseFloat(s) || 0);
+            vis = Math.max(0, r.height - px(p[0]) - px(p[2] ?? p[0]));
+          }
+          // 「대본 첫 줄」 = 종이에서 처음 쳐지는 줄(흐린 앞 지문 다음의 첫 [data-line])
+          const first = hook.querySelector<HTMLElement>('[data-script] [data-line]');
+          const on = first?.querySelector('.on');
+          const off = first?.querySelector('.off');
+          const typed = on ? (on.textContent ?? '').length : -1;
+          const len = on && off ? typed + (off.textContent ?? '').length : -1;
+          w.__hookS.push({ t: performance.now(), vis, h: r.height, typed, len });
+        }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+
+    for (const w of MAIN_WORKS) {
+      const p = `/works/${w.slug}/`;
+      const res = await page.goto(p, { waitUntil: 'commit' });
+      if ((res?.status() ?? 0) !== 200) {
+        problems.push(`${p} → HTTP ${res?.status()}`);
+        continue;
+      }
+      // 연출이 끝나 완성 상태(.done)가 될 때까지 — 입력을 주지 않는다(입력 = 즉시 완성이라 연출을 못 본다)
+      const finished = await page
+        .waitForFunction(() => document.querySelector('[data-hook]')?.classList.contains('done') === true, null, { timeout: 12_000, polling: 100 })
+        .then(() => true)
+        .catch(() => false);
+      if (!finished) problems.push(`${p}: 12초 안에 연출이 끝나지 않음([data-hook].done 이 안 붙음)`);
+      await page.waitForTimeout(400);
+
+      // (a) 닫힘 → 첫 줄 다 쳐짐 → 열림
+      const S = await page.evaluate(() => (window as unknown as { __hookS: { t: number; vis: number; h: number; typed: number; len: number }[] }).__hookS);
+      if (S.length < 10) problems.push(`${p}: 표본이 너무 적음(${S.length})`);
+      else {
+        if (S[0].vis > 2) problems.push(`${p}: (a) 처음부터 화면이 열려 있음 — 첫 표본의 보이는 높이 ${Math.round(S[0].vis)}px / ${Math.round(S[0].h)}px (닫힌 슬릿에서 시작해야 함)`);
+        const k = S.findIndex((s) => s.vis > 2);
+        if (k < 0) problems.push(`${p}: (a) 화면이 끝까지 열리지 않음`);
+        else {
+          const at = S[k];
+          if (!(at.len > 0 && at.typed >= at.len)) problems.push(`${p}: (a) 대본 첫 줄이 다 쳐지기 전에 화면이 열림 — 열리기 시작할 때 ${at.typed}/${at.len}자`);
+          const typedBefore = S.slice(0, k).some((s) => s.typed > 0 && s.vis <= 2);
+          if (!typedBefore) problems.push(`${p}: (a) 화면이 닫힌 동안 대본이 쳐지는 구간이 없음`);
+          if (!S.some((s) => s.vis >= s.h - 2)) problems.push(`${p}: (a) 화면이 다 열리지 않음(최대 ${Math.round(Math.max(...S.map((s) => s.vis)))}px)`);
+        }
+      }
+
+      // (b) 앰비언트(화면 뒤 빛)가 보이고, 영상 상자 가운데의 맨 위는 영상 자신
+      const b = await page.evaluate(() => {
+        const out: string[] = [];
+        const hook = document.querySelector<HTMLElement>('[data-hook]')!;
+        const v = hook.querySelector<HTMLVideoElement>('video');
+        const amb = hook.querySelector<HTMLCanvasElement>('[data-hook-ambient]');
+        if (!v) return ['영상 없음'];
+        if (!amb) return ['앰비언트 캔버스 [data-hook-ambient] 없음'];
+        window.scrollTo(0, 0);
+        const op = parseFloat(getComputedStyle(amb).opacity);
+        if (!(op > 0)) out.push(`앰비언트 캔버스 opacity ${op} (보여야 함)`);
+        if (getComputedStyle(amb).display === 'none' || getComputedStyle(amb).visibility === 'hidden') out.push('앰비언트 캔버스가 숨겨짐');
+        try {
+          const d = amb.getContext('2d')!.getImageData(0, 0, amb.width, amb.height).data;
+          let lit = 0;
+          for (let i = 3; i < d.length; i += 4) if (d[i] > 0) lit++;
+          if (lit === 0) out.push('앰비언트 캔버스에 그려진 영상 빛이 없음(빈 캔버스)');
+        } catch (e) {
+          out.push(`앰비언트 캔버스를 읽을 수 없음: ${(e as Error).message}`);
+        }
+        const r = v.getBoundingClientRect();
+        const a = amb.getBoundingClientRect();
+        if (!(a.width > r.width && a.height > r.height)) out.push(`앰비언트가 화면 둘레로 번지지 않음(캔버스 ${Math.round(a.width)}x${Math.round(a.height)} ≤ 화면 ${Math.round(r.width)}x${Math.round(r.height)})`);
+        const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        if (top !== v) out.push(`영상 상자 가운데의 맨 위가 영상이 아님: <${top?.tagName.toLowerCase()} class="${(top as HTMLElement | null)?.className ?? ''}">`);
+        // 캔버스는 영상 뒤에 깔려야 한다 — 눌림을 무시하고 겹친 순서를 보면 영상이 캔버스보다 위
+        const st = document.createElement('style');
+        st.textContent = '[data-hook-ambient]{pointer-events:auto !important}';
+        document.head.appendChild(st);
+        const stack = document.elementsFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        st.remove();
+        const iv = stack.indexOf(v);
+        const ia = stack.indexOf(amb);
+        if (ia >= 0 && iv >= 0 && ia < iv) out.push('앰비언트 캔버스가 영상 위에 겹침(영상 뒤여야 함)');
+        return out;
+      });
+      for (const m of b) problems.push(`${p}: (b) ${m}`);
+
+      // (c) 종이와 화면을 떼어 놓는다 — 그 사이가 연결선 · 타임코드 자리
+      const gap = await page.evaluate(() => {
+        const hook = document.querySelector<HTMLElement>('[data-hook]')!;
+        const paper = hook.querySelector<HTMLElement>('[data-script]');
+        const v = hook.querySelector<HTMLVideoElement>('video');
+        if (!paper || !v) return null;
+        return v.getBoundingClientRect().left - paper.getBoundingClientRect().right;
+      });
+      if (gap == null) problems.push(`${p}: (c) 후킹 안에 대본 [data-script] 또는 영상이 없음`);
+      else if (gap < 60) problems.push(`${p}: (c) 종이와 화면 사이 간격 ${Math.round(gap)}px (60px 이상이어야 함 — 한 틀로 붙이지 않는다)`);
+    }
+    assertNoProblems(`후킹 연출(히어로 v1) · ${testInfo.project.name}`, problems);
+  });
 });

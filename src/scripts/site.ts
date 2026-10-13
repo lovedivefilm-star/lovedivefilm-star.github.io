@@ -179,25 +179,52 @@ if (root.hasAttribute('data-intro')) {
   ['keydown', 'pointerdown', 'wheel', 'touchstart'].forEach((t) => addEventListener(t, end, { capture: true, passive: true }));
 }
 
-/* ───────────── 후킹 — 히어로 v1 엔진(대본 줄 타이핑 ↔ 클립 시각) ───────────── */
+/* ───────────── 후킹 — 시안 히어로_v1 엔진(index.html 466~668행을 옮김) ─────────────
+   한 번의 연출(v1 646~665행): 빈 종이 → 씬 헤더 · 화면 줄 타이핑 → 그 줄 끝에서 화면으로 연결선 → 슬릿 → 화면이 그 선에서 열리며 재생
+   → 앰비언트(영상 프레임을 흐리게 화면 뒤로) → 타임라인. 그 뒤 대본 줄은 클립 시각(kf)에 맞춰 타이핑, 지금 화면에 나오는 줄만 또렷.
+   시간 = tokens.css 의 v1 값 × --hook-speed(.7). 곡선은 GSAP 3.12.5 와 같은 식(아래 EASE) — 라이브러리 없이 rAF 로 돈다. */
 type HookApi = { pauseForVideo: () => void };
 let hookApi: HookApi | null = null;
+
+/** GSAP 3.12.5 곡선 — gsap-core 의 식 그대로(power1 = Quad · power2 = Cubic · expo · sine, inOut 은 out 에서 뒤집어 만듦) */
+const EASE = {
+  none: (p: number) => p,
+  power1Out: (p: number) => 1 - (1 - p) * (1 - p),
+  power2Out: (p: number) => 1 - Math.pow(1 - p, 3),
+  power2InOut: (p: number) => (p < 0.5 ? Math.pow(p * 2, 3) / 2 : 1 - Math.pow((1 - p) * 2, 3) / 2),
+  expoInOut: (p: number) => (p <= 0 ? 0 : p >= 1 ? 1 : p < 0.5 ? Math.pow(2, 20 * p - 10) / 2 : (2 - Math.pow(2, -20 * p + 10)) / 2),
+  sineOut: (p: number) => Math.sin((p * Math.PI) / 2),
+};
 
 function initHook(): HookApi | null {
   const hook = $('[data-hook]');
   if (!hook) return null;
   const video = $<HTMLVideoElement>('video', hook)!;
   const paper = $('.paper', hook)!;
+  const script = $('.script', paper)!;
   const flow = $('.flow', paper)!;
+  const stage = $('.stage', hook)!;
+  const screen = $('.screen', hook)!;
+  const link = $('.link', hook);
+  const slit = $('.slit', hook);
+  const canvas = $<HTMLCanvasElement>('canvas.ambient', hook);
+  const ctx = canvas?.getContext('2d') ?? null;
+  const tl = $('.tl', hook);
   const tc = $('.tl-tc', hook);
   const head = $('.playhead i', hook);
   const toggle = $<HTMLButtonElement>('.tl-toggle', hook);
   const D = Number(hook.dataset.dur) || 12;
   const OFF = Number(hook.dataset.offset) || 0;
   const FPS = Number(hook.dataset.fps) || 24;
+  const CUT = Number(hook.dataset.cut) || D;
 
-  type Line = { el: HTMLElement; full: string; on: HTMLElement; off: HTMLElement; kf: [number, number][] | null; now: [number, number][]; pre: boolean; n: number };
-  const lines: Line[] = $$('.b:not(.ghost)', paper).map((el) => {
+  // 검수용(v1 562~563행): ?at=초 → 그 순간에 멈춘 완성 상태 · ?notr → CSS 전환 끔
+  const q = new URLSearchParams(location.search);
+  const AT = q.has('at') ? Math.max(0, Math.min(D - 0.01, Number(q.get('at')) || 0)) : null;
+  if (AT != null || q.has('notr')) hook.classList.add('no-tr');
+
+  type Line = { el: HTMLElement; full: string; on: HTMLElement; off: HTMLElement; kf: [number, number][] | null; now: [number, number][]; pre: boolean; scene: boolean; n: number };
+  const lines: Line[] = $$('[data-line]', paper).map((el) => {
     const tx = $('.tx', el)!;
     const full = tx.textContent ?? '';
     const raw: [number, string][] | null = el.dataset.kf ? JSON.parse(el.dataset.kf) : null;
@@ -211,8 +238,12 @@ function initHook(): HookApi | null {
     off.className = 'off';
     off.textContent = full;
     tx.replaceChildren(on, caret, off);
-    return { el, full, on, off, kf, now: el.dataset.now ? JSON.parse(el.dataset.now) : [], pre: el.hasAttribute('data-pre'), n: 0 };
+    const scene = el.classList.contains('b-scene') || el.classList.contains('b-note');
+    return { el, full, on, off, kf, now: el.dataset.now ? JSON.parse(el.dataset.now) : [], pre: el.hasAttribute('data-pre'), scene, n: 0 };
   });
+  const pre = lines.filter((l) => l.pre);
+  const anchor = pre[pre.length - 1] ?? lines[0]; // 연결선 · 슬릿이 나오는 줄(v1 의 INS 줄)
+  const lastKf = Math.max(0, ...lines.map((l) => (l.kf ? l.kf[l.kf.length - 1][0] : 0)));
   const blks = $$('.blk', hook).map((el) => ({ el, a: Number(el.dataset.a), b: Number(el.dataset.b) }));
 
   const setN = (l: Line, n: number) => {
@@ -245,19 +276,87 @@ function initHook(): HookApi | null {
     const ff = f % FPS;
     return `00:${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}:${String(ff).padStart(2, '0')}`;
   };
+
+  /* 연결선 · 슬릿 자리 — 연결선 줄의 글 끝에서 화면 왼쪽 변까지(v1 place()). 글자가 아직 안 쳐졌어도 .off 가 자리를 잡고 있어 전체 길이로 잰다 */
+  let linkKey = '';
+  const placeLink = (setSlit: boolean) => {
+    if (!anchor) return;
+    const fr = screen.getBoundingClientRect();
+    const pr = paper.getBoundingClientRect();
+    if (fr.height <= 0) return;
+    if (pr.right > fr.left) {
+      // 좁은 화면 — 종이가 화면 아래에 쌓였다: 연결선 없이 화면은 아래 변에서 열린다(v1 좁은 화면)
+      link?.classList.add('is-out');
+      if (setSlit) screen.style.setProperty('--slit', '100%');
+      return;
+    }
+    const st = stage.getBoundingClientRect();
+    const tx = $('.tx', anchor.el)!;
+    const range = document.createRange();
+    range.selectNodeContents(tx);
+    const rects = range.getClientRects();
+    const r = rects[rects.length - 1] ?? tx.getBoundingClientRect();
+    const y = r.top + r.height * 0.58;
+    const x0 = r.right + 8;
+    if (link) {
+      const key = `${(x0 - st.left).toFixed(1)}|${(y - st.top).toFixed(1)}|${Math.max(0, fr.left - x0 - 1).toFixed(1)}`;
+      if (key !== linkKey) {
+        linkKey = key;
+        link.style.left = `${(x0 - st.left).toFixed(1)}px`;
+        link.style.top = `${(y - st.top).toFixed(1)}px`;
+        link.style.width = `${Math.max(0, fr.left - x0 - 1).toFixed(1)}px`;
+      }
+      const sr = script.getBoundingClientRect();
+      link.classList.toggle('is-out', y < sr.top || y > sr.bottom);
+    }
+    if (setSlit) screen.style.setProperty('--slit', `${Math.min(99, Math.max(1, ((y - fr.top) / fr.height) * 100)).toFixed(2)}%`);
+  };
+
+  /* 앰비언트 — 화면 빛이 방으로 번진다(v1 drawAmbient: 작은 캔버스에 영상 프레임 → CSS blur · saturate) */
+  const glowEvery = motionMs('--hook-glow-every', 90);
+  const poster = new Image();
+  let lastDraw = -1e9;
+  const drawAmbient = (force = false) => {
+    if (!ctx || !canvas) return;
+    const now = performance.now();
+    if (!force && now - lastDraw < glowEvery) return;
+    lastDraw = now;
+    try {
+      if (video.readyState >= 2) ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      else if (poster.complete && poster.naturalWidth) ctx.drawImage(poster, 0, 0, canvas.width, canvas.height);
+    } catch {
+      /* 아직 그릴 프레임이 없다 */
+    }
+  };
+  poster.addEventListener('load', () => video.readyState < 2 && drawAmbient(true));
+  poster.src = video.getAttribute('poster') ?? '';
+  video.addEventListener('loadeddata', () => drawAmbient(true));
+  video.addEventListener('seeked', () => drawAmbient(true));
+
+  /* 대본 창이 지금 줄을 따라간다(v1 좁은 화면 .flow translateY — 여기선 넓은 화면도: 종이가 작아 줄이 넘친다) */
   let scrollWant = -1;
+  let followUntil = 0;
+  const followMs = motionMs('--dur-hook-follow', 600);
+  const blocks = $$('.b', flow);
   const follow = (l: Line | null) => {
     if (!l) return;
-    const max = Math.max(0, flow.scrollHeight - flow.clientHeight);
-    const want = Math.round(Math.min(max, Math.max(0, l.el.offsetTop + l.el.offsetHeight - flow.clientHeight * 0.78)));
+    const max = Math.max(0, flow.offsetHeight - script.clientHeight);
+    let want = Math.min(max, Math.max(0, l.el.offsetTop + l.el.offsetHeight - script.clientHeight * 0.78));
+    // 창 위 끝에 줄이 반만 걸려 잘리지 않게 — 그 아래 첫 줄의 윗변에 맞춘다(지금 줄보다 더 올리지는 않는다)
+    if (want > 0) {
+      const top = blocks.map((b) => b.offsetTop).find((t) => t >= want - 1);
+      if (top != null) want = Math.min(top, l.el.offsetTop);
+    }
+    want = Math.round(want);
     if (want !== scrollWant) {
       scrollWant = want;
-      flow.scrollTo({ top: want, behavior: reduce ? 'auto' : 'smooth' });
+      flow.style.transform = want ? `translateY(${-want}px)` : '';
+      followUntil = performance.now() + (reduce ? 0 : followMs) + 80;
     }
   };
 
+  /* 시계 — 영상 시간이 기준. 영상이 못 돌면 자체 시계로 대본만 흐른다(v1) */
   let firstPass = !reduce;
-  let opened = false;
   let live = false;
   let lastT = 0;
   let fallback = false;
@@ -265,6 +364,7 @@ function initHook(): HookApi | null {
   let userPaused = false;
   let autoPaused = false;
   let inView = true;
+  let atLock = AT != null;
 
   const finishAll = () => {
     lines.forEach((l) => setN(l, l.full.length));
@@ -272,9 +372,11 @@ function initHook(): HookApi | null {
     paper.classList.remove('typing');
     firstPass = false;
   };
-  const clock = () => (fallback ? ((performance.now() - fbStart) / 1000) % D : video.currentTime || 0);
+  const clock = () => (atLock ? (AT as number) : fallback ? ((performance.now() - fbStart) / 1000) % D : video.currentTime || 0);
+  const anchorOn = (t: number) => (anchor && anchor.now.length ? anchor.now.some(([a, b]) => t >= a && t < b) : t < CUT);
 
   const update = () => {
+    if (!paper.classList.contains('live')) paper.classList.add('live');
     const t = Math.min(clock(), D - 0.001);
     if (firstPass && t + 0.5 < lastT) finishAll(); // 한 바퀴 돌면 완성 상태
     lastT = t;
@@ -285,6 +387,8 @@ function initHook(): HookApi | null {
         if (x.n > 0) l = x;
       });
       setLead(l);
+      const last = lines[lines.length - 1];
+      if (last && last.n === last.full.length) paper.classList.remove('typing'); // 다 쳐지면 이어지는 지문이 맺힌다
     }
     let active: Line | null = null;
     lines.forEach((x) => {
@@ -293,13 +397,17 @@ function initHook(): HookApi | null {
       if (on) active = x;
     });
     blks.forEach((c) => c.el.classList.toggle('is-now', t >= c.a && t < c.b));
+    link?.classList.toggle('is-dim', !anchorOn(t)); // 그 줄의 컷이 끝나면 연결선도 물러난다(v1)
     if (head) head.style.transform = `translateX(${((t / D) * 100).toFixed(3)}%)`;
     if (tc) tc.textContent = smpte(t);
     follow(firstPass ? lead : active);
+    if (performance.now() < followUntil) placeLink(false);
   };
   const loop = () => {
     if (!hook.isConnected) return;
-    if (live && inView && (!video.paused || fallback)) update();
+    const playing = !video.paused || fallback;
+    if (live && inView && playing) update();
+    if (inView && !video.paused) drawAmbient();
     requestAnimationFrame(loop);
   };
 
@@ -318,11 +426,11 @@ function initHook(): HookApi | null {
   });
   video.addEventListener('pause', setToggle);
   toggle?.addEventListener('click', () => {
+    atLock = false;
     live = true;
     if (video.paused) {
       userPaused = false;
       autoPaused = false;
-      if (!opened) openScreen(true);
       video.play().catch(() => {});
     } else {
       userPaused = true;
@@ -332,20 +440,23 @@ function initHook(): HookApi | null {
     update();
   });
 
-  const play = () => {
+  const startVideo = () => {
     live = true;
+    if (AT != null) return;
     const p = video.play();
     p?.catch(() => {
       fallback = true;
       fbStart = performance.now();
       setToggle();
     });
-  };
-  const openScreen = (instant = false) => {
-    if (opened) return;
-    opened = true;
-    if (instant) hook.classList.add('instant');
-    hook.classList.add('open');
+    // 자동재생이 막혔거나 영상이 멈춰 있으면 대본은 제 시계로 흐른다(v1)
+    setTimeout(() => {
+      if (!fallback && !userPaused && !autoPaused && video.currentTime < 0.05) {
+        fallback = true;
+        fbStart = performance.now() - 2000;
+        setToggle();
+      }
+    }, 2000);
   };
 
   // 화면 밖이면 멈추고, 돌아오면 다시(사용자가 멈춘 게 아니면)
@@ -365,92 +476,197 @@ function initHook(): HookApi | null {
     { threshold: 0.15 },
   ).observe(hook);
 
-  requestAnimationFrame(loop);
-
-  if (reduce) {
-    // 완성 상태 · 화면 열림 · 영상은 「재생」 을 눌러야
-    finishAll();
-    opened = true;
-    hook.classList.add('open');
-    setToggle();
-    if (tc) tc.textContent = smpte(0);
-    return {
-      pauseForVideo: () => {
-        userPaused = true;
-        video.pause();
-      },
-    };
-  }
-
-  // ── 한 번의 연출: 빈 종이 → 씬 헤더(미리 치는 줄) → 화면이 그 줄 높이의 한 줄에서 열림 → 클립 시각대로 타이핑 ──
-  lines.forEach((l) => setN(l, 0));
-  paper.classList.add('typing');
-  const pre = lines.filter((l) => l.pre);
-  const openBy = motionMs('--hook-open-by', 1500);
-  const perLine = motionMs('--dur-type-line', 700); // zkPass: 줄 길이와 무관하게 한 줄 총 시간 고정
-  const tick = motionMs('--dur-type-tick', 33.3);
-  const lineDur = pre.map(() => perLine);
-  const placeSlit = () => {
-    const ref = pre[pre.length - 1]?.el ?? lines[0]?.el;
-    const scr = $('.screen', hook);
-    if (!ref || !scr) return;
-    const fr = scr.getBoundingClientRect();
-    const r = ref.getBoundingClientRect();
-    if (fr.height <= 0) return;
-    // 화면 옆에 종이가 있을 때만 그 줄 높이에서 열고, 위아래로 쌓였으면 가운데 한 줄
-    const sideBySide = r.left < fr.left - 4 || r.left > fr.right;
-    const y = sideBySide ? Math.min(0.95, Math.max(0.05, (r.top + r.height * 0.6 - fr.top) / fr.height)) : 0.5;
-    hook.style.setProperty('--slit-top', `${(y * 100).toFixed(2)}%`);
-    hook.style.setProperty('--slit-bot', `${((1 - y) * 100).toFixed(2)}%`);
-  };
-  placeSlit();
-
-  let done = false;
-  const start = performance.now();
-  const preTotal = lineDur.reduce((a, b) => a + b, 0);
-  const preTick = (now: number) => {
-    if (done) return;
-    const te = Math.floor((now - start) / tick) * tick; // 뚝뚝 — 33.3ms 틱
-    let off = 0;
-    pre.forEach((l, k) => {
-      const d = lineDur[k];
-      const f = d > 0 ? Math.max(0, Math.min(1, (te - off) / d)) : 1;
-      setN(l, f * l.full.length);
-      if (f > 0) setLead(l);
-      off += d;
-    });
-    if (now - start >= preTotal || now - start >= openBy) return go();
-    requestAnimationFrame(preTick);
-  };
-  const go = () => {
-    if (done) return;
-    done = true;
-    pre.forEach((l) => setN(l, l.full.length));
-    openScreen();
-    play();
-  };
-  requestAnimationFrame(preTick);
-  setTimeout(go, openBy + 60);
-
-  // 아무 입력이나 하면 완성 상태(작가 피드백 「더 빨라도 된다」)
-  const skip = () => {
-    ['keydown', 'pointerdown', 'wheel', 'touchstart'].forEach((t) => removeEventListener(t, skip, true));
-    if (!done) {
-      done = true;
-      openScreen(true);
-      play();
-    }
-    finishAll();
-    update();
-  };
-  ['keydown', 'pointerdown', 'wheel', 'touchstart'].forEach((t) => addEventListener(t, skip, { capture: true, passive: true }));
-
-  return {
+  const api: HookApi = {
     pauseForVideo: () => {
       userPaused = true;
       video.pause();
     },
   };
+  let opened = false;
+  const relayout = () => {
+    scrollWant = -1;
+    placeLink(!hook.classList.contains('done') && !opened);
+    if (lead || !firstPass) follow(firstPass ? lead : null);
+  };
+  addEventListener('resize', relayout, { passive: true });
+  document.fonts?.ready.then(relayout).catch(() => {});
+
+  requestAnimationFrame(loop);
+
+  // ── 검수: 그 시각에 멈춘 상태(v1 626~636행) ──
+  if (AT != null) {
+    hook.classList.add('done');
+    opened = true;
+    firstPass = true;
+    lines.forEach((l) => setN(l, l.pre ? l.full.length : 0));
+    if (AT < lastKf) paper.classList.add('typing');
+    video.pause();
+    const seek = () => {
+      try {
+        video.currentTime = AT;
+      } catch {
+        /* 메타데이터 전 */
+      }
+    };
+    if (video.readyState >= 1) seek();
+    else video.addEventListener('loadedmetadata', seek, { once: true });
+    live = true;
+    setToggle();
+    update();
+    placeLink(false);
+    video.addEventListener('seeked', () => atLock && update());
+    return api;
+  }
+
+  // ── 움직임 줄이기: 완성 상태 · 화면 열림 · 영상은 「재생」 을 눌러야(v1 637~644행) ──
+  if (reduce) {
+    finishAll();
+    hook.classList.add('done');
+    opened = true;
+    setToggle();
+    if (tc) tc.textContent = smpte(0);
+    placeLink(false);
+    return api;
+  }
+
+  // ── 한 번의 연출(v1 646~665행) — 단계마다 [시작 초, 길이, 곡선] ──
+  lines.forEach((l) => setN(l, 0));
+  paper.classList.add('typing');
+  placeLink(true);
+  const sp = motionMs('--hook-speed', 0.7);
+  const T = (name: string, v1ms: number) => (motionMs(name, v1ms) / 1000) * sp;
+  const glowTo = Number(getComputedStyle(root).getPropertyValue('--hook-glow')) || 0.5;
+  type Step = { at: number; dur: number; ease: (p: number) => number; to: (v: number) => void; begin?: () => void; started?: boolean; ended?: boolean };
+  type Cue = { at: number; fn: () => void; fired?: boolean };
+  const steps: Step[] = [];
+  const cues: Cue[] = [];
+  let at = T('--hook-v1-delay', 250);
+  // 빈 종이가 나타남
+  const dPaper = T('--hook-v1-paper', 600);
+  steps.push({ at, dur: dPaper, ease: EASE.power1Out, to: (v) => (paper.style.opacity = v.toFixed(3)) });
+  at += dPaper;
+  cues.push({ at, fn: () => setLead(pre[0] ?? null) }); // 첫 줄 자리에서 캐럿이 깜박임
+  at += T('--hook-v1-pre-type', 450);
+  // 씬 헤더 · 화면 줄 타이핑(글자당 시간 고정, ease none)
+  pre.forEach((l, k) => {
+    if (k > 0) at += T('--hook-v1-line-gap', 220);
+    const d = l.full.length * T(l.scene ? '--hook-v1-char-scene' : '--hook-v1-char-line', l.scene ? 32 : 45);
+    steps.push({ at, dur: d, ease: EASE.none, begin: () => setLead(l), to: (v) => setN(l, v * l.full.length) });
+    at += d;
+  });
+  at += T('--hook-v1-pre-link', 180);
+  // 그 줄 끝에서 화면 쪽으로 연결선
+  cues.push({ at, fn: () => placeLink(true) });
+  const dLink = T('--hook-v1-link', 500);
+  steps.push({ at, dur: dLink, ease: EASE.power2InOut, to: (v) => link && (link.style.transform = `scaleX(${v.toFixed(4)})`) });
+  at += dLink - T('--hook-v1-slit-lead', 40);
+  // 그 높이에 화면 폭의 가는 가로선(슬릿)
+  const dSlit = T('--hook-v1-slit', 320);
+  steps.push({
+    at,
+    dur: dSlit,
+    ease: EASE.power2Out,
+    begin: () => slit && (slit.style.opacity = '1'),
+    to: (v) => slit && (slit.style.transform = `scaleX(${v.toFixed(4)})`),
+  });
+  at += dSlit;
+  // 영상 재생과 함께 화면이 그 선에서 위아래로 열림
+  const tOpen = at;
+  cues.push({
+    at: tOpen,
+    fn: () => {
+      opened = true;
+      startVideo();
+    },
+  });
+  steps.push({ at: tOpen, dur: T('--hook-v1-open', 950), ease: EASE.expoInOut, to: (v) => screen.style.setProperty('--open', v.toFixed(4)) });
+  const tSlitOut = tOpen + T('--hook-v1-slit-out-at', 250);
+  steps.push({ at: tSlitOut, dur: T('--hook-v1-slit-out', 300), ease: EASE.power1Out, to: (v) => slit && (slit.style.opacity = (1 - v).toFixed(3)) });
+  // 앰비언트 — 빛이 화면 뒤 · 둘레로 번짐
+  const tGlow = tSlitOut + T('--hook-v1-glow-at', 150);
+  steps.push({
+    at: tGlow,
+    dur: T('--hook-v1-glow', 1600),
+    ease: EASE.sineOut,
+    begin: () => drawAmbient(true),
+    to: (v) => canvas && (canvas.style.opacity = (v * glowTo).toFixed(3)),
+  });
+  // 타임라인이 왼→오로 그려짐
+  const tTl = tGlow + T('--hook-v1-tl-at', 300);
+  steps.push({
+    at: tTl,
+    dur: T('--hook-v1-tl', 1000),
+    ease: EASE.power2Out,
+    begin: () => tl && (tl.style.opacity = '1'),
+    to: (v) => tl?.style.setProperty('--draw', v.toFixed(4)),
+  });
+  const tEnd = Math.max(...steps.map((s) => s.at + s.dur), ...cues.map((c) => c.at));
+  hook.dataset.openAt = tOpen.toFixed(3); // 시험 · 검수용 — 화면이 열리기 시작하는 초(연출 시작 기준)
+
+  let introDone = false;
+  const clearInline = () => {
+    paper.style.removeProperty('opacity');
+    link?.style.removeProperty('transform');
+    slit?.style.removeProperty('opacity');
+    slit?.style.removeProperty('transform');
+    screen.style.removeProperty('--open');
+    canvas?.style.removeProperty('opacity');
+    tl?.style.removeProperty('opacity');
+    tl?.style.removeProperty('--draw');
+  };
+  const endIntro = () => {
+    if (introDone) return;
+    introDone = true;
+    for (const c of cues)
+      if (!c.fired) {
+        c.fired = true;
+        c.fn();
+      }
+    for (const s of steps)
+      if (!s.ended) {
+        if (!s.started) s.begin?.();
+        s.started = s.ended = true;
+        s.to(1);
+      }
+    hook.classList.add('done'); // 이제 CSS 가 완성 상태를 든다
+    clearInline();
+  };
+  const t0 = performance.now();
+  const run = (now: number) => {
+    if (introDone) return;
+    const e = (now - t0) / 1000;
+    for (const c of cues)
+      if (!c.fired && e >= c.at) {
+        c.fired = true;
+        c.fn();
+      }
+    for (const s of steps) {
+      if (s.ended || e < s.at) continue;
+      if (!s.started) {
+        s.started = true;
+        s.begin?.();
+      }
+      const p = s.dur > 0 ? Math.min(1, (e - s.at) / s.dur) : 1;
+      s.to(s.ease(p));
+      if (p >= 1) s.ended = true;
+    }
+    if (e >= tEnd) return endIntro();
+    requestAnimationFrame(run);
+  };
+  requestAnimationFrame(run);
+
+  // 아무 입력(클릭 · 키 · 휠 · 터치)이나 하면 즉시 완성 상태(작가 「더 빨라도 된다」)
+  const inputs = ['keydown', 'pointerdown', 'wheel', 'touchstart'] as const;
+  const skip = () => {
+    inputs.forEach((t) => removeEventListener(t, skip, true));
+    endIntro();
+    finishAll();
+    update();
+    placeLink(false);
+  };
+  inputs.forEach((t) => addEventListener(t, skip, { capture: true, passive: true }));
+
+  return api;
 }
 
 /* ───────────── 작품 안 목차 — 지금 단계 켜기(Aaru · Yuya) · 단계 머리 맺힘 ───────────── */

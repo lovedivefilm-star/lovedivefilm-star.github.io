@@ -84,8 +84,10 @@ main { display: block; padding-top: var(--top); }
 @keyframes split-down { to { transform: translateY(100%); } }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 
-/* ── 작품 방 ① 후킹: 히어로 v1 — 종이와 화면을 한 틀에 붙임 ─────────────────── */
-.hook { --stage-h: clamp(320px, calc(100svh - var(--top) - 236px), 760px); display: grid; align-content: start; gap: 14px; min-height: calc(100svh - var(--top)); padding: 18px var(--g) 14px; }
+/* ── 작품 방 ① 후킹: 시안 히어로_v1 — 종이 한 장 | 간격(연결선 · 타임코드) | 화면, 아래 타임라인 ─────────────────
+   v1(index.html 1~400행)을 옮김. 작가 10-13 「대본 써지면서 옆에 파앗 하면서 영상이 떠야지」 — 2차의 「한 틀」은 반려.
+   쌓임: .hook 이 쌓임 맥락(isolation) — 앰비언트 캔버스(z −1)는 그 맨 아래, 종이 · 영상 · 글자 밑에 깔린다(영상 위에는 아무것도 없음). */
+.hook { --stage-h: clamp(300px, calc(100svh - var(--top) - 266px), 760px); position: relative; isolation: isolate; container-type: inline-size; overflow-x: clip; display: grid; grid-template-rows: auto 1fr auto; gap: 14px; min-height: calc(100svh - var(--top)); padding: 18px var(--g) 14px; }
 .hook-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: end; gap: 2px 18px; padding-bottom: 10px; border-bottom: 1px solid var(--rule); }
 .count { display: inline-grid; justify-items: center; gap: 4px; margin: 0 0 6px; font-family: var(--mono); font-size: 11px; line-height: 1; color: var(--seat-text); }
 .count i { display: block; width: 1.9em; height: 3px; background: currentColor; }
@@ -100,43 +102,70 @@ main { display: block; padding-top: var(--top); }
 .meta dt { font-size: 11px; line-height: 1.4; color: var(--seat-text); }
 .meta dd { margin: 0; font-family: var(--mono); font-size: 13px; white-space: nowrap; }
 .meta dd.ko { font-family: var(--sans); }
-.hook-body { width: max-content; max-width: 100%; margin: 0 auto; }
-.hook.h .hook-body { width: min(100%, 1320px); }
-.stage { display: grid; border: 1px solid var(--rule-strong); background: var(--room); }
-.hook.v .stage { grid-template-columns: minmax(260px, 440px) auto; height: var(--stage-h); }
-.hook.v .screen { height: var(--stage-h); aspect-ratio: var(--aspect); }
-.hook.h .stage { grid-template-columns: minmax(250px, 330px) minmax(0, 1fr); }
-.hook.h .screen { width: 100%; aspect-ratio: var(--aspect); }
-.paper { contain: size; position: relative; display: flex; flex-direction: column; min-width: 0; padding: 14px 20px 10px 26px; background: var(--hook-paper); color: var(--hook-ink); border-right: 1px solid var(--rule); font-family: var(--serif-script); font-size: 13.5px; line-height: 1.7; }
-.paper-run { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 6px; margin-bottom: 10px; border-bottom: 1px solid var(--rule); font-family: var(--sans); font-size: 11px; color: var(--hook-sub); }
-.paper-run span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.flow { position: relative; flex: 1 1 0; min-height: 0; overflow: hidden; }
-.paper-foot { margin: 6px 0 0; font-family: var(--sans); font-size: 10.5px; color: var(--hook-dim); }
-.b { position: relative; margin: 0 0 8px; transition: color var(--t) var(--ease); }
-.b-scene { font-weight: 700; }
-.b-note { font-family: var(--sans); font-size: 11.5px; color: var(--hook-sub); }
-.b-dia { margin: 0 6% 8px; }
-.b-dia .who { display: block; text-align: center; font-weight: 700; font-size: 12.5px; }
-.ghost { color: var(--hook-dim); }
-.paper.live .b:not(.ghost):not(.is-now) { color: var(--hook-sub); }
-.b.is-now::before { content: ""; position: absolute; left: -14px; top: .35em; bottom: .35em; width: 2px; background: var(--hook-ink); }
-.tx .off { color: transparent; }
+
+/* 크기 — v1: 화면 높이 --sh → 화면 폭 --sw · 종이 폭 --pw = max(300px, 화면 폭 × .92)(A4, 화면보다 작다) · 간격 --gap = max(84px, 화면 짧은 변 × .34).
+   가로(16:9) 화면은 같은 규칙을 눕혀서 — 종이 높이 = 화면 높이(A4), 간격 = max(84px, 화면 높이 × .34), 셋이 한 줄 폭에 들어가게. */
+.hook-body { align-self: center; justify-self: center; width: max-content; max-width: 100%; --pf: clamp(11px, calc(var(--pw) * .036), 14.5px); --px: calc(var(--pw) * .085); }
+.hook.v .hook-body { --sh: var(--stage-h); --sw: calc(var(--sh) * var(--ar)); --pw: max(300px, calc(var(--sw) * .92)); --gap: max(84px, calc(var(--sw) * .34)); }
+.hook.h .hook-body { --sh: min(var(--stage-h), calc(100cqw / (var(--ar) + 1.0471))); --sw: calc(var(--sh) * var(--ar)); --pw: calc(var(--sh) / 1.4142); --gap: max(84px, calc(var(--sh) * .34)); }
+.hook .stage { position: relative; display: grid; grid-template-columns: var(--pw) var(--gap) var(--sw); align-items: end; }
+
+/* 대본 한 장 — 밝은 종이 · 어두운 글자, 화면 쪽에서 오는 빛(v1 .page) */
+.hook .paper { grid-column: 1; grid-row: 1; position: relative; display: flex; flex-direction: column; width: var(--pw); aspect-ratio: 1 / 1.4142; margin: 0; padding: calc(var(--pw) * .09) var(--px) calc(var(--pw) * .07); background: linear-gradient(98deg, var(--hook-paper-a) 0%, var(--hook-paper-b) 42%, var(--hook-paper-c) 100%); color: var(--ink); font-family: var(--serif-script); font-size: var(--pf); line-height: 1.7; }
+.hook .paper-run { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 1.9em; font-size: .78em; color: var(--pencil); }
+.hook .paper-run span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hook .script { position: relative; flex: 1 1 0; min-height: 0; overflow-x: visible; overflow-y: clip; }
+/* 창 아래 끝에 걸린 줄은 잘리지 않고 흐려진다(v1 이어지는 지문 · 좁은 화면 대본 창의 mask). 옆으로는 마스크를 되풀이해 간격의 타임코드 · 왼쪽 먹선은 그대로 */
+.hook .script { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 2.4em), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 2.4em), transparent); -webkit-mask-repeat: repeat-x; mask-repeat: repeat-x; mask-clip: no-clip; }
+.hook .flow { position: relative; }
+[data-motion] .hook .flow { transition: transform var(--dur-hook-follow) var(--ease-hook-follow); }
+.hook .paper-foot { margin: 0; padding-top: .8em; text-align: center; font-size: .78em; color: var(--pencil); }
+.paper .b { position: relative; margin: 0 0 1em; line-height: 1.7; word-break: keep-all; overflow-wrap: anywhere; transition: opacity .35s; }
+.paper .b-scene { font-weight: 700; margin-bottom: 1.15em; }
+.paper .b-note { font-family: var(--sans); font-size: .86em; color: var(--pencil-text); }
+.paper .b-dia { padding: 0 6%; }
+.paper .b-dia .who { display: block; text-align: center; font-weight: 700; }
+.paper .ghost { color: var(--pencil); transition: opacity .9s ease; }
+/* 이어지는 지문(쳐지는 줄 뒤의 흐린 줄)은 다 쳐진 뒤에 맺힌다(v1). 앞 장면의 끝 줄(첫 줄 앞의 흐린 줄)은 처음부터 — 앞 맥락이라 미리 보여도 된다 */
+.paper.typing [data-line] ~ .ghost { opacity: 0; }
+/* 화면에 걸린 줄만 또렷하게 — 나머지는 물러난다(v1) */
+.paper.live .b[data-now]:not(.is-now) { opacity: .38; }
 .paper.typing .b-dia:not(.is-typed) .who { visibility: hidden; }
-.tx .caret { display: none; }
-.paper.typing .b.is-lead .caret { display: inline-block; width: var(--caret-w); height: var(--caret-h); margin-left: 2px; vertical-align: -.12em; background: var(--hook-ink); animation: caret-blink var(--dur-caret) steps(2) infinite; }
+.paper .tx .off { color: transparent; }
+.paper .tx .caret { display: none; width: var(--hook-caret-w); height: 1.15em; margin: 0 1px -.2em; background: var(--ink); }
+.paper.typing .b.is-lead .caret { display: inline-block; animation: caret-blink var(--dur-hook-caret) steps(1) infinite; }
 @keyframes caret-blink { 50% { opacity: 0; } }
-.screen { position: relative; margin: 0; overflow: hidden; background: var(--room); }
-.screen video { display: block; width: 100%; height: 100%; object-fit: cover; }
-[data-motion] .hook:not(.open) .screen video { clip-path: inset(var(--slit-top, 50%) 0 var(--slit-bot, 50%) 0); }
-[data-motion] .hook .screen video { transition: clip-path var(--dur-hook-open) var(--ease); }
-[data-motion] .hook.instant .screen video { transition: none; }
-/* 4줄 타임라인(히어로 v1 — 작가 「괜찮다」) */
-.tl { margin-top: 10px; font-size: 11px; color: var(--seat-text); }
+/* 지금 화면에 걸린 줄 — 종이 왼쪽 여백의 먹선(v1) */
+.paper .b[data-now]::before { content: ""; position: absolute; left: calc(-1 * var(--px) + 10px); top: .45em; bottom: .45em; width: 2px; background: var(--ink); opacity: 0; transition: opacity .25s; }
+.paper .b.is-now.is-typed::before { opacity: .9; }
+/* 타임코드 — 종이 밖, 화면 쪽 간격(v1) */
+.paper .b[data-tc]::after { content: attr(data-tc); position: absolute; top: .1em; left: calc(100% + var(--px) + 14px); font: 400 11px/1.5 var(--sans); font-variant-numeric: tabular-nums; letter-spacing: .02em; color: var(--seat-text); white-space: nowrap; transition: color .25s, opacity .25s; }
+.paper .b[data-tc]:not(.is-typed)::after { opacity: 0; }
+.paper .b.is-now[data-tc]::after { color: var(--light); }
+
+/* 대본 줄 → 화면으로 이어지는 선(v1 .link — 종이 위에선 어둡게, 간격에선 밝게) */
+.hook .link { position: absolute; left: 0; top: 0; width: 0; height: 1px; background: var(--light); mix-blend-mode: difference; opacity: .55; transform-origin: left center; pointer-events: none; z-index: 2; transition: opacity .35s; }
+.hook .link.is-dim { opacity: .2; }
+.hook .link.is-out { opacity: 0; }
+
+/* 화면 — 열리기 전엔 슬릿 높이에 닫혀 있다(--open 0 → 1, v1 clip-path inset) */
+.hook .screen { grid-column: 3; grid-row: 1; position: relative; margin: 0; width: var(--sw); aspect-ratio: var(--aspect); --open: 1; --slit: 40%; }
+/* 앰비언트 — 영상 프레임을 작은 캔버스에 그려 흐리게, 화면 뒤 · 둘레로(v1 가로 240% · 세로 136%, 16:9 도 같은 비율). z −1 = .hook 쌓임의 맨 아래 */
+.hook .ambient { position: absolute; z-index: -1; left: -70%; top: -18%; width: 240%; height: 136%; filter: blur(60px) saturate(1.15); opacity: var(--hook-glow); pointer-events: none; }
+.hook .frame { position: absolute; inset: 0; overflow: hidden; background: var(--room); clip-path: inset(calc(var(--slit) * (1 - var(--open))) 0 calc((100% - var(--slit)) * (1 - var(--open))) 0); }
+.hook .frame video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.hook .slit { position: absolute; left: 0; right: 0; top: var(--slit); height: 1px; background: var(--light); transform-origin: left center; opacity: 0; pointer-events: none; }
+.hook.done .frame { clip-path: none; }
+.hook.done .slit { visibility: hidden; }
+
+/* 4줄 타임라인(히어로 v1 — 작가 「괜찮다」) — 처음엔 왼→오로 그려짐(--draw) */
+.tl { --draw: 1; margin-top: 18px; font-size: 11px; color: var(--seat-text); }
 .tl-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
 .tl-tc { font-family: var(--mono); font-size: 13px; color: var(--light); }
 .tl-spec { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; font-family: var(--mono); font-size: 10.5px; }
 .tl-toggle { font-family: var(--mono); font-size: 11px; color: var(--light); border: 1px solid var(--rule-strong); padding: 0 8px; }
-.tl-body { position: relative; }
+.tl-body { position: relative; clip-path: inset(-6px calc((1 - var(--draw)) * 100%) -6px 0); }
+.hook.done .tl-body { clip-path: none; }
 .ruler { position: relative; height: 6px; margin-left: 40px; border-bottom: 1px solid var(--rule); }
 .ruler i { position: absolute; bottom: 0; width: 1px; height: 5px; background: var(--rule-strong); }
 .lane { display: grid; grid-template-columns: 40px minmax(0, 1fr); height: 14px; margin-top: 3px; }
@@ -151,6 +180,16 @@ main { display: block; padding-top: var(--top); }
 .playhead i { position: absolute; inset: 0; border-left: 1px solid var(--light); }
 .cue { justify-self: center; display: inline-flex; gap: 8px; align-items: center; font-size: 12.5px; color: var(--seat-text); text-decoration: none; }
 .cue:hover { color: var(--light); }
+
+/* 연출 전 상태(움직임 허용 + 연출이 끝나기 전에만 — 끝나면 .done, 움직임 줄이기 · 스크립트 없음이면 처음부터 완성 상태) */
+[data-motion] .hook:not(.done) .paper { opacity: 0; }
+[data-motion] .hook:not(.done) .paper [data-line] ~ .ghost { opacity: 0; }
+[data-motion] .hook:not(.done) .screen { --open: 0; }
+[data-motion] .hook:not(.done) .ambient { opacity: 0; }
+[data-motion] .hook:not(.done) .tl { opacity: 0; --draw: 0; }
+[data-motion] .hook:not(.done) .link { transform: scaleX(0); }
+/* 검수용(?at=초 · ?notr) — 캡처 때 CSS 전환을 끈다(v1) */
+.hook.no-tr *, .hook.no-tr *::before, .hook.no-tr *::after { transition: none !important; }
 
 /* ── ② 작품 안 목차: Aaru 질문 구역(정밀 §5-1) · Yuya 제작 단계 목차 ───────────── */
 .steps-wrap { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: var(--s-7); padding: var(--s-8) var(--g) 0; }
@@ -348,13 +387,24 @@ main { display: block; padding-top: var(--top); }
 
 /* ── 반응형 ─────────────────────────────────────────────────────────────── */
 @media (max-width: 1100px) {
-  .hook.v .stage { grid-template-columns: minmax(220px, 360px) auto; }
   .steps-wrap { grid-template-columns: 140px minmax(0, 1fr); gap: var(--s-6); }
   .step-media { margin-left: 0; }
 }
 @media (max-width: 900px) {
   .hook-head { grid-template-columns: 1fr; }
   .meta { grid-column: 1; grid-row: auto; margin-top: 8px; }
+  /* 후킹(v1 좁은 화면 @media 899px): 화면 → 대본 창 → 타임라인 · 연결선 · 타임코드 없음 · 화면은 아래 변에서 열림(site.ts) — 모바일은 나중 단계 */
+  .hook { min-height: 0; }
+  .hook-body { width: 100%; --pf: 12.5px; --px: 18px; }
+  .hook .stage { display: flex; flex-direction: column; align-items: center; }
+  .hook .screen { order: 1; width: min(100%, calc((100svh - 300px) * var(--ar))); }
+  .hook .paper { order: 2; width: 100%; aspect-ratio: auto; height: 172px; margin-top: 12px; padding: 14px 16px 0 18px; }
+  .hook .paper-run, .hook .paper-foot { display: none; }
+  .paper .b[data-tc]::after { display: none; }
+  .paper .b[data-now]::before { left: -11px; }
+  .hook .link { display: none; }
+  .hook .ambient { left: -40%; width: 180%; top: -10%; height: 120%; filter: blur(44px) saturate(1.1); }
+  .tl-spec { display: none; }
   .tools { grid-template-columns: 1fr; }
   /* 목차: 위쪽에 붙는 가로 목차 */
   .steps-wrap { display: block; padding-top: var(--s-6); }
@@ -380,15 +430,6 @@ main { display: block; padding-top: var(--top); }
   .door .nm { font-size: 18px; }
   .glyph-slot { width: min(70vw, 300px); height: min(36svh, 300px); }
   .home-name { font-size: 34px; }
-  /* 후킹: 화면 위 · 종이 아래, 한 틀 */
-  .hook { min-height: 0; }
-  .hook-body, .hook.h .hook-body { width: 100%; }
-  .hook.v .stage, .hook.h .stage { grid-template-columns: 1fr; height: auto; }
-  .hook.v .screen { height: min(52svh, 520px); width: auto; margin: 0 auto; }
-  .hook.v .stage { background: var(--room); }
-  .paper { border-right: 0; border-top: 1px solid var(--rule); }
-  .paper { order: 2; height: 34svh; min-height: 200px; padding: 12px 14px 8px 20px; font-size: 13px; }
-  .tl-spec { display: none; }
   .step-media.v .player { height: auto; width: min(100%, calc((100svh - var(--top) - 200px) * 9 / 16)); margin: 0 auto; }
   .sheet { padding: 20px 20px 24px; font-size: 14px; }
   .sheet .dia { margin: 0 6% 12px; }

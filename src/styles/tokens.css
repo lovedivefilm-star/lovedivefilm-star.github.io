@@ -30,11 +30,12 @@
   --scrim-hover: rgba(0, 0, 0, .6);
   --scrim-modal: color-mix(in srgb, var(--room) 96%, transparent);  /* 툴 모달 뒤 — Josh 의 어두운 배경(블러 대신 짙은 막) */
 
-  /* 대본 글자 — 어두운 칸 위(후킹) */
-  --hook-paper: var(--panel);
-  --hook-ink:   var(--script);
-  --hook-sub:   var(--seat-text);
-  --hook-dim:   var(--seat-low);
+  /* 후킹 종이 — 시안 히어로_v1 `.page`: 밝은 종이 · 어두운 글자, 화면 쪽(오른쪽)에서 빛이 오는 그라디언트(98deg).
+     색은 확정 팔레트 안에서만 — 종이 #F0EFE9 를 바탕 #050505 위 투명도(명도) 단계로: v1 의 밝기 비(#D6D2CA : #E3E0D9 : #ECE9E3 ≈ .90 : .96 : 1)를 그대로.
+     글자 = #050505(--ink), 보조 글자 = #050505 의 투명도(--pencil · --pencil-text). */
+  --hook-paper-a: color-mix(in srgb, var(--light) 90%, var(--room));
+  --hook-paper-b: color-mix(in srgb, var(--light) 96%, var(--room));
+  --hook-paper-c: var(--light);
 
 
   /* 종이 띠(02 대본 단계의 한 장) — 팔레트 변수에서 뒤집어 씀 */
@@ -133,6 +134,34 @@
   --ease-expo-out: cubic-bezier(0.19, 1, 0.22, 1);
   --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
 
+  /* 작품 방 후킹 — 시안 히어로_v1 연출(index.html 646~665행)의 v1 값 그대로 + 빠르기 한 수.
+     실제 시간 = v1 값 × --hook-speed (.7 — 작가 「좀 더 빨라도 돼」: 화면이 열리는 순간까지 v1 의 약 70%).
+     곡선 이름은 GSAP 3.12.5 의 것 — site.ts 가 GSAP 와 같은 식으로 계산한다. v1 → 새 값 표는 docs/sources.md 3절. */
+  --hook-speed: .7;
+  --hook-v1-delay: .25s;          /* 시작 지연 */
+  --hook-v1-paper: .6s;           /* 빈 종이가 나타남 · power1.out */
+  --hook-v1-pre-type: .45s;       /* 종이 → 첫 줄 타이핑(그동안 첫 줄 자리에서 캐럿이 깜박임) */
+  --hook-v1-char-scene: 32ms;     /* 씬 헤더 · 노트 한 글자(v1 data-pre 0.032) · ease none */
+  --hook-v1-char-line: 45ms;      /* 지문 · 대사 한 글자(v1 INS 줄 data-pre 0.045) */
+  --hook-v1-line-gap: .22s;       /* 미리 치는 줄 사이 */
+  --hook-v1-pre-link: .18s;       /* 마지막 줄 → 연결선 */
+  --hook-v1-link: .5s;            /* 연결선이 그 줄 끝에서 화면까지 · power2.inOut */
+  --hook-v1-slit-lead: 40ms;      /* 슬릿이 연결선 끝보다 먼저 시작(−0.04) */
+  --hook-v1-slit: .32s;           /* 화면 폭의 가는 가로선(슬릿) 펼침 · power2.out */
+  --hook-v1-open: .95s;           /* 화면이 슬릿에서 위아래로 열림(영상 재생과 함께) · expo.inOut */
+  --hook-v1-slit-out-at: .25s;    /* 열림 시작 → 슬릿 사라짐 */
+  --hook-v1-slit-out: .3s;        /* 슬릿 사라짐 · power1.out */
+  --hook-v1-glow-at: .15s;        /* 슬릿 사라짐 시작 → 앰비언트 */
+  --hook-v1-glow: 1.6s;           /* 앰비언트 0 → --hook-glow · sine.out */
+  --hook-v1-tl-at: .3s;           /* 앰비언트 시작 → 타임라인 */
+  --hook-v1-tl: 1s;               /* 타임라인이 왼→오로 그려짐 · power2.out */
+  --hook-glow: .5;                /* 앰비언트 투명도(v1) — 캔버스 24×42 · blur(60px) saturate(1.15) */
+  --hook-glow-every: 90ms;        /* 앰비언트에 영상 프레임을 다시 그리는 간격(v1) */
+  --hook-caret-w: 1px;            /* 캐럿 1px × 1.15em · 1.05s steps(1)(v1) */
+  --dur-hook-caret: 1.05s;
+  --dur-hook-follow: .6s;         /* 대본 창이 지금 줄을 따라감(v1 좁은 화면 .flow) */
+  --ease-hook-follow: cubic-bezier(.3, .1, .2, 1);
+
   /* 홈 첫 진입 — 오리진킷 Hairline Loader 압축(§6-B 「첫 진입 1.2초대 안」): 선 0.7s power2.inOut → 선 소멸 0.15s 선형 → 시트 갈라짐 0.7s power4.inOut */
   --dur-hair-line: 700ms;
   --ease-hair-line: cubic-bezier(.65, 0, .35, 1);     /* power2.inOut */
@@ -211,5 +240,14 @@
   /* 풀영상 재생 표시 — Bricker 가운데 원 120×120 1px 선(포스터 단계에서만) */
   --play-ring: 120px;
 
+  /* 작업대 명령줄 캐럿 — zkPass 7×14 블록 0.85s steps(2)(정밀 zkPass.md §5-2) · 33.3ms 틱. 2차 때 빠졌던 것을 1차 값 그대로 되살림 */
+  --dur-type-tick: 33.3ms;
+  --caret-w: 7px;
+  --caret-h: 14px;
+  --dur-caret: .85s;
 
+  /* 작품 제목 등장 — 오리진킷 Mask Text Reveal(정밀 오리진킷.md §6-C): inset(0 50%) → inset(0), 1.0s 지연 0.09s. 2차 때 빠졌던 것을 되살림 */
+  --dur-title-mask: 1s;
+  --delay-title-mask: 90ms;
+  --ease-title-mask: cubic-bezier(.42, 0, .58, 1);
 }
