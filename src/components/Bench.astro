@@ -1,0 +1,37 @@
+---
+/**
+ * 작업대 — 탭을 누르면 과정이 재생된다.
+ * 따온 곳: zkPass 「Three ways to verify」 작업대(정밀 zkPass.md §5-3 — 소등 · 이전 결과 380ms → 명령줄 700ms → 노드 260ms 간격 ·
+ *          연결선 점선 6/6 380ms cubic-bezier(.22,1,.36,1) → 결과 380ms, 노드 10×10) · Aaru 탭 알약(§5-3) · 라벨 체계 `[ … ]` · 모서리 「+」(zkPass §5-5).
+ * 바꾼 점: 명령줄 · 노드 이름은 작가의 실제 파일 · 버전만(_분석/제작자료_목록.md) — 지어낸 명령 · 시간 없음. 처음 판을 모르면 마지막 판 하나만.
+ */
+import type { Version } from '../data/works';
+
+type Props = { items: Version[]; label?: string };
+const { items, label = '작업대' } = Astro.props;
+const first = items[0];
+const out = (v: Version) => (v.from ? `${v.from} → ${v.to}` : v.to);
+---
+
+<div class="bench" data-bench data-items={JSON.stringify(items)} aria-label={label}>
+  <i class="corner c-tl" aria-hidden="true"></i><i class="corner c-tr" aria-hidden="true"></i>
+  <i class="corner c-bl" aria-hidden="true"></i><i class="corner c-br" aria-hidden="true"></i>
+  <div class="bench-tabs" role="tablist">
+    <p class="label2">기록 {String(items.length).padStart(2, '0')}</p>
+    {items.map((v, k) => (
+      <button type="button" role="tab" class="bench-tab" data-k={k} aria-selected={k === 0 ? 'true' : 'false'}>
+        <span class="n">{String(k + 1).padStart(2, '0')}</span><span class="t">{v.label}</span>
+      </button>
+    ))}
+  </div>
+  <div class="bench-panel" role="tabpanel">
+    <p class="label"><span aria-hidden="true">[ </span>파일<span aria-hidden="true"> ]</span></p>
+    <p class="bench-cmd"><span class="cmd-t">{first.path ?? first.label}</span><span class="cmd-caret" aria-hidden="true"></span></p>
+    <div class:list={['bench-nodes', { single: !first.from }]}>
+      <span class="bnode from"><i aria-hidden="true"></i><b>{first.from ?? ''}</b></span>
+      <span class="blink" aria-hidden="true"><i></i></span>
+      <span class="bnode to"><i aria-hidden="true"></i><b>{first.to}</b></span>
+    </div>
+    <p class="bench-out"><span class="label2">결과</span><span class="o">{first.label} · {out(first)}</span></p>
+  </div>
+</div>

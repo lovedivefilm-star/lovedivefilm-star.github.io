@@ -22,3 +22,10 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# playwright 시험 산출물 (실제 출력은 D:\claude_tmp\portfolio\qa\ — 기본 위치로 새어도 커밋되지 않게)
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+/qa/

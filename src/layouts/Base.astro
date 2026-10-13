@@ -1,0 +1,68 @@
+---
+/**
+ * 모든 방의 틀 — 상단 바 · 글꼴 · 공통 스크립트.
+ * 방 사이 전환은 브라우저의 문서 간 뷰 전환(CSS @view-transition)으로 — global.css 「방 전환」.
+ */
+import '../styles/tokens.css';
+import '../styles/global.css';
+import TopBar from '../components/TopBar.astro';
+import { FONT_CSS, FONT_ORIGINS, SITE } from '../data/site';
+
+type Props = {
+  title?: string;
+  here?: { no?: string; label: string };
+  /** 지금 단계(작품 방) */
+  step?: string;
+  /** 홈 첫 진입 연출을 쓸지 */
+  intro?: boolean;
+  bodyClass?: string;
+};
+const { title, here, step, intro = false, bodyClass } = Astro.props;
+const fullTitle = title ? `${title} · ${SITE.name}` : SITE.title;
+const favicon =
+  "data:image/svg+xml," +
+  encodeURIComponent(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='#1E1E1C'/><path d='M16 27 C17 24 22 17 22 13 C22 11 21 10 20 9 L20 4 L12 4 L12 9 C11 10 10 11 10 13 C10 17 15 24 16 27 Z' fill='#FFEEC8'/><circle cx='16' cy='12' r='1.6' fill='#1E1E1C'/><path d='M16 13.5 L16 26' stroke='#1E1E1C' stroke-width='1.2'/><circle cx='16' cy='29.5' r='1.4' fill='#FFEEC8'/></svg>",
+  );
+---
+
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={SITE.description} />
+    <link rel="icon" href={favicon} />
+    {FONT_ORIGINS.map((o) => <link rel="preconnect" href={o} crossorigin />)}
+    {FONT_CSS.map((href) => <link rel="stylesheet" href={href} />)}
+    <script is:inline>
+      /* 움직임 허용일 때만 data-motion — 연출용 CSS 는 전부 이 표식 아래에서만 돈다(움직임 줄이기면 처음부터 완성 상태) */
+      try {
+        if (!matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.setAttribute('data-motion', '');
+      } catch (e) {}
+    </script>
+    {
+      intro && (
+        <script is:inline>
+          try {
+            if (document.documentElement.hasAttribute('data-motion') && !sessionStorage.getItem('yk-intro')) {
+              document.documentElement.setAttribute('data-intro', '');
+              sessionStorage.setItem('yk-intro', '1');
+            }
+          } catch (e) {}
+        </script>
+      )
+    }
+  </head>
+  <body class={bodyClass}>
+    <TopBar here={here} step={step} />
+    <main id="main">
+      <slot />
+    </main>
+    <slot name="after" />
+    <script>
+      import '../scripts/site';
+    </script>
+  </body>
+</html>

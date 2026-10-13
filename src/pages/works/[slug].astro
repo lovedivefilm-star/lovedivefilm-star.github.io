@@ -1,0 +1,176 @@
+---
+/**
+ * 작품 방(주력 3편) — 한 작품만.
+ * ① 후킹(data-hook) ② 작품 안 목차(data-toc, 옆에 붙어 따라옴) ③ 단계(data-step) 01 영상 · 02 대본 · 03 생성 · 04 편집 · 05 크레딧 ④ 이전 · 홈 · 다음.
+ * 따온 곳: 목차 = Aaru 고정 번호 목록(믹스_추천3.md 3-7 A3) · Yuya Film Studio 제작 단계 목차(컨셉레퍼런스_웹.md 3절)
+ *          단계 = Google DeepMind 「Behind ANCESTRA」(단계마다 이미지 한 장 + 한 줄 설명, 컨셉레퍼런스_영상.md 6절)
+ */
+import Base from '../../layouts/Base.astro';
+import Hook from '../../components/Hook.astro';
+import VideoPlayer from '../../components/VideoPlayer.astro';
+import ScriptSheet from '../../components/ScriptSheet.astro';
+import Credits from '../../components/Credits.astro';
+import Bench from '../../components/Bench.astro';
+import { SCRIPTS } from '../../data/scripts';
+import Placeholder from '../../components/Placeholder.astro';
+import { MAIN_WORKS, type Work } from '../../data/works';
+
+export function getStaticPaths() {
+  return MAIN_WORKS.map((w) => ({ params: { slug: w.slug }, props: { work: w } }));
+}
+
+type Props = { work: Work };
+const { work } = Astro.props;
+const i = MAIN_WORKS.findIndex((w) => w.slug === work.slug);
+const prev = MAIN_WORKS[(i + MAIN_WORKS.length - 1) % MAIN_WORKS.length];
+const next = MAIN_WORKS[(i + 1) % MAIN_WORKS.length];
+const isV = work.ratio === '9:16';
+const vers = (v?: { from?: string; to: string }) => (v ? (v.from ? `${v.from} → ${v.to}` : v.to) : '');
+// 목차 행이 펼쳐질 때의 한 줄 — 사실(길이 · 형식 · 파일 · 버전)만(Aaru 활성 행 펼침)
+const steps = [
+  { key: 'video', no: '01', name: '영상', fact: `${work.duration} · ${work.ratio}` },
+  { key: 'script', no: '02', name: '대본', fact: `줄 ${SCRIPTS[work.slug]?.length ?? 0}개 · 원문 그대로` },
+  { key: 'generate', no: '03', name: '생성', fact: work.versions?.[0] ? `${work.versions[0].label} ${vers(work.versions[0])}` : `시트 ${work.sheets?.length ?? 0}장` },
+  { key: 'edit', no: '04', name: '편집', fact: work.editVersions?.[0] ? `${work.editVersions[0].label} ${vers(work.editVersions[0])}` : (work.edit?.[0] ?? '') },
+  { key: 'credit', no: '05', name: '크레딧', fact: `대본 김영건 · ${work.credits?.[1]?.v ?? ''}` },
+] as const;
+const [lead, ...restSheets] = work.sheets ?? [];
+---
+
+<Base title={work.title} here={{ no: work.no, label: work.door ?? work.title }} step="첫 장면">
+  <article class="work" data-work={work.slug} data-prev={`/works/${prev.slug}/`} data-next={`/works/${next.slug}/`}>
+    <Hook work={work} />
+
+    <div class="steps-wrap" id="full">
+      <nav class="toc" data-toc aria-label="이 작품 안 목차 — 만든 순서">
+        <p class="toc-k label"><span aria-hidden="true">[ </span>만든 순서<span aria-hidden="true"> ]</span></p>
+        <ol>
+          {steps.map((s, k) => (
+            <li>
+              <a href={`#step-${s.key}`} data-toc-item={s.key} aria-current={k === 0 ? 'step' : undefined}>
+                <span class="n">{s.no}</span><span class="t">{s.name}</span>
+                <span class="d"><span class="d-in">{s.fact}</span></span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </nav>
+
+      <div class="steps">
+        <section class="step" id="step-video" data-step="video" aria-labelledby="h-video">
+          <header class="step-h">
+            <span class="n">01</span><h2 id="h-video"><span class="line"><span class="line-in">영상</span></span></h2>
+            <p class="facts">풀영상 {work.duration} · {work.ratio} · 사이트 안 재생</p>
+            <p class="cap"><Placeholder kind="author-copy" /></p>
+          </header>
+          <div class:list={['step-media', isV ? 'v' : 'h']}>
+            <VideoPlayer youtubeId={work.youtubeId} ratio={work.ratio} title={work.title} poster={work.poster} />
+          </div>
+        </section>
+
+        <section class="step" id="step-script" data-step="script" aria-labelledby="h-script">
+          <header class="step-h">
+            <span class="n">02</span><h2 id="h-script"><span class="line"><span class="line-in">대본</span></span></h2>
+            <p class="facts">{work.scriptLabel} · 집필 김영건</p>
+            <p class="cap"><Placeholder kind="author-copy" /></p>
+          </header>
+          <div class="step-media">
+            <ScriptSheet slug={work.slug} label={work.scriptLabel ?? '대본'} />
+          </div>
+        </section>
+
+        <section class="step" id="step-generate" data-step="generate" data-process aria-labelledby="h-generate">
+          <header class="step-h">
+            <span class="n">03</span><h2 id="h-generate"><span class="line"><span class="line-in">생성</span></span></h2>
+            <p class="facts">시트 {work.sheets?.length ?? 0}장 · 프롬프트 기록</p>
+            <p class="cap"><Placeholder kind="author-copy" /></p>
+          </header>
+          <div class="step-media">
+            {lead && (
+              <figure class="lead-shot">
+                <button type="button" class="shot" data-img={lead.src} data-cap={lead.caption} aria-label={`${lead.caption} 크게 보기`}>
+                  <img src={lead.src} alt={lead.caption} loading="eager" decoding="async" />
+                </button>
+                <figcaption>{lead.caption}</figcaption>
+              </figure>
+            )}
+            {restSheets.length > 0 && (
+              <div class="thumbs">
+                {restSheets.map((s) => (
+                  <figure>
+                    <button type="button" class="shot" data-img={s.src} data-cap={s.caption} aria-label={`${s.caption} 크게 보기`}>
+                      <img src={s.src} alt={s.caption} loading="eager" decoding="async" />
+                    </button>
+                    <figcaption>{s.caption}</figcaption>
+                  </figure>
+                ))}
+              </div>
+            )}
+            {work.versions && work.versions.length > 0 && <Bench items={work.versions} label="작업대 — 프롬프트 · 시트 버전" />}
+            {work.record && (
+              <div class="record">
+                <p class="record-k">기록 · {work.record.summary}</p>
+                <ul>{work.record.lines.map((l) => <li>{l}</li>)}</ul>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section class="step" id="step-edit" data-step="edit" aria-labelledby="h-edit">
+          <header class="step-h">
+            <span class="n">04</span><h2 id="h-edit"><span class="line"><span class="line-in">편집</span></span></h2>
+            <p class="facts">{(work.edit ?? []).join(' · ')}</p>
+            <p class="cap"><Placeholder kind="author-copy" /></p>
+          </header>
+          <div class="step-media">
+            <div class="capboxes">
+              {['프리미어 프로 타임라인', '애프터 이펙트', '생성 툴 화면'].map((t) => (
+                <figure class="capbox">
+                  <span class="capbox-in">{t}<br /><Placeholder kind="capture" /></span>
+                </figure>
+              ))}
+            </div>
+            {work.editVersions && work.editVersions.length > 0 && <Bench items={work.editVersions} label="작업대 — 편집 프로젝트 버전" />}
+            {work.hook && (
+              <figure class="editstrip">
+                <img src={work.hook.strip} alt={`${work.title} 첫 장면 ${Math.round(work.hook.dur)}초의 프레임 띠`} loading="lazy" decoding="async" />
+                <figcaption>첫 장면 {Math.round(work.hook.dur)}초 · 컷 {work.hook.cuts.length + 1}개 — 위 후킹 타임라인의 편집 줄</figcaption>
+              </figure>
+            )}
+          </div>
+        </section>
+
+        <section class="step" id="step-credit" data-step="credit" data-credit aria-labelledby="h-credit">
+          <header class="step-h">
+            <span class="n">05</span><h2 id="h-credit"><span class="line"><span class="line-in">크레딧</span></span></h2>
+            <p class="facts">{work.format} · {work.year}</p>
+          </header>
+          <div class="step-media">
+            <Credits items={work.credits ?? []} />
+            <div class="desc"><Placeholder kind="author-copy" block /></div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <nav class="wnav" aria-label="작품 이동">
+      <div class="wnav-top">
+        <a class="prev" href={`/works/${prev.slug}/`} rel="prev"><span class="lab">← 이전 작품</span><span class="t">{prev.door ?? prev.title}</span></a>
+        <a class="home-link" href="/"><span class="lab">처음으로</span><span class="t">김영건</span></a>
+      </div>
+      <a class="next-big" href={`/works/${next.slug}/`} rel="next">
+        <span class="lab">다음 작품 · {next.no} / 03</span>
+        <span class="t">{next.door ?? next.title}</span>
+        <span class="arr" aria-hidden="true">→</span>
+      </a>
+    </nav>
+  </article>
+
+  <div class="lightbox" data-lightbox role="dialog" aria-modal="true" aria-label="크게 보기" hidden slot="after">
+    <div class="lb-bd" data-close></div>
+    <figure class="lb-box">
+      <img alt="" />
+      <figcaption><span class="lb-cap"></span><button type="button" class="x" data-close><span class="kbd">ESC</span>닫기</button></figcaption>
+    </figure>
+  </div>
+</Base>

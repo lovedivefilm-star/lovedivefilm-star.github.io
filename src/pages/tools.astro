@@ -1,0 +1,49 @@
+---
+/**
+ * 툴 방 — 4편 카드 → 모달에서 사이트 안 유튜브 재생.
+ * 따온 곳: 카드 2×2 = Brady Perron(올린 것만 진하고 나머지 흐림) · 모달 = 학원 예시 이두현(카드 재생 단추) · 박수지(모달).
+ * 모달: Paragon 라이트박스(정밀 Paragon.md §5-6 — 바탕 98% · 0.4s 지연 0.2s · 안쪽 86px · 닫기 48px 원 위/오른쪽 29px · ESC) + 폭 min(960px, 100vw−40px)(EddyOS §5-9).
+ * 영상 위에는 아무것도 얹지 않는다(닫기는 화면 모서리, 제목은 영상 아래).
+ */
+import Base from '../layouts/Base.astro';
+import Placeholder from '../components/Placeholder.astro';
+import { TOOL_WORKS } from '../data/works';
+---
+
+<Base title="툴" here={{ no: '04', label: '툴' }}>
+  <section class="tools" aria-label="툴">
+    <div class="side">
+      <p class="eyebrow">04 — 툴</p>
+      <h1>툴</h1>
+      <Placeholder kind="author-copy" block />
+      <p class="meta">{TOOL_WORKS.length}편 · 단독 작업 · 누르면 이 자리에서 재생</p>
+    </div>
+    <div class="cards">
+      {TOOL_WORKS.map((t) => (
+        <button type="button" class="card" data-tool={t.slug} data-yt={t.youtubeId} data-title={t.title} aria-label={`${t.title} 재생`}>
+          <span class="thumb">
+            <img src={t.poster} alt="" width="960" height="540" loading="eager" decoding="async" />
+            <span class="play" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3 1.5 L14.5 8 L3 14.5 Z"></path></svg></span>
+          </span>
+          <span class="row">
+            <span class="tt">{t.title}{t.label && <span class="tag">{t.label}</span>}</span>
+            <span class="dur">{t.duration} · {t.ratio}</span>
+          </span>
+          <span class="sub">
+            <span>툴 <Placeholder kind="tool" /></span>
+            <span>출처 <Placeholder kind="source" /></span>
+          </span>
+        </button>
+      ))}
+    </div>
+  </section>
+
+  <div class="modal" data-modal role="dialog" aria-modal="true" aria-label="재생" hidden slot="after">
+    <div class="modal-bd" data-close></div>
+    <button type="button" class="modal-x" data-close aria-label="닫기 (ESC)"><span aria-hidden="true"></span></button>
+    <div class="modal-box">
+      <div class="player h" data-video data-ratio="16:9" data-youtube-id="" data-title=""></div>
+      <p class="modal-cap"><span class="modal-t"></span><span class="kbd">ESC</span></p>
+    </div>
+  </div>
+</Base>

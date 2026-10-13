@@ -1,16 +1,45 @@
 ---
+/**
+ * 홈 — 한 화면 · 스크롤 없음. 네 모서리 = 작품 출입구(01 · 02 · 03 주력, 04 툴), 가운데 만년필 촉 + 이름 + [작가 문구 자리].
+ * 따온 곳: EddyOS 홈(네 모서리 번호 메뉴 · 가운데 그림 · 이름 — 정밀 §5-1 수치: 모서리 여백 · 11px 번호/형식 · 제목 clamp · 호버 100ms steps(2) · 칩 160ms steps(3) · 선택 유지).
+ */
+import Base from '../layouts/Base.astro';
+import Placeholder from '../components/Placeholder.astro';
+import { MAIN_WORKS, TOOL_WORKS } from '../data/works';
+import { SITE } from '../data/site';
+
+const pos = ['d-tl', 'd-tr', 'd-bl'];
+const doors = [
+  ...MAIN_WORKS.map((w, k) => ({
+    key: w.slug,
+    href: `/works/${w.slug}/`,
+    no: w.no!,
+    name: w.door ?? w.title,
+    meta: `${w.format} · ${w.ratio} · ${w.duration}`,
+    pos: pos[k],
+  })),
+  { key: 'tools', href: '/tools/', no: '04', name: '툴', meta: `${TOOL_WORKS.length}편 · 단독 작업`, pos: 'd-br' },
+];
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<Base intro bodyClass="is-home">
+  <section class="home" aria-label="처음">
+    <div class="intro" aria-hidden="true"><i class="half t"></i><i class="half b"></i><i class="hair"></i><span class="ticks">{Array.from({ length: 11 }, () => <i></i>)}</span></div>
+    <div class="home-center">
+      <!-- 가운데 오브제 자리 — 글자로 짠 만년필(GlyphMorph, 다른 에이전트 전담)이 여기 들어온다. 크기는 global.css .glyph-slot -->
+      <div class="glyph-slot" data-glyph-slot></div>
+      <p class="home-name">{SITE.name}</p>
+      <Placeholder kind="author-copy" />
+    </div>
+    <nav class="doors" aria-label="작품 출입구">
+      {doors.map((d) => (
+        <a class:list={['door', d.pos]} href={d.href} data-door={d.key}>
+          <span class="n">{d.no}</span>
+          <span class="m">{d.meta}</span>
+          <span class="nm">{d.name}</span>
+          <span class="chip" aria-hidden="true">들어가기 ▸</span>
+        </a>
+      ))}
+    </nav>
+  </section>
+</Base>

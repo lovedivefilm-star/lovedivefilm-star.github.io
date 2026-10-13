@@ -1,0 +1,26 @@
+---
+/**
+ * 대본 한 장 — 원문 줄 그대로(인물명과 대사만 서식으로 가름).
+ * 따온 곳: Pixar Script to Screen · Screenplayed(종이 · 씬 헤딩 굵게 · 인물명 가운데 · 대사 들여쓰기).
+ */
+import { SCRIPTS } from '../data/scripts';
+
+type Props = { slug: string; label: string };
+const { slug, label } = Astro.props;
+const lines = SCRIPTS[slug] ?? [];
+---
+
+<article class="sheet" data-script aria-label={`${label} — 대본 원문`}>
+  <div class="sh-head"><span>{label}</span><span>대본 원문 그대로 · 줄 단위 발췌</span></div>
+  {lines.map((l) =>
+    l.t === 'scene' ? (
+      <p class="scene">{l.s}</p>
+    ) : l.t === 'note' ? (
+      <p class="note">{l.s}</p>
+    ) : l.t === 'dia' ? (
+      <p class="dia"><span class="who">{l.who}</span>{l.s}</p>
+    ) : (
+      <p class="act">{l.s}</p>
+    ),
+  )}
+</article>

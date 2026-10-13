@@ -1,0 +1,49 @@
+---
+/**
+ * 상단 바 — 이름(홈) · 지금 위치 · 연락(이메일 한 줄). 메뉴를 늘리지 않는다(규약 1절).
+ * 따온 곳: Paragon 상단 바(정밀 Paragon.md §5-1 — fixed · 배경 없음 · 위 32 / 좌우 48 · 50px 박스 + 1px 테두리 이어 붙임 · 연락 버튼 142×50, 화살표 12px gap 8, 호버 0.4s ease)
+ *          + EddyOS 경로(지금 위치) · 「ESC — 홈으로」(정밀 EddyOS.md §5-3).
+ * 바꾼 점: 연락은 스크롤해도 숨기지 않는다(규약 · 시험 2) · 이메일을 버튼 안에 직접.
+ */
+import { CONTACT_EMAIL, SITE } from '../data/site';
+
+type Props = {
+  here?: { no?: string; label: string };
+  /** 지금 단계(작품 방에서 목차와 같이 움직임) */
+  step?: string;
+};
+const { here, step } = Astro.props;
+const isHome = !here;
+---
+
+<header class="site-head">
+  <nav data-nav aria-label="사이트">
+    <div class="tb-left">
+      <a class="tb tb-name" href="/" aria-current={isHome ? 'page' : undefined}>{SITE.name}</a>
+      {here && (
+        <span class="tb tb-here">
+          <span aria-current="page">
+            {here.no && <span class="n">{here.no}</span>}
+            <span class="lab">{here.label}</span>
+            {step !== undefined && <span class="here-step" data-path-step>{step}</span>}
+          </span>
+        </span>
+      )}
+      {here && (
+        <a class="tb tb-esc" href="/"><span class="kbd">ESC</span><span class="esc-t">홈으로</span></a>
+      )}
+    </div>
+    {CONTACT_EMAIL ? (
+      <span class="tb-right">
+        <a class="tb tb-mail" href={`mailto:${CONTACT_EMAIL}`} data-nav="contact">
+          <span class="mail-t">{CONTACT_EMAIL}</span><span class="arr" aria-hidden="true">→</span>
+        </a>
+        <button type="button" class="tb tb-copy" data-copy={CONTACT_EMAIL} aria-label="이메일 주소 복사">복사</button>
+      </span>
+    ) : (
+      <span class="tb tb-mail" data-nav="contact" title="이메일은 작가가 정한 뒤 채운다">
+        <span class="mail-t ph-mail" data-placeholder="email">[이메일 자리]</span><span class="arr" aria-hidden="true">→</span>
+      </span>
+    )}
+  </nav>
+</header>

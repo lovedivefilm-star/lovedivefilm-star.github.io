@@ -1,0 +1,20 @@
+---
+/**
+ * 크레딧 점선 표 — EddyOS 상세 `.project-spec` (정밀 분석 §5-7 「그대로 가져올 가장 가치 있는 자리」).
+ * 행 = 라벨 · 점 리더(넉넉히 깔고 넘치는 점은 잘림) · 값. 행마다 70ms 어긋나 맺힘(움직임 허용일 때만).
+ */
+import type { Credit } from '../data/works';
+import Placeholder from './Placeholder.astro';
+
+type Props = { items: Credit[] };
+const { items } = Astro.props;
+---
+
+<dl class="spec">
+  {items.map((c, k) => (
+    <div class="spec-row" style={`--i:${k}`}>
+      <dt>{c.k}</dt>
+      <dd>{c.v ?? <Placeholder kind="tool" text={c.ph} />}</dd>
+    </div>
+  ))}
+</dl>
