@@ -13,10 +13,10 @@
  * 성능: 음절은 한 번 「층 × 글자」 판(오프스크린 캔버스, 광채 포함)에 찍어 두고 drawImage 로만 찍는다(fillText 없음).
  *       머무는 동안은 정지 그림(형태마다 미리 그린 판) — 커서가 닿은 칸 · 글자 교체 칸만 다시 그린다.
  *       전환 중엔 「떠나는 형태 판(파도처럼 지워짐) + 나는 글자(최대 6.5천) + 도착하는 형태 판(파도처럼 드러남)」 — 전체 칸을 매 프레임 찍지 않는다.
- * 색: 하드코딩 없음 — --glyph-ink-1(가장 밝은 층) … --glyph-ink-4(가장 옅은 층) · --glyph-accent(한 점: 촉 끝 · 앵커 · 핸들) · --glyph-label(숫자).
+ * 색: 하드코딩 없음 — --glyph-ink(글자색 하나) · --glyph-alphas(4층 투명도, zkPass 실측 .55 .80 .97 1) · --glyph-accent(한 점: 촉 끝 · 앵커 · 핸들) · --glyph-label(숫자).
  */
 
-const ORDER = ['pen', 'sunset', 'hanseol', 'smile'];
+const ORDER = ['pen', 'sea', 'hanseol', 'smile'];
 const LAYER_W = [0, 1, 1, 2];                 // 층 → 굵기 판(400 · 500 · 500 · 600)
 const CFG = {
   hold: 2800, holdPen: 3400, morph: 1300, appear: 1250,
@@ -99,11 +99,14 @@ export function mountGlyphMorph(root, opts = {}) {
   function readTheme() {
     const cs = getComputedStyle(root);
     const v = (n, fb) => parseColor(cs.getPropertyValue(n), fb);
-    const names = ['--glyph-ink-1', '--glyph-ink-2', '--glyph-ink-3', '--glyph-ink-4', '--glyph-accent', '--glyph-label', '--glyph-bg'];
+    const names = ['--glyph-ink', '--glyph-alphas', '--glyph-accent', '--glyph-label', '--glyph-bg'];
+    const ink = v('--glyph-ink', '#F0EFE9');
+    const al = (cs.getPropertyValue('--glyph-alphas').trim() || '.55 .80 .97 1').split(/[\s,]+/).map(Number);
     return {
-      layer: [v('--glyph-ink-4', 'rgba(240,239,233,.3)'), v('--glyph-ink-3', 'rgba(240,239,233,.5)'), v('--glyph-ink-2', 'rgba(240,239,233,.64)'), v('--glyph-ink-1', '#F0EFE9')],
+      layer: [0, 1, 2, 3].map((i) => [ink[0], ink[1], ink[2], ink[3] * clamp(al[i] ?? 1, 0, 1)]),
       accent: v('--glyph-accent', '#0090FF'),
       label: v('--glyph-label', 'rgba(240,239,233,.64)'),
+      bg: v('--glyph-bg', '#050505'),
       key: names.map((n) => cs.getPropertyValue(n)).join('|'),
     };
   }
@@ -439,7 +442,8 @@ export function mountGlyphMorph(root, opts = {}) {
     if (pn > 0.01) {                                       // 촉 끝 잉크 한 점
       const r = Math.max(2.2, cell * 0.8);
       o.fillStyle = rgba(theme.accent, pn);
-      o.beginPath(); o.arc(D.rig.tip[0] * GW - r * 0.15, D.rig.tip[1] * GH + r * 0.7, r, 0, Math.PI * 2); o.fill();
+      const dot = D.rig.dot || D.rig.tip;
+      o.beginPath(); o.arc(dot[0] * GW, dot[1] * GH, r, 0, Math.PI * 2); o.fill();
     }
     if (pn > 0.01 && V.pres > 0.003) drawRig(GW, GH, pn * V.pres);
   }
@@ -458,18 +462,25 @@ export function mountGlyphMorph(root, opts = {}) {
     o.beginPath(); o.moveTo(h1[0], h1[1]); o.lineTo(h2[0], h2[1]); o.stroke();
     for (const h of [h1, h2]) { o.beginPath(); o.arc(h[0], h[1], vw.dot / 2, 0, Math.PI * 2); o.fill(); }
     o.fillRect(Math.round(x - vw.anchor / 2), Math.round(y - vw.anchor / 2), vw.anchor, vw.anchor);
-    // 숫자
+    // 숫자 — 글자 결 위에서도 읽히게 바탕색 칩을 깐다
     o.font = '400 11px "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace';
     if ('letterSpacing' in o) o.letterSpacing = '0.88px';
-    o.fillStyle = rgba(theme.label, 0.6 / Math.max(theme.label[3], 0.01) * theme.label[3]);
-    o.textAlign = 'center'; o.textBaseline = 'middle';
+    o.textBaseline = 'middle';
+    const chip = (txt, cx, cy, align) => {
+      const w = o.measureText(txt).width;
+      const x0 = align === 'center' ? cx - w / 2 : cx;
+      o.fillStyle = rgba(theme.bg, 0.82);
+      o.fillRect(Math.round(x0 - 3), Math.round(cy - 8), Math.ceil(w + 6), 16);
+      o.fillStyle = rgba(theme.label);
+      o.textAlign = 'left';
+      o.fillText(txt, x0, cy + 0.5);
+    };
     let nx = -uy, ny = ux; if (ny < 0) { nx = -nx; ny = -ny; }        // 직선에 수직 — 화면 아래쪽
     const xp = Math.round(clamp(x / GW, 0, 1) * 100), yp = Math.round(clamp(1 - y / GH, 0, 1) * 100);
-    o.fillText(`${xp}, ${yp}`, x + nx * vw.label, y + ny * vw.label);
+    chip(`${xp}, ${yp}`, x + nx * vw.label, y + ny * vw.label, 'center');
     const deg = Math.round(((-ang * 180) / Math.PI) % 360 + 360) % 360;
     const right = h2[0] >= h1[0] ? h2 : h1;
-    o.textAlign = 'left'; o.textBaseline = 'top';
-    o.fillText(`${deg}°`, right[0] + 10, right[1] - 16);
+    chip(`${deg}°`, right[0] + 10, right[1] - 16 + 6, 'left');
     o.restore();
   }
 

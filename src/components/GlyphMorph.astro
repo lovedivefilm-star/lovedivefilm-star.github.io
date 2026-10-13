@@ -1,13 +1,13 @@
 ---
 /**
  * GlyphMorph — 홈 가운데 「글자로 짠 오브제」.
- * 작가 대본 음절 1만~2만 자(칸 4~6px)가 만년필이 되었다가 흩어져 완성본의 장면 → 인물 → 인물 → 다시 만년필.
- * 만년필 상태에서 커서를 올리면 촉 윤곽에 펜 툴 앵커 · 베지어 핸들 · 좌표(오리진킷 Vector Wordmark),
+ * 작가 대본 음절 수천~1만여 자(칸 4~6px, zkPass 4층 농도)가 만년필이 되었다가 흩어져 완성본의 장면 → 인물 → 인물 → 다시 만년필.
+ * 만년필 상태에서 커서를 올리면 펜 툴 앵커 · 베지어 핸들 · 좌표 · 각도(오리진킷 Vector Wordmark 3),
  * 장면 · 인물 상태에서 커서가 지나간 자리엔 원본 프레임이 잠깐 비친다(EddyOS 렌즈), 글자는 커서에서 밀려난다(EddyOS).
  *
  * 쓰는 법(홈): <div class="glyph-slot" data-glyph-slot><GlyphMorph /></div> — 부품은 부모 상자를 채우고 그 안에 격자를 맞춘다.
- * 색은 CSS 변수로 받는다(하드코딩 없음): --glyph-ink-1(가장 밝음) … --glyph-ink-4(가장 어두움) · --glyph-accent(촉 끝 한 점) · --glyph-bg(펜 툴 렌즈 바탕).
- *   기본값은 사이트 토큰(--light · --seat-text · --seat-low · --seat · --lamp · --curtain) — 토큰을 바꾸면 따라 바뀐다.
+ * 색은 CSS 변수로 받는다(하드코딩 없음): --glyph-ink · --glyph-alphas · --glyph-accent · --glyph-label.
+ *   기본값은 사이트 토큰(--light · --lamp · --seat-text) — 토큰을 바꾸면 따라 바뀐다.
  * 데이터: public/media/glyph/(glyph-data.json · atlas.png · frame_*.jpg) — scripts/glyph-bake.py 가 굽는다. 출처는 public/media/출처.json.
  * 움직임 줄이기: 만년필 한 장으로 정지. 탭이 숨거나 화면 밖이면 멈춘다.
  */
@@ -25,13 +25,12 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 
 <style is:global>
   .glyph-morph {
-    /* 색 — 부모가 덮어쓰면 그 값으로(팔레트 교체) */
-    --glyph-ink-1: var(--light, #ffffff);
-    --glyph-ink-2: var(--seat-text, #bfbfbf);
-    --glyph-ink-3: var(--seat-low, #7a7a7a);
-    --glyph-ink-4: var(--seat, #404040);
-    --glyph-accent: var(--lamp, #ffffff);
-    --glyph-bg: var(--curtain, #000000);
+    /* 색 — 사이트 토큰에서(하드코딩 없음). 글자 4층 = 글자색 하나의 투명도 단계(zkPass 실측 .55 .80 .97 1) */
+    --glyph-ink: var(--light);
+    --glyph-alphas: .55 .80 .97 1;
+    --glyph-accent: var(--lamp);       /* 한 점 — 촉 끝 잉크 · 펜 툴 앵커 · 핸들 */
+    --glyph-label: var(--seat-text);   /* 펜 툴 숫자 */
+    --glyph-bg: var(--curtain);        /* 숫자 밑 칩 */
     position: relative;
     width: 100%;
     height: 100%;
@@ -44,6 +43,13 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
   .glyph-morph .gm-stage { position: relative; transform-origin: 50% 50%; }
   .glyph-morph canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .glyph-morph .gm-over { pointer-events: none; }
+  /* zkPass 오브제 영역 스캔라인(1px 선 · 3px 간격, 2.4%) — 가장자리는 흐려서 상자 테두리가 보이지 않게 */
+  .glyph-morph .gm-stage::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(to bottom, color-mix(in srgb, var(--glyph-ink) 2.4%, transparent) 0 1px, transparent 1px 3px);
+    -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent);
+    mask-image: radial-gradient(closest-side, #000 55%, transparent);
+  }
   /* 좌우 흔들림 — EddyOS 초상 yaw(주기 19.6s)를 2D 로: ±3.5° · 20s */
   @media (prefers-reduced-motion: no-preference) {
     .glyph-morph.gm-ready .gm-stage { animation: gm-breathe 10s ease-in-out infinite alternate; }

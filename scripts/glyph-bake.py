@@ -199,8 +199,8 @@ def pen_place():
     return outs[0], outs[1], to_norm
 
 def pen_rig(to_norm):
-    """촉 끝(잉크 한 점 · 전환 원점) 좌표 — 격자 기준 0..1."""
-    return {"tip": [round(float(v), 5) for v in to_norm(0, 0)]}
+    """촉 끝(전환 원점) · 잉크 한 점(글자가 보이는 촉 끝 바로 위) 좌표 — 격자 기준 0..1."""
+    return {"tip": [round(float(v), 5) for v in to_norm(0, 0)], "dot": [round(float(v), 5) for v in to_norm(0, -34)]}
 
 # ───────────────────────────── ② ③ ④ 완성본 프레임
 SHAPES = [
@@ -208,11 +208,11 @@ SHAPES = [
         "key": "pen", "kind": "object", "pool": "all", "label": "만년필",
         "source": "직접 그림(Pillow) — 촉 · 숨구멍 · 틈 · 그립 · 고리 · 몸통 일부, 사진 · 생성 없음",
     },
-    {   # ② 장면 — 버터! 노을 해변
-        "key": "sunset", "kind": "scene", "pool": "butter", "label": "버터! — 노을 해변",
-        "video": "트레일러_버터!_김영건.mp4", "t": 16.0, "file": "frame_butter_0016.jpg",
-        "crop": (540, 160, 1300, 782),
-        "tone": dict(lo=30, hi=99.9, gamma=3.0, clarity=1.0, vignette=(0.95, 1.0, 0.45)),
+    {   # ② 장면 — 버터! 노을 바다(해가 수평선에 걸린 첫 컷)
+        "key": "sea", "kind": "scene", "pool": "butter", "label": "버터! — 노을 바다",
+        "video": "트레일러_버터!_김영건.mp4", "t": 0.5, "file": "frame_butter_0000.jpg",
+        "crop": (480, 138, 1462, 941),
+        "tone": dict(lo=5, hi=99.8, gamma=1.6, clarity=1.0, vignette=(1.05, 1.0, 0.35)),
     },
     {   # ③ 인물 — 오직 당신의 것 한설(한복 · 노을빛 정면)
         "key": "hanseol", "kind": "person", "pool": "oneandonly", "label": "오직 당신의 것 — 한설",
@@ -228,7 +228,7 @@ SHAPES = [
         "key": "smile", "kind": "person", "pool": "butter", "label": "버터! — 웃는 얼굴",
         "video": "트레일러_버터!_김영건.mp4", "t": 31.0, "file": "frame_butter_0031.jpg",
         "crop": (520, 138, 1500, 940),
-        "tone": dict(lo=2, hi=98, gamma=0.72, clarity=0.5, floor=0.16, feather=0.8, stats_box=(700, 260, 1250, 900), vignette=(1.0, 1.04, 0.32),
+        "tone": dict(lo=2, hi=98, gamma=0.62, clarity=0.5, floor=0.18, feather=0.8, stats_box=(700, 260, 1250, 900), vignette=(1.0, 1.04, 0.32),
                      poly=[(615, 138), (1500, 138), (1560, 300), (1600, 450), (1660, 620), (1700, 800), (1660, 941), (640, 941),
                            (620, 800), (580, 600), (560, 420), (590, 300), (600, 200)]),
     },

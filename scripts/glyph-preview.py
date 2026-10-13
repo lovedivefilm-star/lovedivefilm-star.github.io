@@ -1,4 +1,4 @@
-"""
+r"""
 글자 오브제 미리보기 한 파일 만들기 — 사이트 부품(src/scripts/glyph-morph.js)과 같은 엔진 + 데이터를 한 HTML 에 넣는다.
 더블클릭(file://)으로도 돈다(데이터 · 글자 판 · 프레임을 data: 로 내장).
 
@@ -55,15 +55,15 @@ body { background: var(--curtain); color: var(--light); font-family: "Pretendard
 
 /* ── 부품(사이트 GlyphMorph.astro 와 같은 규칙) ── */
 .glyph-morph {
-  --glyph-ink-1: var(--light); --glyph-ink-2: var(--seat-text); --glyph-ink-3: var(--seat-low); --glyph-ink-4: var(--seat);
-  --glyph-accent: var(--lamp); --glyph-label: var(--seat-text);
+  --glyph-ink: var(--light); --glyph-alphas: .55 .80 .97 1;   /* 글자 4층 = 글자색 하나의 투명도 단계(zkPass 실측) */
+  --glyph-accent: var(--lamp); --glyph-label: var(--seat-text); --glyph-bg: var(--curtain);
   position: relative; width: 100%; height: 100%; min-height: 240px; display: grid; place-items: center; overflow: visible;
 }
 .glyph-morph .gm-stage { position: relative; transform-origin: 50% 50%; }
 .glyph-morph canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .glyph-morph .gm-over { pointer-events: none; }
 /* zkPass 오브제 영역 스캔라인(1px 선 · 3px 간격, 2.4%) */
-.glyph-morph .gm-stage::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(to bottom, color-mix(in srgb, var(--glyph-ink-1) 2.4%, transparent) 0 1px, transparent 1px 3px); }
+.glyph-morph .gm-stage::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(to bottom, color-mix(in srgb, var(--glyph-ink) 2.4%, transparent) 0 1px, transparent 1px 3px); -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent); mask-image: radial-gradient(closest-side, #000 55%, transparent); }
 @media (prefers-reduced-motion: no-preference) {
   .glyph-morph.gm-ready .gm-stage { animation: gm-breathe 10s ease-in-out infinite alternate; }
   .glyph-morph.gm-paused .gm-stage { animation-play-state: paused; }
