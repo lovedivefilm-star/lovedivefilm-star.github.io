@@ -1,0 +1,10 @@
+---
+/** 다음 작품 — Kavieng 2-4(위 1px 선 · 「다음 작품」 15px · 큰 세리프 제목 + → 100px · 호버 화살표 +10px .4s). 전체가 링크. */
+type Props = { href: string; title: string };
+const { href, title } = Astro.props;
+---
+
+<a class="next" href={href} data-next>
+  <span class="lab2">다음 작품</span>
+  <span class="row"><span class="nt">{title}</span><span class="ar" aria-hidden="true">→</span></span>
+</a>

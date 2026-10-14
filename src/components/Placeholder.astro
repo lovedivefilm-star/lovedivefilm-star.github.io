@@ -1,8 +1,0 @@
----
-/** 비어 있는 자리 — 점선 상자. 작가 글은 작가가 쓴다(지어 넣지 않는다). */
-type Props = { kind?: 'author-copy' | 'tool' | 'source' | 'capture' | 'email'; text?: string; block?: boolean };
-const { kind = 'author-copy', text, block = false } = Astro.props;
-const label = text ?? ({ 'author-copy': '작가 문구 자리', tool: '툴 확인 후', source: '출처 자리', capture: '작가 캡처 자리', email: '이메일 자리' } as const)[kind];
----
-
-<span class:list={['ph', { 'ph-block': block }]} data-placeholder={kind}>[{label}]</span>

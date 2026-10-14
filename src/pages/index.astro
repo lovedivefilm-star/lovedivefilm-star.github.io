@@ -1,46 +1,34 @@
 ---
 /**
- * 홈 — 한 화면 · 스크롤 없음. 네 모서리 = 작품 출입구(01 · 02 · 03 주력, 04 툴), 가운데 만년필 촉 + 이름 + [작가 문구 자리].
- * 따온 곳: EddyOS 홈(네 모서리 번호 메뉴 · 가운데 그림 · 이름 — 정밀 §5-1 수치: 모서리 여백 · 11px 번호/형식 · 제목 clamp · 호버 100ms steps(2) · 칩 160ms steps(3) · 선택 유지).
+ * 홈 = 인트로(잠든 벽) + 작업 벽(docs/v4-redesign.md 2절 · 메인 지시 10-14 · Kavieng 2-3).
+ * 벽 = React Bits DomeGallery(흑백 · 마우스가 올라간 타일만 컬러 · 드래그 · 휠 · 3칸은 후킹 클립) — src/components/react/WorkWall.tsx.
+ * 인트로 동안 같은 벽이 카메라 틀([data-cam]) 안에서 ×2.2 · 어둡게 · 흐리게 · 아주 느리게 돌고, 입장하면 물러나 지금 크기가 된다(src/scripts/site.ts initIntro).
+ * 아래 가운데 읽음 · 오른쪽 아래 작품 7편 목록 · 왼쪽 아래 「드래그해서 둘러보기」. 카운터 · 필터 탭 없음.
  */
 import Base from '../layouts/Base.astro';
-import Placeholder from '../components/Placeholder.astro';
-import GlyphMorph from '../components/GlyphMorph.astro';
-import { MAIN_WORKS, TOOL_WORKS } from '../data/works';
-import { SITE } from '../data/site';
+import TopBar from '../components/TopBar.astro';
+import Intro from '../components/Intro.astro';
+import WorkWall from '../components/react/WorkWall';
+import { MAIN_WORKS, WORKS } from '../data/works';
+import { WALL_TILES, wallOrder } from '../data/wall';
 
-const pos = ['d-tl', 'd-tr', 'd-bl'];
-const doors = [
-  ...MAIN_WORKS.map((w, k) => ({
-    key: w.slug,
-    href: `/works/${w.slug}/`,
-    no: w.no!,
-    name: w.door ?? w.title,
-    meta: `${w.format} · ${w.ratio} · ${w.duration}`,
-    pos: pos[k],
-  })),
-  { key: 'tools', href: '/tools/', no: '04', name: '툴', meta: `${TOOL_WORKS.length}편 · 단독 작업`, pos: 'd-br' },
-];
+const order = wallOrder(WALL_TILES);
+const images = order.map((t) => ({ src: t.src, slug: t.slug, k: t.k, avif: t.avif, webp: t.webp }));
+const works = WORKS.map((w) => ({
+  slug: w.slug,
+  title: w.title,
+  format: w.format ?? w.category ?? '',
+  year: w.year ?? '',
+  href: w.group === 'main' ? `/works/${w.slug}/` : `/tools/#${w.slug}`,
+}));
+// 벽 칸 3개 = 주력 3편의 후킹 클립(음소거 · 반복 · 보일 때만 재생)
+const videos = MAIN_WORKS.filter((w) => w.hook).map((w) => ({ slug: w.slug, src: w.hook!.clip, poster: w.hook!.poster }));
 ---
 
-<Base intro bodyClass="is-home">
-  <section class="home" aria-label="처음">
-    <div class="intro" aria-hidden="true"><i class="half t"></i><i class="half b"></i><i class="hair"></i><span class="ticks">{Array.from({ length: 11 }, () => <i></i>)}</span></div>
-    <div class="home-center">
-      <!-- 가운데 오브제 — 대본 음절로 짠 만년필 → 장면 → 인물(GlyphMorph). 크기는 global.css .glyph-slot -->
-      <div class="glyph-slot" data-glyph-slot><GlyphMorph /></div>
-      <p class="home-name">{SITE.name}</p>
-      <Placeholder kind="author-copy" />
-    </div>
-    <nav class="doors" aria-label="작품 출입구">
-      {doors.map((d) => (
-        <a class:list={['door', d.pos]} href={d.href} data-door={d.key}>
-          <span class="n">{d.no}</span>
-          <span class="m">{d.meta}</span>
-          <span class="nm">{d.name}</span>
-          <span class="chip" aria-hidden="true">들어가기 ▸</span>
-        </a>
-      ))}
-    </nav>
-  </section>
+<Base page="home">
+  <Intro />
+  <div class="wall-cam" data-cam>
+    <WorkWall client:load images={images} works={works} videos={videos} hint="드래그해서 둘러보기" listLabel="작품" />
+  </div>
+  <TopBar variant="home" />
 </Base>

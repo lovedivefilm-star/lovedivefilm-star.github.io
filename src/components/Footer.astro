@@ -1,0 +1,16 @@
+---
+/** 푸터 — 큰 연락 링크 「연락하기 ↗」(Kavieng 2-4 · 8-5). 주소(CONTACT_EMAIL)가 없으면 그리지 않는다. */
+import { CONTACT_EMAIL } from '../data/site';
+---
+
+{
+  CONTACT_EMAIL ? (
+    <footer class="foot">
+      <a href={`mailto:${CONTACT_EMAIL}`} data-nav="contact" data-contact-foot>
+        연락하기 <span class="ar" aria-hidden="true">↗</span>
+      </a>
+    </footer>
+  ) : (
+    <div class="end" aria-hidden="true" />
+  )
+}

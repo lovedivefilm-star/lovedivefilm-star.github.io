@@ -1,5 +1,5 @@
 /**
- * 시험 공용 — docs/contract.md 의 1~3절을 코드로 옮긴 것.
+ * 시험 공용 — v4(docs/contract.md 1~3절을 코드로 옮긴 것).
  * 표식(셀렉터)은 전부 여기 한 곳. 제작이 표식을 바꾸면 여기만 고친다.
  */
 import { test as base, type BrowserContext, type Page } from '@playwright/test';
@@ -14,14 +14,7 @@ export const MEDIA_DIR = path.join(PUBLIC_DIR, 'media');
 export const SRC_DIR = path.join(PROJECT_ROOT, 'src');
 
 // ───────────────────────── 2절 작품 데이터 ─────────────────────────
-export type Work = {
-  slug: string;
-  title: string;
-  group: 'main' | 'tools';
-  ratio: '9:16' | '16:9';
-  yt: string;
-};
-
+export type Work = { slug: string; title: string; group: 'main' | 'tools'; ratio: '9:16' | '16:9'; yt: string };
 export const WORKS: Work[] = [
   { slug: 'oneandonly', title: '오직 당신의 것 EP.01', group: 'main', ratio: '9:16', yt: 'NPlAjWuCsAY' },
   { slug: 'firstimpression', title: '첫 인상은 백점, 첫 마디는 엎드려', group: 'main', ratio: '9:16', yt: '1XMjpYyastE' },
@@ -33,85 +26,73 @@ export const WORKS: Work[] = [
 ];
 export const MAIN_WORKS = WORKS.filter((w) => w.group === 'main');
 export const TOOL_WORKS = WORKS.filter((w) => w.group === 'tools');
+export const roomPath = (w: Work) => (w.group === 'main' ? `/works/${w.slug}/` : `/tools/#${w.slug}`);
 
 // ───────────────────────── 1절 방(페이지)과 주소 ─────────────────────────
-export type Room = { key: string; path: string; name: string };
-// 방은 다섯뿐: 홈 · 작품 상세 3 · 툴. (연락은 방이 아니라 상단 바의 이메일 한 줄)
+export type Room = { key: string; path: string; name: string; kind: 'home' | 'work' | 'tools' };
+// 홈(인트로 + 벽) · 작품 방 3 · 툴 방. 404 는 따로(V-1).
 export const ROOMS: Room[] = [
-  { key: 'home', path: '/', name: '홈' },
-  ...MAIN_WORKS.map((w) => ({ key: `works-${w.slug}`, path: `/works/${w.slug}/`, name: `작품 상세 ${w.slug}` })),
-  { key: 'tools', path: '/tools/', name: '툴' },
+  { key: 'home', path: '/?skipIntro', name: '홈(벽)', kind: 'home' },
+  ...MAIN_WORKS.map((w) => ({ key: `works-${w.slug}`, path: `/works/${w.slug}/`, name: w.title, kind: 'work' as const })),
+  { key: 'tools', path: '/tools/', name: '툴', kind: 'tools' },
 ];
-// 있으면 안 되는 방(404 여야 함): 작품 목록 · 소개 · 연락 · 경력/이력
-export const ABSENT_ROOMS = ['/works/', '/about/', '/contact/', '/career/', '/experience/', '/resume/', '/cv/'];
+export const WORK_ROOMS = ROOMS.filter((r) => r.kind === 'work');
+export const ABSENT_ROOMS = ['/works/', '/about/', '/contact/', '/career/', '/resume/', '/cv/'];
 
 // ───────────────────────── 3절 시험용 표식 ─────────────────────────
 export const SEL = {
   nav: 'nav[data-nav]',
-  navContact: '[data-nav="contact"]',
-  door: (k: string) => `[data-door="${k}"]`,
-  video: '[data-video]',
-  hook: '[data-hook]',
-  hookVideo: '[data-hook] video',
-  script: '[data-script]',
-  credit: '[data-credit]',
-  process: '[data-process]',
-  authorCopy: '[data-placeholder="author-copy"]',
+  contact: '[data-nav="contact"]',
+  // 홈
+  introLayer: '[data-intro-layer]',
+  wall: '[data-wall]',
+  wallTile: '[data-wall] .item__image',
+  wallRead: '[data-wall-read]',
+  wallLink: (slug: string) => `[data-wall-link="${slug}"]`,
+  // 방
   work: (slug: string) => `[data-work="${slug}"]`,
-  // 작품 방 최종 구조(docs/work-room.md 4절 · contract.md 3절)
-  overview: '[data-overview]',
-  toc: '[data-toc]',
-  tocItem: '[data-toc-item]',
-  step: '[data-step]',
-  paperLine: '[data-pp-line]',
-  playScene: '[data-process] [data-play-at]',
+  meta: '[data-meta]',
+  metaRow: (k: string) => `[data-meta-row="${k}"]`,
+  title: '[data-title]',
+  line: '[data-line]',
+  video: '[data-video]',
+  vbox: '[data-vbox]',
+  play: '[data-vbox] .play[data-play]',
+  intro: '[data-intro-text]',
+  process: '[data-process]',
+  stage: '[data-process] [data-stage]',
+  stepGo: (i: number) => `[data-process] [data-step-go="${i}"]`,
+  cutPlay: '[data-process] .play[data-play][data-start]',
+  next: '[data-next]',
   verbatim: '[data-work] [data-src]',
-  confirm: '[data-confirm]',
-  // ── 3절에 정의가 없어 시험이 "가정"한 표식 (제작과 맞출 것 · 맞춰지면 contract.md 3절에 추가) ──
-  // /tools/ 의 카드: data-work="<slug>" (또는 data-tool="<slug>")
-  toolCard: '[data-work], [data-tool]',
-  // 툴 모달: data-modal 또는 <dialog open> 또는 role="dialog"
-  modal: '[data-modal], dialog[open], [role="dialog"]',
+  tool: (slug: string) => `[data-tool="${slug}"]`,
 };
+/** 한 컷이 만들어진 순서 — 걸음 4개(대본 · 시트 · 연출 · 완성)와 스냅 위치(src/scripts/site.ts SNAP) */
+export const CUT_STEPS = ['대본', '시트', '연출', '완성'] as const;
+export const CUT_SNAP = [0, 1 / 3, 2 / 3, 1];
 
-// 홈 네 모서리 출입구 → 가는 방
-export const DOOR_TARGETS: Record<string, string> = {
-  oneandonly: '/works/oneandonly/',
-  firstimpression: '/works/firstimpression/',
-  butter: '/works/butter/',
-  tools: '/tools/',
-};
-export const DOORS = Object.keys(DOOR_TARGETS);
+/** 작가 원문 대조 문서 폴더 — `<slug>.md`(V-16) */
+export const PROCESS_DOC_DIR = process.env.QA_PROCESS_DOC_DIR ?? 'G:/내 드라이브/포폴 웹사이트 만들기/_분석/작품과정';
 
-// ───────────────────────── 4절-8 공모전 낱말 ─────────────────────────
-// 한글은 공백을 지우고 비교(「서울 드라마 어워즈」도 잡는다). OYE 는 영문 낱말 경계로.
+// ───────────────────────── 공모전 낱말 ─────────────────────────
 export const CONTEST_WORDS_KO = ['비글루', '서울드라마어워즈', '페스티벌', '챌린지', '공모전'];
 export const CONTEST_WORD_OYE = /(?<![A-Za-z])OYE(?![A-Za-z])/i;
 
-// 시험이 기다려 주는 시간 (첫 진입 연출 · 전환 연출이 끝나길). QA_SETTLE_MS 로 조절.
 export const SETTLE_MS = Number(process.env.QA_SETTLE_MS ?? 1500);
+/** 작품 방 히어로 연출(≈2.2s)이 끝나길 기다리는 시간 */
+export const HERO_MS = Number(process.env.QA_HERO_MS ?? 2800);
 
-// ───────────────────────── 시험 확장: 유튜브는 막는다 ─────────────────────────
-// 시험이 외부 유튜브에 닿지 않게(오프라인 · 속도 · 약관). iframe 은 생기지만 안은 빈 문서.
+// ───────────────────────── 유튜브는 막는다 ─────────────────────────
 export const YT_URL = /^https?:\/\/([a-z0-9-]+\.)*(youtube\.com|youtube-nocookie\.com|ytimg\.com|googlevideo\.com|youtu\.be)\//i;
-const PNG_1X1 = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
-  'base64',
-);
+const PNG_1X1 = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
 
 export const test = base.extend<{ _youtubeStub: void }>({
   _youtubeStub: [
     async ({ context }, use) => {
       await context.route(YT_URL, async (route) => {
         const url = route.request().url();
-        if (/\.(png|jpe?g|webp)(\?|$)/i.test(url)) {
-          return route.fulfill({ status: 200, contentType: 'image/png', body: PNG_1X1 });
-        }
-        return route.fulfill({
-          status: 200,
-          contentType: 'text/html; charset=utf-8',
-          body: '<!doctype html><meta charset="utf-8"><title>youtube stub</title>',
-        });
+        if (/\.(png|jpe?g|webp)(\?|$)/i.test(url)) return route.fulfill({ status: 200, contentType: 'image/png', body: PNG_1X1 });
+        return route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: '<!doctype html><meta charset="utf-8"><title>youtube stub</title>' });
       });
       await use();
     },
@@ -126,123 +107,47 @@ export async function visit(page: Page, p: string): Promise<number> {
   await page.waitForLoadState('networkidle', { timeout: 5_000 }).catch(() => {});
   return res?.status() ?? 0;
 }
-
 export const settle = (page: Page, ms = SETTLE_MS) => page.waitForTimeout(ms);
 
-/** problems 가 비어 있지 않으면 한 덩어리 메시지로 실패시킨다. */
 export function assertNoProblems(header: string, problems: string[]) {
   if (problems.length === 0) return;
   const err = new Error(`${header} — ${problems.length}건\n  · ${problems.join('\n  · ')}`);
-  err.stack = `Error: ${err.message}`; // 보고서에 코드 조각 대신 문제 목록만
+  err.stack = `Error: ${err.message}`;
   throw err;
 }
 
-/** page.evaluate(fn) 이 "문제 목록(빈 배열=통과)" 을 돌려줄 때, 통과할 때까지 최대 timeoutMs 기다린다. */
-export async function pollProblems<A = undefined>(
-  page: Page,
-  probe: ((arg: A) => string[] | Promise<string[]>) | (() => string[] | Promise<string[]>),
-  timeoutMs = 3_000,
-  everyMs = 250,
-  arg?: A,
-): Promise<string[]> {
-  const end = Date.now() + timeoutMs;
-  let last: string[] = ['(측정 전)'];
-  for (;;) {
-    try {
-      last = await page.evaluate(probe as (a: A) => string[], arg as A);
-    } catch (e) {
-      last = [`측정 오류: ${(e as Error).message.split('\n')[0]}`];
+/** 아래로 천천히 내려 lazy 그림을 다 받게 한 뒤 맨 위로 */
+export async function loadAll(page: Page) {
+  await page.evaluate(async () => {
+    const step = Math.max(300, innerHeight * 0.8);
+    for (let y = 0; y < document.documentElement.scrollHeight; y += step) {
+      window.scrollTo(0, y);
+      await new Promise((r) => setTimeout(r, 60));
     }
-    if (last.length === 0 || Date.now() >= end) return last;
-    await page.waitForTimeout(everyMs);
-  }
+    await Promise.all(Array.from(document.images).map((i) => (i.complete ? null : new Promise((r) => { i.onload = i.onerror = r; setTimeout(r, 3000); }))));
+    window.scrollTo(0, 0);
+  });
 }
 
-// ───────────────────────── 툴 카드 → 모달 ─────────────────────────
-/** /tools/ 에서 해당 툴 카드를 눌러 모달을 연다. 실패하면 이유 문자열, 성공하면 null. */
-export async function openToolCard(page: Page, w: Work): Promise<string | null> {
-  const cards = page.locator(SEL.toolCard);
-  const n = await cards.count();
-  let card = null as ReturnType<typeof cards.nth> | null;
-  for (let i = 0; i < n; i++) {
-    const c = cards.nth(i);
-    const slug = (await c.getAttribute('data-work')) ?? (await c.getAttribute('data-tool'));
-    if (slug === w.slug) {
-      card = c;
-      break;
-    }
-  }
-  if (!card) return `/tools/ 에 카드 [data-work="${w.slug}"] 없음 (카드 후보 ${n}개)`;
-  try {
-    await card.scrollIntoViewIfNeeded({ timeout: 8_000 });
-    await card.click({ timeout: 8_000 });
-  } catch (e) {
-    return `카드 ${w.slug} 누르기 실패: ${(e as Error).message.split('\n')[0]}`;
-  }
-  const modal = page.locator(SEL.modal).filter({ has: page.locator(`${SEL.video}[data-youtube-id="${w.yt}"]`) }).first();
-  try {
-    await modal.waitFor({ state: 'visible', timeout: 3_000 });
-  } catch {
-    return `카드 ${w.slug} 를 눌러도 모달(${SEL.modal}) 안에 [data-video][data-youtube-id="${w.yt}"] 가 보이지 않음`;
-  }
-  return null;
-}
-
-// ───────────────────────── page.evaluate 안에서 도는 측정 함수들 ─────────────────────────
-// (직렬화되어 브라우저에서 실행된다 — 바깥 변수를 쓰지 말 것)
-
-/** 4절-2: [연락] 이 화면 안에 보이는가 (숨김 · 화면 밖 · 다른 요소에 가림). 빈 배열 = 통과. */
-export function contactProbe(): string[] {
-  const why: string[] = [];
-  if (!document.querySelector('nav[data-nav]')) why.push('nav[data-nav] 없음');
-  const el = document.querySelector<HTMLElement>('[data-nav="contact"]');
-  if (!el) {
-    why.push('[data-nav="contact"] 없음');
-    return why;
-  }
-  if (!el.closest('nav[data-nav]')) why.push('[data-nav="contact"] 가 상단 바(nav[data-nav]) 안에 있지 않음');
-  const opt = { checkOpacity: true, checkVisibilityCSS: true, opacityProperty: true, visibilityProperty: true };
-  if (!el.checkVisibility(opt as CheckVisibilityOptions)) why.push('숨겨져 있음(display · visibility · opacity)');
-  const r = el.getBoundingClientRect();
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const box = `x ${Math.round(r.left)}~${Math.round(r.right)}, y ${Math.round(r.top)}~${Math.round(r.bottom)} / 화면 ${vw}x${vh}`;
-  if (r.width < 1 || r.height < 1) why.push(`크기 0 (${box})`);
-  else if (r.left < 0 || r.top < 0 || r.right > vw + 0.5 || r.bottom > vh + 0.5) why.push(`화면 밖 (${box})`);
-  else {
-    const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-    if (!top || (top !== el && !el.contains(top))) {
-      const t = top as HTMLElement | null;
-      why.push(`다른 요소에 가림: ${t ? t.tagName.toLowerCase() + (t.id ? '#' + t.id : '') + (typeof t.className === 'string' && t.className ? '.' + t.className.trim().split(/\s+/).join('.') : '') : 'null'}`);
-    }
-  }
-  return why;
-}
+// ───────────────────────── page.evaluate 안에서 도는 측정 함수들(바깥 변수 금지) ─────────────────────────
 
 export type OverlayArg = { sel: string; tag?: string };
-
 /**
- * 4절-3: 보이는 모든 [data-video] 에 대해, 가운데 · 네 귀퉁이 안쪽 5개 지점의
- * ① 클릭이 닿는 맨 위 요소(elementFromPoint)가 영상 자리 자신 또는 자식인가
- * ② 눌림과 무관하게 "눈에 보이게" 위에 얹힌 요소(글자 · 배경 · 이미지)가 없는가
- *    (pointer-events:none 으로 영상 위에 깔린 글자도 잡는다 — v2 반려 사유)
- * 보이는 [data-video] 가 하나도 없으면 빈 목록 { count: 0 }.
+ * 영상 위 덮개: 보이는 모든 [data-video] 의 가운데 · 네 귀퉁이 안쪽 5점에서
+ * ① 클릭이 닿는 맨 위 요소가 영상 자리 자신 또는 자식인가 ② 눈에 보이게 위에 얹힌 요소(글자 · 배경 · 이미지)가 없는가
+ * ③ 영상 자리 안(자식)에 버튼 · 링크 밖의 글자가 없는가.
  */
 export function overlayProbe(arg: OverlayArg): { count: number; problems: string[] } {
   const problems: string[] = [];
-  const all = Array.from(document.querySelectorAll<HTMLElement>(arg.sel));
-  const vids = all.filter((el) =>
-    el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true, opacityProperty: true, visibilityProperty: true } as CheckVisibilityOptions),
-  );
-
+  const vis = { checkOpacity: true, checkVisibilityCSS: true, opacityProperty: true, visibilityProperty: true } as CheckVisibilityOptions;
+  const vids = Array.from(document.querySelectorAll<HTMLElement>(arg.sel)).filter((el) => el.checkVisibility(vis));
   const nameOf = (e: Element | null): string => {
     if (!e) return 'null';
     const h = e as HTMLElement;
     const cls = typeof h.className === 'string' && h.className.trim() ? '.' + h.className.trim().split(/\s+/).slice(0, 3).join('.') : '';
     const txt = (h.textContent ?? '').trim().replace(/\s+/g, ' ').slice(0, 24);
-    return `<${e.tagName.toLowerCase()}${h.id ? '#' + h.id : ''}${cls}>${txt ? ` "${txt}"` : ''}`;
+    return `<${e.tagName.toLowerCase()}${cls}>${txt ? ` "${txt}"` : ''}`;
   };
-
   const painted = (e: Element): boolean => {
     for (let a: Element | null = e; a; a = a.parentElement) {
       const c = getComputedStyle(a);
@@ -255,96 +160,61 @@ export function overlayProbe(arg: OverlayArg): { count: number; problems: string
     for (const n of Array.from(e.childNodes)) if (n.nodeType === 3 && (n.textContent ?? '').trim()) return true;
     return false;
   };
-  const pseudoPainted = (e: Element): string | null => {
-    for (const ps of ['::before', '::after'] as const) {
-      const c = getComputedStyle(e, ps);
-      if (c.content && c.content !== 'none' && c.content !== 'normal' && c.display !== 'none' && parseFloat(c.opacity) > 0 &&
-        (c.position === 'absolute' || c.position === 'fixed')) return ps;
-    }
-    return null;
-  };
-
   const style = document.createElement('style');
   style.textContent = '*,*::before,*::after{pointer-events:auto !important}';
-
   vids.forEach((el, idx) => {
     const id = el.getAttribute('data-youtube-id') ?? `${arg.tag ?? 'video'}#${idx}`;
     el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' as ScrollBehavior });
     const r = el.getBoundingClientRect();
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const x0 = Math.max(r.left, 0);
-    const y0 = Math.max(r.top, 0);
-    const x1 = Math.min(r.right, vw - 1);
-    const y1 = Math.min(r.bottom, vh - 1);
-    const w = x1 - x0;
-    const h = y1 - y0;
-    if (w <= 4 || h <= 4) {
-      problems.push(`[${id}] 영상 자리가 화면에 거의 안 보임 (${Math.round(r.width)}x${Math.round(r.height)})`);
-      return;
-    }
-    const inset = Math.max(2, Math.min(10, Math.min(w, h) * 0.1));
+    const x0 = Math.max(r.left, 0), y0 = Math.max(r.top, 0), x1 = Math.min(r.right, innerWidth - 1), y1 = Math.min(r.bottom, innerHeight - 1);
+    if (x1 - x0 <= 4 || y1 - y0 <= 4) return void problems.push(`[${id}] 영상 자리가 화면에 거의 안 보임`);
+    // 9:16 칸은 가운데 세로 플레이어 — 양옆 #050505 는 칸 바탕(덮개 아님). 플레이어(자식) 쪽 귀퉁이를 잰다
+    const inner = el.querySelector<HTMLElement>(':scope > .hook, :scope > lite-youtube');
+    const ir = inner?.getBoundingClientRect();
+    const ax0 = ir ? Math.max(ir.left, x0) : x0, ax1 = ir ? Math.min(ir.right, x1) : x1;
+    const inset = Math.max(2, Math.min(10, Math.min(ax1 - ax0, y1 - y0) * 0.1));
     const pts: [string, number, number][] = [
-      ['가운데', (x0 + x1) / 2, (y0 + y1) / 2],
-      ['왼쪽위', x0 + inset, y0 + inset],
-      ['오른쪽위', x1 - inset, y0 + inset],
-      ['왼쪽아래', x0 + inset, y1 - inset],
-      ['오른쪽아래', x1 - inset, y1 - inset],
+      ['가운데', (ax0 + ax1) / 2, (y0 + y1) / 2],
+      ['왼쪽위', ax0 + inset, y0 + inset],
+      ['오른쪽위', ax1 - inset, y0 + inset],
+      ['왼쪽아래', ax0 + inset, y1 - inset],
+      ['오른쪽아래', ax1 - inset, y1 - inset],
     ];
-    // 지점별 결과를 "같은 범인" 끼리 한 줄로 묶는다
     const hits = new Map<string, string[]>();
-    const hit = (msg: string, label: string) => hits.set(msg, [...(hits.get(msg) ?? []), label]);
-    // ① 클릭이 닿는 맨 위
+    const hit = (m: string, l: string) => hits.set(m, [...(hits.get(m) ?? []), l]);
     for (const [label, x, y] of pts) {
       const top = document.elementFromPoint(x, y);
       if (!top || (top !== el && !el.contains(top))) hit(`영상 위에 ${nameOf(top)} 가 올라와 있음(클릭이 막힘)`, label);
     }
-    // ② 눈에 보이게 얹힌 요소 (pointer-events 무시)
     document.head.appendChild(style);
     try {
       for (const [label, x, y] of pts) {
         for (const e of document.elementsFromPoint(x, y)) {
           if (e === el) break;
-          if (el.contains(e)) continue; // 자식은 허용
-          if (e.contains(el)) {
-            const ps = pseudoPainted(e);
-            if (ps) hit(`조상 ${nameOf(e)} 의 ${ps} 가 영상 위에 얹힘`, label);
-            continue;
-          }
+          if (el.contains(e) || e.contains(el)) continue;
           if (painted(e)) hit(`${nameOf(e)} 가 영상 위에 겹쳐 보임`, label);
         }
       }
     } finally {
       style.remove();
     }
-    for (const [msg, labels] of hits) problems.push(`[${id}] ${labels.join('·')}: ${msg}`);
-    // ②-2 영상 자리 "안"에 깐 글자(자식이라 위 규칙을 통과한다) — 재생 버튼 · 링크 밖의 글자는 영상 위 글자다
+    for (const [m, ls] of hits) problems.push(`[${id}] ${ls.join('·')}: ${m}`);
     const tw = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
     for (let n = tw.nextNode(); n; n = tw.nextNode()) {
       const t = (n.textContent ?? '').trim();
       const p = n.parentElement;
-      if (!t || !p) continue;
-      if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEMPLATE'].includes(p.tagName)) continue;
+      if (!t || !p || ['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEMPLATE'].includes(p.tagName)) continue;
       const ctl = p.closest('button,a,[role="button"]');
       if (ctl && el.contains(ctl)) continue;
-      if (!p.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true, opacityProperty: true, visibilityProperty: true } as CheckVisibilityOptions)) continue;
-      problems.push(`[${id}] 영상 자리 안에 글자 「${t.slice(0, 20)}」 가 깔려 있음(재생 버튼 · 링크 밖) — 영상 위에는 글자를 깔지 않는다`);
+      if (!p.checkVisibility(vis)) continue;
+      problems.push(`[${id}] 영상 자리 안에 글자 「${t.slice(0, 20)}」`);
       break;
-    }
-    // ③ 대본 상자와 영상 상자가 겹치지 않는다 (같은 방 안의 [data-script])
-    const scripts = Array.from(document.querySelectorAll<HTMLElement>('[data-script]')).filter((s) => !el.contains(s) && !s.contains(el));
-    for (const s of scripts) {
-      const a = s.getBoundingClientRect();
-      const b = el.getBoundingClientRect();
-      const ix = Math.min(a.right, b.right) - Math.max(a.left, b.left);
-      const iy = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
-      if (a.width > 0 && a.height > 0 && ix > 2 && iy > 2) problems.push(`[${id}] 대본 상자 ${nameOf(s)} 와 영상 상자가 ${Math.round(ix)}x${Math.round(iy)}px 겹침`);
     }
   });
   return { count: vids.length, problems };
 }
 
-/** 4절-8: 페이지에 "글자로 있는" 모든 것 — 보이지 않는 DOM 글자 · alt · title · aria-label · meta 포함. */
+/** 페이지에 "글자로 있는" 모든 것 — 보이지 않는 DOM 글자 · alt · title · aria-label · meta 포함. */
 export function pageTexts(): string[] {
   const out: string[] = [];
   const skip = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEMPLATE']);
@@ -365,7 +235,7 @@ export function pageTexts(): string[] {
   return out;
 }
 
-/** 4절-9: 페이지가 끌어오는 이미지 · 영상 주소 전부 (img · source · video · og:image · CSS 배경). */
+/** 페이지가 끌어오는 이미지 · 영상 주소 전부 (img · source · video · og:image · CSS 배경). */
 export function mediaRefs(): string[] {
   const urls = new Set<string>();
   const add = (u: string | null | undefined) => {
@@ -399,17 +269,74 @@ export function mediaRefs(): string[] {
   return [...urls];
 }
 
-// ───────────────────────── 4절-11 첫 화면 전송량 (CDP) ─────────────────────────
+/** 화면(뷰포트) 안에 보이는 글자의 크기 단계 — 글자를 직접 가진 요소의 계산된 font-size(.5px 단위) */
+export function visibleFontSizes(): { sizes: number[]; samples: Record<string, string> } {
+  const vis = { checkOpacity: true, checkVisibilityCSS: true, opacityProperty: true, visibilityProperty: true } as CheckVisibilityOptions;
+  const sizes = new Set<number>();
+  const samples: Record<string, string> = {};
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    const t = (n.textContent ?? '').trim();
+    const p = n.parentElement;
+    if (!t || !p || ['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEMPLATE'].includes(p.tagName)) continue;
+    if (!p.checkVisibility(vis)) continue;
+    let hidden = false;
+    for (let a: Element | null = p; a; a = a.parentElement) if (parseFloat(getComputedStyle(a).opacity) < 0.05) hidden = true;
+    if (hidden) continue;
+    const range = document.createRange();
+    range.selectNodeContents(n);
+    const r = range.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1 || r.bottom <= 0 || r.top >= innerHeight || r.right <= 0 || r.left >= innerWidth) continue;
+    const fs = Math.round(parseFloat(getComputedStyle(p).fontSize) * 2) / 2;
+    sizes.add(fs);
+    samples[String(fs)] ??= t.slice(0, 18);
+  }
+  return { sizes: [...sizes].sort((a, b) => a - b), samples };
+}
+
+/** 테두리 있는 칸(상자) — 표(table) 안 · 다음 작품 위 괘선([data-next]) 밖에서. 보이는 것만. */
+export function boxProbe(): { boxes: string[]; tables: number } {
+  const vis = { checkOpacity: true, checkVisibilityCSS: true, opacityProperty: true, visibilityProperty: true } as CheckVisibilityOptions;
+  const boxes: string[] = [];
+  const all = Array.from(document.body.querySelectorAll<HTMLElement>('*'));
+  for (const e of all) {
+    if (e.closest('table, [data-next]')) continue;
+    if (e.matches('[data-process] .box')) continue; // 과정 무대의 연결 상자(정지 그림 위 표시 — 메인 지시 10-14)
+    if (!e.checkVisibility(vis)) continue;
+    const cs = getComputedStyle(e);
+    const sides = ['Top', 'Right', 'Bottom', 'Left'].filter((s) => {
+      const w = parseFloat(cs.getPropertyValue(`border-${s.toLowerCase()}-width`));
+      const st = cs.getPropertyValue(`border-${s.toLowerCase()}-style`);
+      const c = cs.getPropertyValue(`border-${s.toLowerCase()}-color`);
+      return w > 0 && st !== 'none' && st !== 'hidden' && !/rgba\([^)]*,\s*0\)$/.test(c) && c !== 'transparent';
+    });
+    if (sides.length) {
+      const r = e.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) boxes.push(`<${e.tagName.toLowerCase()}${e.className && typeof e.className === 'string' ? '.' + e.className.trim().split(/\s+/).join('.') : ''}> ${sides.join('/')}`);
+    }
+  }
+  const tables = Array.from(document.querySelectorAll('table')).filter((t) => t.checkVisibility(vis)).length;
+  return { boxes, tables };
+}
+
+/** 지금 돌고 있는 움직임 — CSS/WAAPI(document.getAnimations) + GSAP(window.__motion) */
+export function motionProbe(): { css: string[]; gsap: number } {
+  const css = document
+    .getAnimations()
+    .filter((a) => a.playState === 'running')
+    .map((a) => {
+      const t = (a.effect as KeyframeEffect | null)?.target as HTMLElement | null;
+      const name = (a as CSSAnimation).animationName ?? (a as CSSTransition).transitionProperty ?? a.constructor.name;
+      return `${name} @ ${t ? `<${t.tagName.toLowerCase()}.${String(t.className).split(' ')[0]}>` : '?'}`;
+    });
+  return { css, gsap: (window as unknown as { __motion?: () => number }).__motion?.() ?? -1 };
+}
+
+// ───────────────────────── 첫 화면 전송량 (CDP) ─────────────────────────
 const EXCLUDED_HOST = /(^|\.)((youtube|youtube-nocookie|ytimg|googlevideo)\.com|youtu\.be)$/i;
 const MEDIA_EXT = /\.(mp4|webm|mov|m4v|mkv|ogv)(\?|$)/i;
 const FONT_EXT = /\.(woff2?|ttf|otf|eot)(\?|$)/i;
-
-export type Landing = {
-  status: number;
-  totalBytes: number;
-  fonts: { url: string; bytes: number }[];
-  top: { url: string; bytes: number; type: string }[];
-};
+export type Landing = { status: number; totalBytes: number; fonts: { url: string; bytes: number }[]; top: { url: string; bytes: number; type: string }[] };
 
 export async function measureLanding(page: Page, context: BrowserContext, p: string): Promise<Landing> {
   const cdp = await context.newCDPSession(page);
@@ -424,17 +351,14 @@ export async function measureLanding(page: Page, context: BrowserContext, p: str
   const status = await visit(page, p);
   await page.waitForTimeout(800);
   await cdp.detach().catch(() => {});
-
   const counted = done.filter((d) => {
     if (d.url.startsWith('data:') || d.url.startsWith('blob:')) return false;
     let host = '';
     try {
       host = new URL(d.url).hostname;
-    } catch {
-      /* ignore */
-    }
-    if (EXCLUDED_HOST.test(host)) return false; // 유튜브 제외
-    if (d.type === 'Media' || MEDIA_EXT.test(d.url)) return false; // 영상 제외
+    } catch {}
+    if (EXCLUDED_HOST.test(host)) return false;
+    if (d.type === 'Media' || MEDIA_EXT.test(d.url)) return false;
     return true;
   });
   return {
@@ -445,29 +369,21 @@ export async function measureLanding(page: Page, context: BrowserContext, p: str
   };
 }
 
-// ───────────────────────── 4절-9 파일 목록 / 출처.json ─────────────────────────
-export function walkFiles(dir: string, base = dir): string[] {
+// ───────────────────────── 파일 목록 / 출처 ─────────────────────────
+export function walkFiles(dir: string, b = dir): string[] {
   if (!fs.existsSync(dir)) return [];
   const out: string[] = [];
   for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, ent.name);
-    if (ent.isDirectory()) out.push(...walkFiles(full, base));
-    else out.push(path.relative(base, full).split(path.sep).join('/'));
+    if (ent.isDirectory()) out.push(...walkFiles(full, b));
+    else out.push(path.relative(b, full).split(path.sep).join('/'));
   }
   return out;
 }
-
 export const IMG_VIDEO_EXT = /\.(png|jpe?g|webp|avif|gif|svg|ico|bmp|tiff?|mp4|webm|mov|m4v|mkv|ogv)$/i;
 export const RASTER_VIDEO_EXT = /\.(png|jpe?g|webp|avif|gif|bmp|tiff?|mp4|webm|mov|m4v|mkv|ogv)$/i;
 
-/**
- * 출처.json 을 느슨하게 읽는다. 지원하는 모양:
- *   { "a.jpg": "버터 완성본 00:12" }
- *   { "a.jpg": { "source": "...", "출처": "..." } }
- *   [ { "file": "a.jpg", "source": "..." } ]   (file | path | name | 파일 | 파일명)
- *   { "files": { ... } } 처럼 한 겹 감싼 것
- * 키는 `public/media/` 기준 상대 경로 또는 파일명. 값(출처)은 비어 있지 않은 문자열.
- */
+/** media-sources.json 을 느슨하게 읽는다: { "a.jpg": "…" | { source } } · [ { file, source } ] */
 export function readSources(jsonText: string): Map<string, string> {
   const map = new Map<string, string>();
   const norm = (k: string) => k.replace(/\\/g, '/').replace(/^\/?(public\/)?media\//, '').replace(/^\.?\//, '');
@@ -479,7 +395,6 @@ export function readSources(jsonText: string): Map<string, string> {
     }
     return '';
   };
-  const looksLikeFile = (k: string) => IMG_VIDEO_EXT.test(k);
   const walk = (node: unknown) => {
     if (Array.isArray(node)) {
       for (const it of node) {
@@ -492,7 +407,7 @@ export function readSources(jsonText: string): Map<string, string> {
       }
     } else if (node && typeof node === 'object') {
       for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
-        if (looksLikeFile(k)) map.set(norm(k), srcOf(v));
+        if (IMG_VIDEO_EXT.test(k)) map.set(norm(k), srcOf(v));
         else walk(v);
       }
     }
@@ -501,112 +416,121 @@ export function readSources(jsonText: string): Map<string, string> {
   return map;
 }
 
-/** src/data/media-sources.json(미디어 출처 기록 — 사이트에 실리지 않게 public 밖, 10-13) 을 읽는다. 없거나 깨졌으면 error 에 이유. */
-export function loadSources(): { map: Map<string, string>; error: string | null } {
-  const file = path.join(SRC_DIR, 'data', 'media-sources.json');
-  if (!fs.existsSync(file)) return { map: new Map(), error: 'src/data/media-sources.json 이 없음' };
-  try {
-    return { map: readSources(fs.readFileSync(file, 'utf8')), error: null };
-  } catch (e) {
-    return { map: new Map(), error: `src/data/media-sources.json 을 읽을 수 없음: ${(e as Error).message}` };
-  }
-}
-
-/** 4절-후킹: [data-hook] 안 <video> 의 src(들) — video[src] · source[src]. */
-export function hookProbe(): {
-  found: boolean;
-  workRoot: string | null;
-  top: number;
-  bottom: number;
-  vh: number;
-  videoCount: number;
-  srcs: string[];
-  textLen: number;
-} {
-  const hook = document.querySelector<HTMLElement>('[data-hook]');
-  if (!hook) return { found: false, workRoot: null, top: 0, bottom: 0, vh: innerHeight, videoCount: 0, srcs: [], textLen: 0 };
-  window.scrollTo(0, 0);
-  const r = hook.getBoundingClientRect();
-  const vids = Array.from(hook.querySelectorAll('video'));
-  const srcs: string[] = [];
-  for (const v of vids) {
-    const add = (u: string | null) => u && srcs.push(new URL(u, location.href).pathname);
-    add(v.getAttribute('src'));
-    v.querySelectorAll('source').forEach((s) => add(s.getAttribute('src')));
-  }
-  return {
-    found: true,
-    workRoot: hook.closest('[data-work]')?.getAttribute('data-work') ?? null,
-    top: r.top,
-    bottom: r.bottom,
-    vh: innerHeight,
-    videoCount: vids.length,
-    srcs,
-    textLen: (hook.innerText ?? '').replace(/\s+/g, '').length,
-  };
-}
-
-// ───────────────────────── 작품 안 목차 (data-toc / data-toc-item / data-step) ─────────────────────────
-// 최종 구조(docs/work-room.md 4절): 목차 = 과정 6단계, 단계 = 과정 패널 6개. 과정 데이터가 있는 작품에만 있다.
-export const STEPS = ['plan', 'script', 'sheet', 'segment', 'generate', 'edit'] as const;
-export { PROCESS_READY, WORK_ROOMS } from '../src/data/process/index';
-/** 작가 원문 대조 문서 폴더 — `<slug>.md`(시험 W-a) */
-export const PROCESS_DOC_DIR = process.env.QA_PROCESS_DOC_DIR ?? 'G:/내 드라이브/포폴 웹사이트 만들기/_분석/작품과정';
-
-/**
- * 목차 항목 ↔ 단계 짝짓기 규칙(3절은 「항목 → 단계」 라고만 적혀 있다):
- *   data-toc-item="<단계>" 값 → 없으면 항목의 data-step → 없으면 href="#id" 가 가리키는 요소의 data-step → 없으면 순서.
- */
-export function tocState(): {
-  hasToc: boolean;
-  items: { key: string; current: string | null }[];
-  steps: string[];
-} {
-  const toc = document.querySelector<HTMLElement>('[data-toc]');
-  const items = toc ? Array.from(toc.querySelectorAll<HTMLElement>('[data-toc-item]')) : [];
-  const keyOf = (el: HTMLElement, i: number): string => {
-    const v = el.getAttribute('data-toc-item');
-    if (v) return v;
-    const s = el.getAttribute('data-step');
-    if (s) return s;
-    const href = el.getAttribute('href') ?? el.querySelector('a')?.getAttribute('href') ?? '';
-    if (href.startsWith('#')) {
-      const k = document.getElementById(href.slice(1))?.getAttribute('data-step');
-      if (k) return k;
-    }
-    return `#${i}`;
-  };
-  return {
-    hasToc: !!toc,
-    items: items.map((el, i) => ({ key: keyOf(el, i), current: el.getAttribute('aria-current') })),
-    steps: Array.from(document.querySelectorAll<HTMLElement>('[data-step]')).map((e) => e.getAttribute('data-step') ?? ''),
-  };
-}
-
-/** 단계 key 가 화면 안에 충분히 보이는가(빈 배열 = 통과). */
-export function stepVisibleProbe(key: string): string[] {
-  const el = document.querySelector<HTMLElement>(`[data-step="${key}"]`);
-  if (!el) return [`[data-step="${key}"] 없음`];
-  const r = el.getBoundingClientRect();
-  const vh = window.innerHeight;
-  const vis = Math.min(r.bottom, vh) - Math.max(r.top, 0);
-  const need = Math.min(r.height, vh * 0.3);
-  return vis > 0 && vis >= need ? [] : [`단계 ${key} 가 화면에 안 옴 (y ${Math.round(r.top)}~${Math.round(r.bottom)} / 화면 높이 ${vh})`];
-}
-
-/** 단계 key 를 화면 한가운데(큰 단계는 위쪽 15%)로 즉시 스크롤. */
-export function scrollToStep(key: string): boolean {
-  const el = document.querySelector<HTMLElement>(`[data-step="${key}"]`);
-  if (!el) return false;
-  const r = el.getBoundingClientRect();
-  const vh = window.innerHeight;
-  const offset = r.height < vh ? (vh - r.height) / 2 : vh * 0.15;
-  window.scrollTo({ top: window.scrollY + r.top - offset, behavior: 'instant' as ScrollBehavior });
-  return true;
-}
-
-/**
- * 출처 문구가 「완성본 파일명 · 시점」 또는 「작가 캡처」 · 「시트」 꼴인가.
- * 작품 방 최종 구조(docs/work-room.md 4절)에서 허용한 미디어 갈래를 더했다: 콘티 · 블로킹맵 · 프리비즈 스틸 · 합성 소스 · 기획안 쪽 · 대본 쪽(contract.md 4절 9).
- */
+/** 출처 문구가 「완성본 파일명 · 시점」 · 「작가 캡처」 · 시트 · 콘티 · 블로킹맵 · 프리비즈 · 합성 소스 · 기획안 쪽 · 대본 쪽 꼴인가 */
 export const SOURCE_FORM = /작가\s*캡처|시트|완성본|직접\s*그림|콘티|블로킹맵|프리비즈|합성\s*소스|기획안\s*쪽|대본\s*쪽|\.(mp4|mov|mkv|webm|m4v)/i;
+
+/** src/data/site.ts 의 CONTACT_EMAIL(시험 V-14) */
+export function contactEmail(): string {
+  const s = fs.readFileSync(path.join(SRC_DIR, 'data', 'site.ts'), 'utf8');
+  return s.match(/export const CONTACT_EMAIL\s*=\s*['"]([^'"]*)['"]/)?.[1] ?? '';
+}
+
+/** 작가 확인 전 벽 칸(src/data/wall.ts WALL_HOLD) — 어느 방에도 나오면 안 된다 */
+export const WALL_HOLD_FILES = /\/media\/wall\/musicvideo_(1|2|3|5)_/;
+
+/** 과정 고정 무대의 걸음 k(1~4) 끝 위치로 스크롤(스냅 위치 그대로) — 핀 구간은 [data-process] 의 data-pin-start/end */
+export async function toCutStep(page: Page, k: number, wait = 1400): Promise<boolean> {
+  const ok = await page.evaluate(
+    ({ k, snap }) => {
+      const s = document.querySelector<HTMLElement>('[data-process]');
+      const a = Number(s?.dataset.pinStart), b = Number(s?.dataset.pinEnd);
+      if (!s || !Number.isFinite(a) || !Number.isFinite(b) || b <= a) return false;
+      window.scrollTo(0, k === 1 ? a : Math.floor(a + (b - a) * snap[k - 1]) - 1); // 방향 스냅이 이 걸음에 멈추도록 바로 앞에서
+      return true;
+    },
+    { k, snap: CUT_SNAP },
+  );
+  await page.waitForTimeout(wait);
+  return ok;
+}
+
+/**
+ * 레퍼런스 절제 규칙(_분석/감사/2026-10-14_레퍼런스절제.md 1-2 지표 정의 · 3절 상한)을 한 화면에서 잰다.
+ * 화면 = 지금 뷰포트에 보이는 것만(가려짐 · 투명 · 화면 밖 제외).
+ */
+export type ScreenStat = {
+  sizes: number[];
+  small: number[];
+  families: string[];
+  labels: string[];
+  boxes: string[];
+  rules: string[];
+  fragments: number;
+  eases: string[];
+  durations: string[];
+  media: number;
+};
+export function screenStats(): ScreenStat {
+  const vis = { checkOpacity: true, checkVisibilityCSS: true, opacityProperty: true, visibilityProperty: true } as CheckVisibilityOptions;
+  const vw = innerWidth, vh = innerHeight;
+  const shown = (e: Element) => {
+    if (!(e as HTMLElement).checkVisibility?.(vis)) return false;
+    for (let a: Element | null = e; a; a = a.parentElement) if (parseFloat(getComputedStyle(a).opacity) < 0.05) return false;
+    const r = e.getBoundingClientRect();
+    return r.width > 0.5 && r.height > 0.5 && r.bottom > 0 && r.top < vh && r.right > 0 && r.left < vw;
+  };
+  const name = (e: Element) => `<${e.tagName.toLowerCase()}${typeof (e as HTMLElement).className === 'string' && (e as HTMLElement).className ? '.' + (e as HTMLElement).className.trim().split(/\s+/)[0] : ''}>`;
+  const sizes = new Set<number>(), families = new Set<string>(), eases = new Set<string>(), durations = new Set<string>();
+  const labels: string[] = [], boxes: string[] = [], rules: string[] = [];
+  let fragments = 0;
+  for (const e of Array.from(document.body.querySelectorAll('*'))) {
+    if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEMPLATE', 'svg', 'line'].includes(e.tagName)) continue;
+    if (!shown(e)) continue;
+    const cs = getComputedStyle(e);
+    // 테두리 · 괘선
+    const sides = ['top', 'right', 'bottom', 'left'].filter((s) => parseFloat(cs.getPropertyValue(`border-${s}-width`)) > 0 && !['none', 'hidden'].includes(cs.getPropertyValue(`border-${s}-style`)) && !/rgba\([^)]*,\s*0\)$/.test(cs.getPropertyValue(`border-${s}-color`)));
+    if (sides.length >= 3) boxes.push(name(e));
+    else if (sides.length >= 1 || e.tagName === 'HR') rules.push(name(e));
+    else {
+      const r = e.getBoundingClientRect();
+      if (r.height <= 2.5 && r.width > 20 && cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && cs.backgroundColor !== 'transparent') rules.push(name(e) + '(채움 선)');
+    }
+    // 전환
+    const ds = cs.transitionDuration.split(',').map((x) => x.trim());
+    const ts = cs.transitionTimingFunction.split(/,(?![^(]*\))/).map((x) => x.trim());
+    ds.forEach((d, i) => {
+      if (parseFloat(d) > 0) {
+        durations.add(d);
+        eases.add(ts[i] ?? ts[0]);
+      }
+    });
+    // 글
+    const own = Array.from(e.childNodes).filter((n) => n.nodeType === 3 && (n.textContent ?? '').trim()).map((n) => (n.textContent ?? '').trim()).join(' ');
+    if (!own) continue;
+    fragments++;
+    const fs = Math.round(parseFloat(cs.fontSize));
+    sizes.add(fs);
+    families.add(cs.fontFamily.split(',')[0].replace(/["']/g, '').trim().toLowerCase());
+    const block = ((e.closest('p,li,td,th,h1,h2,h3,button,a,figcaption,summary') ?? e).textContent ?? '').trim();
+    const numeric = /^[\d\s:.,\-–·/~()일초분년월화x×%]+$/.test(own) && /\d/.test(own);
+    const isLabel = own.length <= 40 && block.length <= 60 && (fs <= 13 || cs.textTransform === 'uppercase' || /mono/i.test(cs.fontFamily) || numeric);
+    if (isLabel) labels.push(own.slice(0, 16));
+  }
+  // 작업물 면적 — 보이는 영상 · 이미지 · iframe(겹침은 칸 격자로 한 번만 센다)
+  const G = 8;
+  const cols = Math.ceil(vw / G), rows = Math.ceil(vh / G);
+  const grid = new Uint8Array(cols * rows);
+  const medias = Array.from(document.querySelectorAll('img, video, iframe, lite-youtube')).filter((m) => shown(m));
+  for (const m of medias) {
+    const r = m.getBoundingClientRect();
+    for (let y = Math.max(0, Math.floor(r.top / G)); y < Math.min(rows, Math.ceil(r.bottom / G)); y++)
+      for (let x = Math.max(0, Math.floor(r.left / G)); x < Math.min(cols, Math.ceil(r.right / G)); x++) grid[y * cols + x] = 1;
+  }
+  let on = 0;
+  grid.forEach((v) => (on += v));
+  return {
+    sizes: [...sizes].sort((a, b) => a - b),
+    small: [...sizes].filter((s) => s <= 16).sort((a, b) => a - b),
+    families: [...families],
+    labels,
+    boxes,
+    rules,
+    fragments,
+    eases: [...eases],
+    durations: [...durations],
+    media: on / grid.length,
+  };
+}
+
+/** 절제 규칙 상한(3절) */
+export const RESTRAINT = { sizes: 5, small: 3, families: 2, labels: 12, boxes: 2, rules: 5, fragments: 20, eases: 3, durations: 6, sections: 6, devices: 6, lengthScreens: 3.5, homeSizes: 4, homeFragments: 12, firstMedia: 0.5 };

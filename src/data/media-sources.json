@@ -1,5 +1,5 @@
 {
-  "_설명": "public/media 의 파일마다 출처. 장면(포스터 · 클립 · 띠)은 작업물 완성본/ 의 완성본 mp4 에서만, 과정 칸은 시트만(작가 허락 10-13). 경로: 완성본 = G:/내 드라이브/포폴 웹사이트 만들기/작업물 완성본/, 시트 원본 경로는 _분석/과정스틸/후보/목록.md.",
+  "_설명": "public/media 의 파일마다 출처. 장면(포스터 · 클립 · 띠)은 작업물 완성본/ 의 완성본 mp4 에서만, 과정 칸은 시트만(작가 허락 10-13). 경로: 완성본 = G:/내 드라이브/포폴 웹사이트 만들기/작업물 완성본/, 시트 원본 경로는 _분석/과정스틸/후보/목록.md. 벽 장면 wall/* 는 장면 에이전트(2026-10-14) src/data/wall-sources.json 을 합친 것. v4 에서 글자 오브제(glyph/*)는 저장소에서 뺐다.",
   "hook_oneandonly.mp4": {
     "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
     "time": "00:00–00:12",
@@ -112,31 +112,6 @@
   },
   "sheets/bt_sheet_3.jpg": {
     "source": "시트: G:/내 드라이브/ai 단편 영화/버터_트레일러_공모전/인물/지현/#1지현_정본시트.png"
-  },
-  "glyph/pen.png": {
-    "source": "직접 그림 — 만년필(촉 · 숨구멍 · 틈 · 그립 · 고리 · 몸통 일부)을 scripts/glyph-bake.py 가 Pillow 로 그린 그레이스케일. 사진 · 생성 없음",
-    "time": "—",
-    "note": "홈 글자 오브제(GlyphMorph) 형태 ① 만년필의 원본"
-  },
-  "glyph/atlas.png": {
-    "source": "직접 그림 — 대본 음절 글리프 아틀라스. 글자 = 대본 원문 _분석/대본/oneandonly_대본.txt · firstimpression_대본.txt · butter_트레일러대본.txt 의 한글 음절 · 문장부호, 글꼴 Pretendard Variable(wght 400 · 500 · 600 세 벌)로 scripts/glyph-bake.py 가 렌더",
-    "time": "—",
-    "note": "음절마다 잉크 면적을 재서 밝기 단계(15)로 줄 세운 판(107자)"
-  },
-  "glyph/frame_butter_0000.jpg": {
-    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
-    "time": "00:00.5",
-    "note": "글자 오브제 형태 ② 장면(노을 바다 — 해가 수평선에 걸린 첫 컷). 1920×1080 에서 (480,138)–(1462,941) 자름"
-  },
-  "glyph/frame_butter_0031.jpg": {
-    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
-    "time": "00:31.0",
-    "note": "글자 오브제 형태 ④ 인물(웃는 얼굴 클로즈업). (520,138)–(1500,940) 자름"
-  },
-  "glyph/frame_oneandonly_0252.jpg": {
-    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
-    "time": "02:52.5",
-    "note": "글자 오브제 형태 ③ 인물(한설, 한복 · 노을빛 정면, 번인 자막 없는 프레임). 720×1280 에서 (20,80)–(700,880) 자름"
   },
   "plan/bt_p10.jpg": {
     "source": "기획안 쪽: G:/내 드라이브/ai 단편 영화/버터_트레일러_공모전/02_기획·심사/버터_피칭기획안_2026-07-28.pdf",
@@ -353,5 +328,1280 @@
     "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
     "time": "02:36.5",
     "note": "06 편집 컷 띠 — 컷 2 칸(그 컷 가운데 프레임 · 높이 224)"
+  },
+  "wall/oneandonly_1_720.avif": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "00:02.08",
+    "note": "크롭 0,356,720,439"
+  },
+  "wall/oneandonly_1_720.webp": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "00:02.08",
+    "note": "크롭 0,356,720,439"
+  },
+  "wall/oneandonly_1_720.jpg": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "00:02.08",
+    "note": "크롭 0,356,720,439"
+  },
+  "wall/oneandonly_1_360.avif": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "00:02.08",
+    "note": "크롭 0,356,720,439"
+  },
+  "wall/oneandonly_1_360.webp": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "00:02.08",
+    "note": "크롭 0,356,720,439"
+  },
+  "wall/oneandonly_1_360.jpg": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "00:02.08",
+    "note": "크롭 0,356,720,439"
+  },
+  "wall/oneandonly_2_720.avif": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "00:37.88",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/oneandonly_2_720.webp": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "00:37.88",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/oneandonly_2_720.jpg": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "00:37.88",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/oneandonly_2_360.avif": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "00:37.88",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/oneandonly_2_360.webp": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "00:37.88",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/oneandonly_2_360.jpg": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "00:37.88",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/oneandonly_3_720.avif": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "01:07.96",
+    "note": "크롭 0,459,720,439"
+  },
+  "wall/oneandonly_3_720.webp": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "01:07.96",
+    "note": "크롭 0,459,720,439"
+  },
+  "wall/oneandonly_3_720.jpg": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "01:07.96",
+    "note": "크롭 0,459,720,439"
+  },
+  "wall/oneandonly_3_360.avif": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "01:07.96",
+    "note": "크롭 0,459,720,439"
+  },
+  "wall/oneandonly_3_360.webp": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "01:07.96",
+    "note": "크롭 0,459,720,439"
+  },
+  "wall/oneandonly_3_360.jpg": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "01:07.96",
+    "note": "크롭 0,459,720,439"
+  },
+  "wall/oneandonly_4_720.avif": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "01:20.08",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/oneandonly_4_720.webp": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "01:20.08",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/oneandonly_4_720.jpg": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "01:20.08",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/oneandonly_4_360.avif": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "01:20.08",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/oneandonly_4_360.webp": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "01:20.08",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/oneandonly_4_360.jpg": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "01:20.08",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/oneandonly_5_720.avif": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "02:24.71",
+    "note": "크롭 0,216,720,439"
+  },
+  "wall/oneandonly_5_720.webp": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "02:24.71",
+    "note": "크롭 0,216,720,439"
+  },
+  "wall/oneandonly_5_720.jpg": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "02:24.71",
+    "note": "크롭 0,216,720,439"
+  },
+  "wall/oneandonly_5_360.avif": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "02:24.71",
+    "note": "크롭 0,216,720,439"
+  },
+  "wall/oneandonly_5_360.webp": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "02:24.71",
+    "note": "크롭 0,216,720,439"
+  },
+  "wall/oneandonly_5_360.jpg": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "02:24.71",
+    "note": "크롭 0,216,720,439"
+  },
+  "wall/oneandonly_6_720.avif": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "02:53.29",
+    "note": "크롭 0,203,720,439"
+  },
+  "wall/oneandonly_6_720.webp": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "02:53.29",
+    "note": "크롭 0,203,720,439"
+  },
+  "wall/oneandonly_6_720.jpg": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "02:53.29",
+    "note": "크롭 0,203,720,439"
+  },
+  "wall/oneandonly_6_360.avif": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "02:53.29",
+    "note": "크롭 0,203,720,439"
+  },
+  "wall/oneandonly_6_360.webp": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "02:53.29",
+    "note": "크롭 0,203,720,439"
+  },
+  "wall/oneandonly_6_360.jpg": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "02:53.29",
+    "note": "크롭 0,203,720,439"
+  },
+  "wall/firstimpression_1_720.avif": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "00:07.96",
+    "note": "크롭 0,318,720,439"
+  },
+  "wall/firstimpression_1_720.webp": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "00:07.96",
+    "note": "크롭 0,318,720,439"
+  },
+  "wall/firstimpression_1_720.jpg": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "00:07.96",
+    "note": "크롭 0,318,720,439"
+  },
+  "wall/firstimpression_1_360.avif": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "00:07.96",
+    "note": "크롭 0,318,720,439"
+  },
+  "wall/firstimpression_1_360.webp": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "00:07.96",
+    "note": "크롭 0,318,720,439"
+  },
+  "wall/firstimpression_1_360.jpg": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "00:07.96",
+    "note": "크롭 0,318,720,439"
+  },
+  "wall/firstimpression_2_720.avif": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "00:20.88",
+    "note": "크롭 0,356,720,439"
+  },
+  "wall/firstimpression_2_720.webp": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "00:20.88",
+    "note": "크롭 0,356,720,439"
+  },
+  "wall/firstimpression_2_720.jpg": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "00:20.88",
+    "note": "크롭 0,356,720,439"
+  },
+  "wall/firstimpression_2_360.avif": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "00:20.88",
+    "note": "크롭 0,356,720,439"
+  },
+  "wall/firstimpression_2_360.webp": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "00:20.88",
+    "note": "크롭 0,356,720,439"
+  },
+  "wall/firstimpression_2_360.jpg": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "00:20.88",
+    "note": "크롭 0,356,720,439"
+  },
+  "wall/firstimpression_3_720.avif": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "00:26.04",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/firstimpression_3_720.webp": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "00:26.04",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/firstimpression_3_720.jpg": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "00:26.04",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/firstimpression_3_360.avif": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "00:26.04",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/firstimpression_3_360.webp": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "00:26.04",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/firstimpression_3_360.jpg": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "00:26.04",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/firstimpression_4_720.avif": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "02:12.79",
+    "note": "크롭 0,356,720,439"
+  },
+  "wall/firstimpression_4_720.webp": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "02:12.79",
+    "note": "크롭 0,356,720,439"
+  },
+  "wall/firstimpression_4_720.jpg": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "02:12.79",
+    "note": "크롭 0,356,720,439"
+  },
+  "wall/firstimpression_4_360.avif": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "02:12.79",
+    "note": "크롭 0,356,720,439"
+  },
+  "wall/firstimpression_4_360.webp": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "02:12.79",
+    "note": "크롭 0,356,720,439"
+  },
+  "wall/firstimpression_4_360.jpg": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "02:12.79",
+    "note": "크롭 0,356,720,439"
+  },
+  "wall/firstimpression_5_720.avif": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "03:59.29",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/firstimpression_5_720.webp": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "03:59.29",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/firstimpression_5_720.jpg": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "03:59.29",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/firstimpression_5_360.avif": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "03:59.29",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/firstimpression_5_360.webp": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "03:59.29",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/firstimpression_5_360.jpg": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "03:59.29",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/firstimpression_6_720.avif": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "04:41.04",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/firstimpression_6_720.webp": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "04:41.04",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/firstimpression_6_720.jpg": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "04:41.04",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/firstimpression_6_360.avif": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "04:41.04",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/firstimpression_6_360.webp": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "04:41.04",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/firstimpression_6_360.jpg": {
+    "source": "완성본 AI 숏드라마/첫 인상은 백점, 첫 마디는 엎드려.mp4",
+    "time": "04:41.04",
+    "note": "크롭 0,164,720,439"
+  },
+  "wall/butter_1_720.avif": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "00:07.62",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_1_720.webp": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "00:07.62",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_1_720.jpg": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "00:07.62",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_1_360.avif": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "00:07.62",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_1_360.webp": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "00:07.62",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_1_360.jpg": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "00:07.62",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_2_720.avif": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "00:29.88",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_2_720.webp": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "00:29.88",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_2_720.jpg": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "00:29.88",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_2_360.avif": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "00:29.88",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_2_360.webp": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "00:29.88",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_2_360.jpg": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "00:29.88",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_3_720.avif": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "00:52.12",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_3_720.webp": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "00:52.12",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_3_720.jpg": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "00:52.12",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_3_360.avif": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "00:52.12",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_3_360.webp": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "00:52.12",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_3_360.jpg": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "00:52.12",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_4_720.avif": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "01:00.25",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_4_720.webp": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "01:00.25",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_4_720.jpg": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "01:00.25",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_4_360.avif": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "01:00.25",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_4_360.webp": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "01:00.25",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_4_360.jpg": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "01:00.25",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_5_720.avif": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "01:06.88",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_5_720.webp": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "01:06.88",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_5_720.jpg": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "01:06.88",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_5_360.avif": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "01:06.88",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_5_360.webp": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "01:06.88",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_5_360.jpg": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "01:06.88",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_6_720.avif": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "01:09.00",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_6_720.webp": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "01:09.00",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_6_720.jpg": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "01:09.00",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_6_360.avif": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "01:09.00",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_6_360.webp": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "01:09.00",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/butter_6_360.jpg": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "01:09.00",
+    "note": "크롭 300,138,1319,804"
+  },
+  "wall/kinetic_1_720.avif": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:02.50",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_1_720.webp": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:02.50",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_1_720.jpg": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:02.50",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_1_360.avif": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:02.50",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_1_360.webp": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:02.50",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_1_360.jpg": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:02.50",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_2_720.avif": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:06.00",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_2_720.webp": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:06.00",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_2_720.jpg": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:06.00",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_2_360.avif": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:06.00",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_2_360.webp": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:06.00",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_2_360.jpg": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:06.00",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_3_720.avif": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:08.00",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_3_720.webp": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:08.00",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_3_720.jpg": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:08.00",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_3_360.avif": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:08.00",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_3_360.webp": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:08.00",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_3_360.jpg": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:08.00",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_4_720.avif": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:16.00",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_4_720.webp": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:16.00",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_4_720.jpg": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:16.00",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_4_360.avif": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:16.00",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_4_360.webp": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:16.00",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_4_360.jpg": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:16.00",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_5_720.avif": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:18.50",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_5_720.webp": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:18.50",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_5_720.jpg": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:18.50",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_5_360.avif": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:18.50",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_5_360.webp": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:18.50",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_5_360.jpg": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:18.50",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_6_720.avif": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:20.33",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_6_720.webp": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:20.33",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_6_720.jpg": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:20.33",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_6_360.avif": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:20.33",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_6_360.webp": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:20.33",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/kinetic_6_360.jpg": {
+    "source": "완성본 키네틱타이포_김영건_0616.mp4",
+    "time": "00:20.33",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_1_720.avif": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:11.80",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_1_720.webp": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:11.80",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_1_720.jpg": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:11.80",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_1_360.avif": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:11.80",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_1_360.webp": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:11.80",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_1_360.jpg": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:11.80",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_2_720.avif": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:14.01",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_2_720.webp": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:14.01",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_2_720.jpg": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:14.01",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_2_360.avif": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:14.01",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_2_360.webp": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:14.01",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_2_360.jpg": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:14.01",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_3_720.avif": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:17.52",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_3_720.webp": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:17.52",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_3_720.jpg": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:17.52",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_3_360.avif": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:17.52",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_3_360.webp": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:17.52",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_3_360.jpg": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:17.52",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_4_720.avif": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:19.81",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_4_720.webp": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:19.81",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_4_720.jpg": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:19.81",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_4_360.avif": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:19.81",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_4_360.webp": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:19.81",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_4_360.jpg": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:19.81",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_5_720.avif": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:24.02",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_5_720.webp": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:24.02",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_5_720.jpg": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:24.02",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_5_360.avif": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:24.02",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_5_360.webp": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:24.02",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_5_360.jpg": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:24.02",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_6_720.avif": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:26.03",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_6_720.webp": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:26.03",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_6_720.jpg": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:26.03",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_6_360.avif": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:26.03",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_6_360.webp": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:26.03",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/mindhunter_6_360.jpg": {
+    "source": "완성본 마인드헌터 최종_김영건_0716.mp4",
+    "time": "00:26.03",
+    "note": "크롭 74,0,1771,1080"
+  },
+  "wall/curlyshyll_1_720.avif": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:02.62",
+    "note": "크롭 0,0,1181,720"
+  },
+  "wall/curlyshyll_1_720.webp": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:02.62",
+    "note": "크롭 0,0,1181,720"
+  },
+  "wall/curlyshyll_1_720.jpg": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:02.62",
+    "note": "크롭 0,0,1181,720"
+  },
+  "wall/curlyshyll_1_360.avif": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:02.62",
+    "note": "크롭 0,0,1181,720"
+  },
+  "wall/curlyshyll_1_360.webp": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:02.62",
+    "note": "크롭 0,0,1181,720"
+  },
+  "wall/curlyshyll_1_360.jpg": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:02.62",
+    "note": "크롭 0,0,1181,720"
+  },
+  "wall/curlyshyll_2_720.avif": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:04.96",
+    "note": "크롭 99,0,1181,720"
+  },
+  "wall/curlyshyll_2_720.webp": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:04.96",
+    "note": "크롭 99,0,1181,720"
+  },
+  "wall/curlyshyll_2_720.jpg": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:04.96",
+    "note": "크롭 99,0,1181,720"
+  },
+  "wall/curlyshyll_2_360.avif": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:04.96",
+    "note": "크롭 99,0,1181,720"
+  },
+  "wall/curlyshyll_2_360.webp": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:04.96",
+    "note": "크롭 99,0,1181,720"
+  },
+  "wall/curlyshyll_2_360.jpg": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:04.96",
+    "note": "크롭 99,0,1181,720"
+  },
+  "wall/curlyshyll_3_720.avif": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:12.00",
+    "note": "크롭 50,0,1181,720"
+  },
+  "wall/curlyshyll_3_720.webp": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:12.00",
+    "note": "크롭 50,0,1181,720"
+  },
+  "wall/curlyshyll_3_720.jpg": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:12.00",
+    "note": "크롭 50,0,1181,720"
+  },
+  "wall/curlyshyll_3_360.avif": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:12.00",
+    "note": "크롭 50,0,1181,720"
+  },
+  "wall/curlyshyll_3_360.webp": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:12.00",
+    "note": "크롭 50,0,1181,720"
+  },
+  "wall/curlyshyll_3_360.jpg": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:12.00",
+    "note": "크롭 50,0,1181,720"
+  },
+  "wall/curlyshyll_4_720.avif": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:21.08",
+    "note": "크롭 0,0,1181,720"
+  },
+  "wall/curlyshyll_4_720.webp": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:21.08",
+    "note": "크롭 0,0,1181,720"
+  },
+  "wall/curlyshyll_4_720.jpg": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:21.08",
+    "note": "크롭 0,0,1181,720"
+  },
+  "wall/curlyshyll_4_360.avif": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:21.08",
+    "note": "크롭 0,0,1181,720"
+  },
+  "wall/curlyshyll_4_360.webp": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:21.08",
+    "note": "크롭 0,0,1181,720"
+  },
+  "wall/curlyshyll_4_360.jpg": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:21.08",
+    "note": "크롭 0,0,1181,720"
+  },
+  "wall/curlyshyll_5_720.avif": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:23.83",
+    "note": "크롭 50,0,1181,720"
+  },
+  "wall/curlyshyll_5_720.webp": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:23.83",
+    "note": "크롭 50,0,1181,720"
+  },
+  "wall/curlyshyll_5_720.jpg": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:23.83",
+    "note": "크롭 50,0,1181,720"
+  },
+  "wall/curlyshyll_5_360.avif": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:23.83",
+    "note": "크롭 50,0,1181,720"
+  },
+  "wall/curlyshyll_5_360.webp": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:23.83",
+    "note": "크롭 50,0,1181,720"
+  },
+  "wall/curlyshyll_5_360.jpg": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:23.83",
+    "note": "크롭 50,0,1181,720"
+  },
+  "wall/curlyshyll_6_720.avif": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:27.92",
+    "note": "크롭 50,0,1181,720"
+  },
+  "wall/curlyshyll_6_720.webp": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:27.92",
+    "note": "크롭 50,0,1181,720"
+  },
+  "wall/curlyshyll_6_720.jpg": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:27.92",
+    "note": "크롭 50,0,1181,720"
+  },
+  "wall/curlyshyll_6_360.avif": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:27.92",
+    "note": "크롭 50,0,1181,720"
+  },
+  "wall/curlyshyll_6_360.webp": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:27.92",
+    "note": "크롭 50,0,1181,720"
+  },
+  "wall/curlyshyll_6_360.jpg": {
+    "source": "완성본 Curly shyll_AI CF_김영건.mp4",
+    "time": "00:27.92",
+    "note": "크롭 50,0,1181,720"
+  },
+  "wall/musicvideo_1_720.avif": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "00:02.60",
+    "note": "크롭 156,108,1417,864"
+  },
+  "wall/musicvideo_1_720.webp": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "00:02.60",
+    "note": "크롭 156,108,1417,864"
+  },
+  "wall/musicvideo_1_720.jpg": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "00:02.60",
+    "note": "크롭 156,108,1417,864"
+  },
+  "wall/musicvideo_1_360.avif": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "00:02.60",
+    "note": "크롭 156,108,1417,864"
+  },
+  "wall/musicvideo_1_360.webp": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "00:02.60",
+    "note": "크롭 156,108,1417,864"
+  },
+  "wall/musicvideo_1_360.jpg": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "00:02.60",
+    "note": "크롭 156,108,1417,864"
+  },
+  "wall/musicvideo_2_720.avif": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "00:29.80",
+    "note": "크롭 0,108,1417,864"
+  },
+  "wall/musicvideo_2_720.webp": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "00:29.80",
+    "note": "크롭 0,108,1417,864"
+  },
+  "wall/musicvideo_2_720.jpg": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "00:29.80",
+    "note": "크롭 0,108,1417,864"
+  },
+  "wall/musicvideo_2_360.avif": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "00:29.80",
+    "note": "크롭 0,108,1417,864"
+  },
+  "wall/musicvideo_2_360.webp": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "00:29.80",
+    "note": "크롭 0,108,1417,864"
+  },
+  "wall/musicvideo_2_360.jpg": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "00:29.80",
+    "note": "크롭 0,108,1417,864"
+  },
+  "wall/musicvideo_3_720.avif": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "00:45.08",
+    "note": "크롭 252,108,1417,864"
+  },
+  "wall/musicvideo_3_720.webp": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "00:45.08",
+    "note": "크롭 252,108,1417,864"
+  },
+  "wall/musicvideo_3_720.jpg": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "00:45.08",
+    "note": "크롭 252,108,1417,864"
+  },
+  "wall/musicvideo_3_360.avif": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "00:45.08",
+    "note": "크롭 252,108,1417,864"
+  },
+  "wall/musicvideo_3_360.webp": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "00:45.08",
+    "note": "크롭 252,108,1417,864"
+  },
+  "wall/musicvideo_3_360.jpg": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "00:45.08",
+    "note": "크롭 252,108,1417,864"
+  },
+  "wall/musicvideo_4_720.avif": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "01:17.11",
+    "note": "크롭 503,108,1417,864"
+  },
+  "wall/musicvideo_4_720.webp": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "01:17.11",
+    "note": "크롭 503,108,1417,864"
+  },
+  "wall/musicvideo_4_720.jpg": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "01:17.11",
+    "note": "크롭 503,108,1417,864"
+  },
+  "wall/musicvideo_4_360.avif": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "01:17.11",
+    "note": "크롭 503,108,1417,864"
+  },
+  "wall/musicvideo_4_360.webp": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "01:17.11",
+    "note": "크롭 503,108,1417,864"
+  },
+  "wall/musicvideo_4_360.jpg": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "01:17.11",
+    "note": "크롭 503,108,1417,864"
+  },
+  "wall/musicvideo_5_720.avif": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "03:17.03",
+    "note": "크롭 252,108,1417,864"
+  },
+  "wall/musicvideo_5_720.webp": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "03:17.03",
+    "note": "크롭 252,108,1417,864"
+  },
+  "wall/musicvideo_5_720.jpg": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "03:17.03",
+    "note": "크롭 252,108,1417,864"
+  },
+  "wall/musicvideo_5_360.avif": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "03:17.03",
+    "note": "크롭 252,108,1417,864"
+  },
+  "wall/musicvideo_5_360.webp": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "03:17.03",
+    "note": "크롭 252,108,1417,864"
+  },
+  "wall/musicvideo_5_360.jpg": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "03:17.03",
+    "note": "크롭 252,108,1417,864"
+  },
+  "wall/musicvideo_6_720.avif": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "03:47.13",
+    "note": "크롭 252,108,1417,864"
+  },
+  "wall/musicvideo_6_720.webp": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "03:47.13",
+    "note": "크롭 252,108,1417,864"
+  },
+  "wall/musicvideo_6_720.jpg": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "03:47.13",
+    "note": "크롭 252,108,1417,864"
+  },
+  "wall/musicvideo_6_360.avif": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "03:47.13",
+    "note": "크롭 252,108,1417,864"
+  },
+  "wall/musicvideo_6_360.webp": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "03:47.13",
+    "note": "크롭 252,108,1417,864"
+  },
+  "wall/musicvideo_6_360.jpg": {
+    "source": "완성본 뮤직비디오_김영건_0512.mp4",
+    "time": "03:47.13",
+    "note": "크롭 252,108,1417,864"
+  },
+  "process/oneandonly/oo_cut_final.jpg": {
+    "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
+    "time": "02:34.85",
+    "note": "한 컷이 만들어진 순서 ④ 완성 — 720×1280 원본 프레임"
+  },
+  "process/oneandonly/oo_cut_board.jpg": {
+    "source": "블로킹맵 — process/oneandonly/oo_03_3.jpg 의 2번 칸(컷 1 끝) 잘라 냄",
+    "time": "—",
+    "note": "원본 05_에셋/2026-10-05_S6-D_블로킹맵/S6-D_d1_끝_블로킹맵 (팀 제작 · Python)"
+  },
+  "process/butter/bt_cut_final.jpg": {
+    "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",
+    "time": "01:04.70",
+    "note": "한 컷이 만들어진 순서 ④ 완성 — 1920×1080 에서 레터박스(위 138 · 아래 138px) 잘라 1600×670"
   }
 }

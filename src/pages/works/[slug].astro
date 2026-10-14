@@ -1,20 +1,22 @@
 ---
 /**
- * 작품 방(주력 3편) — 한 작품만. 최종 구조(docs/work-room.md 4절 · 작가 10-13):
- * ① 후킹(data-hook — 그대로) ② 완성본 + 개요(data-overview — 다 보여 주는 건 풀영상 하나)
- * ③ 과정(data-process — 대본 발췌 한 장면을 6단계로: 01 기획 → 02 대본 → 03 이미지 시트 · 연출 → 04 세그먼트 → 05 영상 생성 → 06 편집 → 끝 완성)
- * ④ 크레딧(data-credit) ⑤ 이전 · 처음으로 · 다음.
- * 과정 데이터(src/data/process/<slug>.ts 의 process)가 없는 작품은 ③ 을 그리지 않는다.
- * 각 구역의 출처는 부품 머리 주석 · docs/sources.md 3-2절.
+ * 작품 방(주력 3편) — v4(메인 지시 10-14 반영: 「영상 먼저 · 첫 화면에 필요한 건 다 · 3화면 이내」).
+ *  · 9:16(두 숏드라마): 왼쪽 영상 칸(≈82vh 세로) | 오른쪽 큰 제목 → 대본 첫 줄 한 번 타이핑 → 메타 표 → 소개(첫 문단 + 「더 읽기」)
+ *  · 16:9(버터): 위 제목 + 대본 첫 줄 → 영상 칸(폭 min(100%, 72svh × 16/9) — 첫 화면 작업물 ≥ 50%) → [메타 표 | 소개]
+ *  → 한 컷이 만들어진 순서(고정 무대 4걸음, CutStage) → 다음 작품 큰 제목 → 연락 큰 링크.
+ * 크레딧 표는 없앴다(메타 표의 「역할」 이 크레딧). 판(벽 프레임 복제) 없음 — 벽 타일 그림은 영상 칸으로 이어진다(view-transition-name: lead).
+ * 상단 바 오른쪽 「← 이전 · 다음 →」 + 키보드 ← →. 데이터 없는 칸은 그리지 않는다. 움직임은 src/scripts/site.ts initRoom · initCut.
  */
 import Base from '../../layouts/Base.astro';
-import Hook from '../../components/Hook.astro';
-import Overview from '../../components/Overview.astro';
-import Process from '../../components/Process.astro';
-import Credits from '../../components/Credits.astro';
-import Placeholder from '../../components/Placeholder.astro';
+import TopBar from '../../components/TopBar.astro';
+import VideoCell from '../../components/VideoCell.astro';
+import CutStage from '../../components/CutStage.astro';
+import NextWork from '../../components/NextWork.astro';
+import Footer from '../../components/Footer.astro';
 import { MAIN_WORKS, type Work } from '../../data/works';
 import { roomOf } from '../../data/process';
+import { CUTS } from '../../data/cut';
+import { heroLine, metaRows, nextOf, prevOf, titleLines, titleSize } from '../../data/room';
 
 export function getStaticPaths() {
   return MAIN_WORKS.map((w) => ({ params: { slug: w.slug }, props: { work: w } }));
@@ -22,48 +24,120 @@ export function getStaticPaths() {
 
 type Props = { work: Work };
 const { work } = Astro.props;
-const i = MAIN_WORKS.findIndex((w) => w.slug === work.slug);
-const prev = MAIN_WORKS[(i + MAIN_WORKS.length - 1) % MAIN_WORKS.length];
-const next = MAIN_WORKS[(i + 1) % MAIN_WORKS.length];
 const room = roomOf(work.slug);
-const proc = room?.process;
+const rows = metaRows(work);
+const line = heroLine(work.slug);
+const intro = room?.overview.intro ?? [];
+const cut = CUTS[work.slug];
+const next = nextOf(work.slug);
+const prev = prevOf(work.slug);
+const vertical = work.ratio === '9:16';
+const video = {
+  id: work.youtubeId,
+  title: work.title,
+  ratio: work.ratio,
+  poster: work.hook?.poster ?? work.poster,
+  duration: work.duration,
+  hook: work.hook ? { clip: work.hook.clip, poster: work.hook.poster } : undefined,
+};
 ---
 
-<Base title={work.title} here={{ no: work.no, label: work.door ?? work.title }} step="첫 장면">
-  <article class="work" data-work={work.slug} data-prev={`/works/${prev.slug}/`} data-next={`/works/${next.slug}/`}>
-    <Hook work={work} />
+<Base page="work" title={work.title}>
+  <TopBar variant="room" prev={prev} next={next} />
+  <article class:list={['room', 'pre', vertical ? 'is-v' : 'is-h']} data-work={work.slug} data-prev-href={prev.href} data-next-href={next.href}>
+    {
+      vertical ? (
+        <section class="hero hero--v" aria-label="작품">
+          <div class="lead">
+            <VideoCell {...video} vt="lead" />
+          </div>
+          <div class="side">
+            <h1 class="title title--v" data-title>
+              {titleLines(work.title).map((t) => (
+                <span class="tl">{t}</span>
+              ))}
+            </h1>
+            {line && (
+              <p class="line ko" data-line>
+                <span class="ghost" aria-hidden="true">{line.s}</span>
+                <span class="typed">{line.s}</span>
+              </p>
+            )}
+            <table class="tbl meta" data-meta>
+              <tbody>
+                {rows.map((r) => (
+                  <tr data-meta-row={r.key}>
+                    <th scope="row">{r.k}</th>
+                    <td class="ko">{r.v}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {intro.length > 0 && (
+              <div class="story about" data-intro-text>
+                <p data-src={intro[0].src}>{intro[0].t}</p>
+                {intro.length > 1 && (
+                  <details class="more">
+                    <summary>더 읽기</summary>
+                    {intro.slice(1).map((v) => (
+                      <p data-src={v.src}>{v.t}</p>
+                    ))}
+                  </details>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+      ) : (
+        <section class="hero hero--h" aria-label="작품">
+          <div class="g head">
+            <h1 class="title" data-title style={`font-size:${titleSize(work.title, 'clamp(56px, 8.4vw, 120px)')}`}>
+              {work.title}
+            </h1>
+            {line && (
+              <p class="line ko" data-line>
+                <span class="ghost" aria-hidden="true">{line.s}</span>
+                <span class="typed">{line.s}</span>
+              </p>
+            )}
+          </div>
+          <div class="lead">
+            <VideoCell {...video} vt="lead" />
+          </div>
+          <div class="g body2">
+            <div class="side">
+              <table class="tbl meta" data-meta>
+                <tbody>
+                  {rows.map((r) => (
+                    <tr data-meta-row={r.key}>
+                      <th scope="row">{r.k}</th>
+                      <td class="ko">{r.v}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {intro.length > 0 && (
+              <div class="story about" data-intro-text>
+                <p data-src={intro[0].src}>{intro[0].t}</p>
+                {intro.length > 1 && (
+                  <details class="more">
+                    <summary>더 읽기</summary>
+                    {intro.slice(1).map((v) => (
+                      <p data-src={v.src}>{v.t}</p>
+                    ))}
+                  </details>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+      )
+    }
 
-    <Overview work={work} room={room} />
+    {cut && <CutStage cut={cut} slug={work.slug} />}
 
-    {proc && <Process p={proc} title={work.title} vertical={work.ratio === '9:16'} />}
-
-    <section class="credit-sec" id="credit" data-credit data-path="크레딧" aria-labelledby="h-credit">
-      <header class="sec-h">
-        <h2 id="h-credit">크레딧</h2>
-        <p class="facts">{work.format} · {work.year}</p>
-      </header>
-      <Credits items={work.credits ?? []} />
-      <div class="desc"><Placeholder kind="author-copy" block /></div>
-    </section>
-
-    <nav class="wnav" aria-label="작품 이동">
-      <div class="wnav-top">
-        <a class="prev" href={`/works/${prev.slug}/`} rel="prev"><span class="lab">← 이전 작품</span><span class="t">{prev.door ?? prev.title}</span></a>
-        <a class="home-link" href="/"><span class="lab">처음으로</span><span class="t">김영건</span></a>
-      </div>
-      <a class="next-big" href={`/works/${next.slug}/`} rel="next">
-        <span class="lab">다음 작품 · {next.no} / 03</span>
-        <span class="t">{next.door ?? next.title}</span>
-        <span class="arr" aria-hidden="true">→</span>
-      </a>
-    </nav>
+    <NextWork href={next.href} title={next.title} />
+    <Footer />
   </article>
-
-  <div class="lightbox" data-lightbox role="dialog" aria-modal="true" aria-label="크게 보기" hidden slot="after">
-    <div class="lb-bd" data-close></div>
-    <figure class="lb-box">
-      <img alt="" />
-      <figcaption><span class="lb-cap"></span><button type="button" class="x" data-close><span class="kbd">ESC</span>닫기</button></figcaption>
-    </figure>
-  </div>
 </Base>

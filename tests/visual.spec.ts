@@ -1,53 +1,138 @@
 /**
- * 리뷰용 스크린샷 — 방마다 세 화면 크기(1440 · 1280 · 390).
- * 저장 위치(이것만 구글 드라이브): G:\내 드라이브\포폴 웹사이트 만들기\_분석\qa\<날짜시각>\
- * 한 번 돌릴 때마다 폴더 하나(날짜시각은 playwright.config.ts 가 QA_STAMP 로 정한다).
- *
- * 방: 홈 · 작품 상세 3 · 툴 · 툴 모달 열림. 작품 상세는 전체 페이지 + 첫 화면(접힘선 위) 두 장.
- * 방이 없거나 모달이 안 열리면 화면은 그대로 찍어 두고(리뷰용) 시험은 실패로 알린다.
+ * 검수 스크린샷 · 녹화 — v4(1440 · 1280). 저장(이것만 구글 드라이브):
+ *   G:\내 드라이브\포폴 웹사이트 만들기\_분석\qa\2026-10-14_v4\<1440|1280>\NN_이름.png
+ *   녹화(1440): …\2026-10-14_v4\녹화\인트로_입장.webm · 과정_<작품>.webm
+ *   글꼴 비교(1440): …\2026-10-14_v4\글꼴비교\
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { MAIN_WORKS, SETTLE_MS, TOOL_WORKS, openToolCard, settle, test, visit } from './helpers';
+import type { Browser, Page } from '@playwright/test';
+import { HERO_MS, MAIN_WORKS, SEL, loadAll, settle, test, toCutStep, visit, YT_URL } from './helpers';
 
-const SHOT_ROOT = process.env.QA_SHOTS_DIR ?? 'G:\\내 드라이브\\포폴 웹사이트 만들기\\_분석\\qa';
-const OUT = path.join(SHOT_ROOT, process.env.QA_STAMP ?? 'manual');
+const ROOT = process.env.QA_SHOTS_DIR ?? 'G:\\내 드라이브\\포폴 웹사이트 만들기\\_분석\\qa\\2026-10-14_v4';
+const VIDEO_TMP = (process.env.QA_DIR ?? 'D:/claude_tmp/portfolio/qa') + '/video';
 
-type Shot = { n: string; key: string; path: string; modal?: boolean; detail?: boolean };
-const SHOTS: Shot[] = [
-  { n: '01', key: 'home', path: '/' },
-  ...MAIN_WORKS.map((w, i) => ({ n: String(i + 2).padStart(2, '0'), key: `work-${w.slug}`, path: `/works/${w.slug}/`, detail: true })),
-  { n: '05', key: 'tools', path: '/tools/' },
-  { n: '06', key: 'tools-modal', path: '/tools/', modal: true },
-];
+const dirFor = (project: string) => {
+  const d = path.join(ROOT, project.replace(/^\D+-/, ''));
+  fs.mkdirSync(d, { recursive: true });
+  return d;
+};
 
-test.describe('visual (리뷰용 스크린샷)', () => {
-  for (const s of SHOTS) {
-    test(`${s.n} ${s.key}`, async ({ page }, testInfo) => {
-      fs.mkdirSync(OUT, { recursive: true });
-      const file = (suffix = '') => path.join(OUT, `${s.n}_${s.key}${suffix}__${testInfo.project.name}.png`);
-      const problems: string[] = [];
-
-      const status = await visit(page, s.path);
-      if (status !== 200) problems.push(`${s.path} → HTTP ${status}`);
-      // 후킹 대본이 타이핑되는 시간을 조금 더 준다
-      await settle(page, s.detail ? SETTLE_MS + 1500 : SETTLE_MS);
-
-      if (s.modal) {
-        const why = await openToolCard(page, TOOL_WORKS[0]);
-        if (why) problems.push(why);
-        await settle(page, 600);
-        await page.screenshot({ path: file() }); // 모달은 화면 크기 그대로
-      } else if (s.detail) {
-        await page.screenshot({ path: file('_fold') }); // 첫 화면(접힘선 위) — 후킹
-        await page.evaluate(() => window.scrollTo(0, 0));
-        await page.screenshot({ path: file(), fullPage: true });
-      } else {
-        await page.screenshot({ path: file(), fullPage: true });
-      }
-
-      testInfo.annotations.push({ type: 'screenshot', description: OUT });
-      if (problems.length) throw new Error(`스크린샷은 저장했지만 방 상태가 정상이 아님: ${problems.join(' · ')}\n  → ${OUT}`);
-    });
+/** 녹화 — D: 임시에 찍고 G: 로 옮긴다 */
+async function record(browser: Browser, name: string, fn: (page: Page) => Promise<void>) {
+  fs.mkdirSync(VIDEO_TMP, { recursive: true });
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'ko-KR', recordVideo: { dir: VIDEO_TMP, size: { width: 1440, height: 900 } } });
+  await ctx.route(YT_URL, (r) => r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>stub</title>' }));
+  const page = await ctx.newPage();
+  await fn(page);
+  const v = page.video();
+  await ctx.close();
+  if (v) {
+    const out = path.join(ROOT, '녹화');
+    fs.mkdirSync(out, { recursive: true });
+    fs.copyFileSync(await v.path(), path.join(out, `${name}.webm`));
   }
+}
+
+test.describe('검수 스크린샷(v4)', () => {
+  test('01 인트로 · 02 입장 중 · 03 벽 · 04 벽 호버', async ({ page }, ti) => {
+    const d = dirFor(ti.project.name);
+    await visit(page, '/');
+    await settle(page, 2600);
+    await page.screenshot({ path: path.join(d, '01_인트로_잠든벽.png') });
+    await page.mouse.wheel(0, 120);
+    await settle(page, 550);
+    await page.screenshot({ path: path.join(d, '02_입장_중.png') });
+    await settle(page, 2400);
+    await page.mouse.move(2, 2);
+    await settle(page, 400);
+    await page.screenshot({ path: path.join(d, '03_벽.png') });
+    const vp = page.viewportSize()!;
+    await page.mouse.move(vp.width / 2 + 30, vp.height / 2 + 20);
+    await settle(page, 700);
+    await page.screenshot({ path: path.join(d, '04_벽_호버.png') });
+  });
+
+  MAIN_WORKS.forEach((w, i) => {
+    test(`${String(i + 5).padStart(2, '0')} 작품 방 ${w.slug}`, async ({ page }, ti) => {
+      const d = dirFor(ti.project.name);
+      const n = String(i + 5).padStart(2, '0');
+      await visit(page, `/works/${w.slug}/`);
+      await settle(page, HERO_MS);
+      await page.screenshot({ path: path.join(d, `${n}_${w.slug}_0첫화면.png`) });
+      await loadAll(page);
+      for (const k of [1, 2, 3, 4]) {
+        await toCutStep(page, k, 1600);
+        await page.screenshot({ path: path.join(d, `${n}_${w.slug}_${k}걸음_${['대본', '시트', '연출', '완성'][k - 1]}.png`) });
+      }
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      await settle(page, 800);
+      await page.screenshot({ path: path.join(d, `${n}_${w.slug}_5다음작품.png`) });
+    });
+  });
+
+  test('08 툴 방 · 09 404', async ({ page }, ti) => {
+    const d = dirFor(ti.project.name);
+    await visit(page, '/tools/');
+    await settle(page, 1200);
+    await page.screenshot({ path: path.join(d, '08_툴_첫화면.png') });
+    await page.screenshot({ path: path.join(d, '08_툴_전체.png'), fullPage: true });
+    await visit(page, '/없는-주소/');
+    await settle(page, 1400);
+    await page.mouse.move(200, 160);
+    await settle(page, 1100);
+    await page.screenshot({ path: path.join(d, '09_404.png') });
+  });
+
+  test('10 녹화 — 인트로 → 입장 · 과정 핀 구간 3편', { tag: '@once' }, async ({ browser }) => {
+    await record(browser, '인트로_입장', async (page) => {
+      await visit(page, '/');
+      await settle(page, 2400);
+      await page.mouse.wheel(0, 120);
+      await settle(page, 1900);
+    });
+    for (const w of MAIN_WORKS) {
+      await record(browser, `과정_${w.slug}`, async (page) => {
+        await visit(page, `/works/${w.slug}/`);
+        await settle(page, 1200);
+        await page.evaluate(() => {
+          const s = document.querySelector<HTMLElement>('[data-process]');
+          if (s) window.scrollTo(0, Number(s.dataset.pinStart) - 40);
+        });
+        await settle(page, 600);
+        // 손으로 굴리듯 휠 — 걸음마다 스냅
+        for (let k = 0; k < 4; k++) {
+          for (let j = 0; j < 7; j++) {
+            await page.mouse.wheel(0, 100);
+            await page.waitForTimeout(60);
+          }
+          await settle(page, 1400);
+        }
+      });
+    }
+  });
+
+  test('11 글꼴 비교 — Hahmlet(기본) · Noto Serif KR', { tag: '@once' }, async ({ browser }) => {
+    const d = path.join(ROOT, '글꼴비교');
+    fs.mkdirSync(d, { recursive: true });
+    for (const serif of ['hahmlet', 'noto']) {
+      const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'ko-KR' });
+      await ctx.route(YT_URL, (r) => r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>stub</title>' }));
+      const page = await ctx.newPage();
+      await visit(page, `/?serif=${serif}`);
+      await page.evaluate(() => document.fonts.ready);
+      await settle(page, 2600);
+      await page.screenshot({ path: path.join(d, `${serif}_인트로.png`) });
+      for (const slug of ['firstimpression', 'butter']) {
+        await visit(page, `/works/${slug}/?serif=${serif}`);
+        await page.evaluate(() => document.fonts.ready);
+        await settle(page, HERO_MS);
+        await page.screenshot({ path: path.join(d, `${serif}_작품방_${slug}.png`) });
+      }
+      await ctx.close();
+    }
+  });
 });
+
+// SEL 은 다른 시험과 같은 표식을 쓴다는 표시(검수 화면이 표식을 바꾸면 여기서도 바뀐다)
+void SEL;

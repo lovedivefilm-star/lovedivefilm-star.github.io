@@ -1,4 +1,54 @@
-# 레퍼런스 출처 — 요소마다 어디서 따왔고 무엇을 바꿨나
+# 출처 — 요소마다 어디서 따왔고 무엇을 바꿨나
+
+## v4 (2026-10-14) — Kavieng 식 대개편 · 오픈소스 우선 · 메인 지시(작가 반려 반영)
+
+설계 정본 `docs/v4-redesign.md` + 메인 지시 10-14, 수치 정본 `_분석\레퍼런스\정밀\Kavieng.md`(「K 2-3」 = 그 문서 절), 합격선 `_분석\감사\2026-10-14_레퍼런스절제.md` 3절. 작가 지시: *「직접 다 짤 생각말고 우리가 연결한 mcp나 스킬을 적극 활용해서 쓸 수 있는 오픈소스 같은건 가져와서 써」*.
+쓴 스킬: frontend-design · gsap-core · gsap-plugins(Flip · SplitText · Observer · TextPlugin) · gsap-timeline. 쓴 MCP: astro-docs(View Transitions · ClientRouter 생명주기 · @astrojs/react 설치 · client 지시어) · context7(`/websites/reactbits_dev` DomeGallery 속성 · `/davidhdev/react-bits` 레지스트리 · 라이선스 · `/justinribeiro/lite-youtube` 속성 · slot · 비율).
+
+### v4-1. 가져다 쓴 오픈소스
+
+| 이름 | 버전 | 라이선스(원본 확인) | 어디에 | 우리 손질 |
+|---|---|---|---|---|
+| React Bits **DomeGallery**(TS + CSS) | 레지스트리 `https://reactbits.dev/r/DomeGallery-TS-CSS.json`(2026-10-14 받음) | **MIT + Commons Clause v1.0**, Copyright (c) 2026 David Haz — `https://raw.githubusercontent.com/DavidHDev/react-bits/main/LICENSE.md` 확인. 앱 · 웹사이트 · 제품의 일부로 사용 · 수정 허용, 컴포넌트 자체를 팔거나 따로 재배포 금지. 저작권 · 허가 문구는 파일 머리말에 그대로 | 홈 작업 벽 `src/components/react/DomeGallery.tsx` · `.css` | 기본 이미지(외부 주소) 삭제 · 항목에 작품 표식 · 클릭 = 확대 대신 작품 방 이동(`onItemClick`) · 정면 칸 알림(`onCenterChange`) · 휠(K 2-3 `deltaY × .74`, `1 − e^(−21·dt)`) · 세로 분할 `segmentsY` · 행 수 `rows`(칸 1 : .61 — K 2-3) · `<picture>`(AVIF · WebP · JPG × 360/720 — K 5) · **영상 칸**(`videos` · `videoActive` — 보일 때만 재생, 인트로 전엔 preload none) · 흑백 → 호버 컬러(K 2-3 값 · .36s `cubic-bezier(.16,1,.3,1)`) · 위아래 덮개 140 · 165px · 칸 transform 전환 삭제 · 칸은 탭 순서 · 보조기술에서 뺌(목록이 대신) |
+| **@use-gesture/react** | 10.3.1 | MIT | 벽 드래그 · 관성 | — |
+| **@astrojs/react** · **react** · **react-dom** | 7.0.1 · 19.3.0 · 19.3.0 | MIT | 벽 섬(`client:load`) | — |
+| **Astro View Transitions**(`<ClientRouter />`) | astro 7.3.8 | MIT | 방 전환 — 벽 칸 그림 → 작품 방 영상 칸(`lead`) | 누른 칸 그림에만 `view-transition-name: lead`, 방 쪽 영상 칸도 같은 이름. 뿌리 전환 .28s · lead .62s. 직접 짠 블록 디졸브 삭제 |
+| **lite-youtube**(@justinribeiro/lite-youtube) | 1.9.0 | MIT(`LICENSE` 확인) | 작품 방 · 툴 방 영상 칸 | 우리 포스터 `slot="image"`(유튜브 썸네일 안 받음) · 빨간 단추 · 위 그림자 숨김 · 재생 줄 · 클립 클릭 → `addIframe()`(youtube-nocookie, 자동 재생) · 「이 장면 보기」 = `videoStartAt` |
+| **GSAP** 코어 · **SplitText** · **TextPlugin** · **ScrollTrigger** · **Observer** · **Flip** | 3.15.0 | GSAP Standard 「no charge」 License(`https://gsap.com/standard-license` — 상업 사용 포함 무료, 플러그인 포함) | 인트로 진입 · 입장(Flip 으로 이름 → 상단 바) · 잠든 벽 회전 · 히어로 연출 · 한 컷 고정 무대(pin · scrub · snap) | 아래 v4-2 |
+| **Pretendard** | 1.3.9(배포 동적 서브셋) | SIL OFL 1.1(RFN 'Pretendard') — 저장소 `LICENSE` 확인 | 정보 글자 12–17px | — |
+| **Hahmlet**(기본) · **Noto Serif KR**(후보) | Google Fonts CSS2 | SIL OFL 1.1 — `google/fonts` 의 `ofl/hahmlet/OFL.txt` · `ofl/notoserifkr/OFL.txt` 확인 | 이름 · 제목 · 대본(세리프) | 400 하나만. `?serif=noto` 로 바꿔 보기 |
+
+### v4-2. 화면 요소 ← 레퍼런스 수치
+
+| 요소 | 따온 곳 | 바꾼 점 |
+|---|---|---|
+| 인트로 = **잠든 벽** — 같은 벽 ×2.2 · brightness .32 · blur 2px · .45°/s 회전 · 큰 세리프 이름 + 직함 13px + 안내 12px .14em .62 · 글 뒤 타원 어둠 덮개 | 메인 지시 10-14(작가 반려 「띄엄띄엄 있고 크기도 작고 … 우리 상황에 맞게 변형」 — K 2-1 의 썸네일 10장 부유를 버림) · 덮개 = K 2-6(404) `#050505 42% → .93 62% → 투명 82%` · 진입 시간 K 2-1(이름 .9s · 직함 +.5s · 안내 +1.05s) | 이름은 한 덩이 「김영건」 가운데 · `clamp(78px, 15.2vw, 230px)` · 자간 −.03em |
+| 입장 — 휠 누적 36px(Observer `tolerance: 36`) · 클릭 · 키 · 터치, 처음 .9s 무시 · 4.6s 안전장치 | K 2-2 | 「조립」 대신 **같은 벽이 물러남**(×2.2 → 1, 어둠 · 흐림 걷힘, 1.1s power3.inOut) · 큰 이름은 **GSAP Flip.fit** 으로 상단 바 이름 자리로(.85s 부터 바꿔 들기) · 상단 바 · 벽 위 글은 .9s · 1.0s 부터 |
+| 벽 — 흑백 · 호버한 칸만 컬러 · 가운데 읽음 · 가운데 점 · 덮개 · UI 글자 그림자 · 상단 이름 18px 700 · 오른쪽 아래 목록 | K 2-3 | DomeGallery(볼록 구). 읽음 「작품 · 형식 · 연도」 · 점 #0090FF · 필터 · 카운터 없음(K 8-2). **영상 칸 3**(주력 후킹 클립 — 메인 지시 「영상이라는 걸 보이게」) |
+| 작품 방 히어로 — **영상 먼저** | 메인 지시 10-14 · 레퍼런스 절제 4절 표준 골격(영상이 맨 위 6/6) | 9:16 = 왼쪽 영상(82svh · 따라옴) │ 오른쪽 제목 → 대본 줄 → 메타 표 → 소개 · 16:9 = 제목 + 대본 줄 → 영상(68svh × 16/9) → 메타 │ 소개. 판(벽 프레임 복제) · 크레딧 표 삭제 |
+| 히어로 연출 — 영상 칸 `inset(7%) → 0` 1.05s expo.out @0 · 제목 줄 올라옴 .92s .09s 간격 @.2(SplitText lines + mask) · 대본 줄 한 번 타이핑 @.45(TextPlugin, 캐럿 끝나면 지움) · 메타 행 걷힘 .34s .075s 간격 @.65 | K 2-4 히어로 연출 | 순서를 영상 먼저로 · 메타 행은 steps(6) 대신 power4.out(한 화면 이징 ≤ 3 — 절제 규칙 13) |
+| 메타 표 150px / 1fr · 17px/1.35 | K 2-4 | 괘선은 표 위 · 아래 한 쌍만(절제 규칙 4: 한 화면 괘선 ≤ 5) · 행은 형식 · 역할 · 툴 · 제작 기간(연도 · 길이는 같은 사실이 다른 곳에 — 규칙 10) |
+| 소개 — 첫 문단 + 「더 읽기」 | 메인 지시 10-14 · K 2-5 Awards 의 네이티브 `<details>`(열림 애니메이션 없음) | 문장은 그대로, 숨김/펼침만 |
+| **한 컷이 만들어진 순서** — 고정 무대 + 스크롤 걸음, 연결선 · 상자 · 와이프 | 메인 지시 10-14(작가 「연결과정이 친절하게 보여야지」) · 연결선 = 시안 히어로_v1(대본 줄 → 화면 선, power2.inOut) · 고정 무대 = Aaru(정밀 `Aaru.md`) · 원본 → 결과 = fxguide · Ancestra(케이스스터디 C7 · C8) · 와이프 = Paragon 전후 비교 · 갤러리 모서리 5px = K 2-4 | 걸음 1 은 고정되는 순간 문장이 뜨고 밑줄, 걸음 2~4 는 핀 구간 3 × 30vh(작품 한 편 ≤ 3.5화면 — 규칙 9) · 스냅 = 걸음 끝 4곳(`inertia: false`) · 연결 좌표는 그림을 열어 보고 `src/data/cut.ts` 에 · 연결은 완성본에 실제로 나오는 것끼리만 · 움직임 줄이기 = 4장면 세로 · 선 그려진 상태 |
+| 다음 작품 · 푸터 연락 | K 2-4 | 화살표 글자 크기 = 제목 크기(한 화면 글자 크기 ≤ 5) |
+| 툴 방 — 2×2 격자 | 메인 지시 10-14 · K 8-4 | 영상 밖 아래 제목(세리프 30px) · 분류 · 「모작」 · 「▶ 재생 · 길이」 |
+| 상단 바 이전 · 다음 · 키보드 ← → | 메인 지시 10-14 | 화살표는 글자(← →) · 작품 이름 13px |
+| 404 — 7×5 = 35칸 · 흐림 · 불투명 `.28 + ((i×13) mod 47)/100` · 진입 `.95s cubic-bezier(.16,1,.3,1)` · 커서 시차 · 타원 덮개 · 링크 1px .55 | K 2-6 | 문장은 화면 안내 낱말 「찾는 페이지가 없습니다」(작가 문장 대기 — docs/빈자리.md) · lh 1.02 |
+| 색 · 글꼴 · 괘선 · 움직임 토큰 | K 4 · 6 · 절제 규칙 13 | 보조 = #F0EFE9 의 70% · 57% · 괘선 19% · 포인트 #0090FF. 움직임 토큰은 쓰는 것만 — 이징 1(`--ease-quick`) · 시간 2(`--dur-link .28s` · `--dur-arrow .4s`) |
+
+### v4-3. 글꼴 — 기본 Hahmlet
+
+두 후보를 인트로 · 작품 방 제목 · 대본 발췌에 걸어 찍었다(`_분석\qa\2026-10-14_v4\글꼴비교\`). 1차에선 내가 Noto Serif KR(명조 획 대비 → 정보 글자와 역할 분리)을 골랐으나, **메인이 비교 화면을 보고 Hahmlet 으로 정했다** — 라틴 섞인 제목(「버터! [VirTer!]」 · 「EP.01」)이 덜 어색하다. 10-13 「가는 명조 대형 이름이 무섭다」 피드백과도 Hahmlet 쪽이 멀다. 바꾸려면 `src/data/site.ts` `SERIF` 한 줄.
+
+### v4-4. 작가 지시 편집(사이트에 보이는 작가 글을 작가 지시로 바꾼 곳 — `src/data/edits.ts`)
+
+| 작품 | 원문 → 사이트 | 근거 |
+|---|---|---|
+| oneandonly | 「너울」 → 「장옷」(「너울 때문에 … 너울을 걷으면」 → 「장옷 때문에 … 장옷을 걷으면」) | 작가 2026-10-14 「그냥 장옷으로만 바꿔 니가 대본을」 — 제작에서 너울이 장옷으로 바뀜(3고 대본엔 너울). 원문 대조 시험(V-16)은 원문에 이 치환을 적용한 뒤 비교 |
+
+---
+
+## v1 ~ v3 (2026-10-13, 지난 판 — v4 에서 대체. 기록으로 둔다)
 
 규칙(결정로그 10-13): 새로 발명하지 않는다 — 모아 둔 레퍼런스의 구체적 부분에서 따와 바꾼다.
 경로의 `_분석` = `G:\내 드라이브\포폴 웹사이트 만들기\_분석\`. 정밀 분석 = `_분석\레퍼런스\정밀\*.md` 의 5절(「우리 사이트로 옮기기」) 「우리 제안」 수치.

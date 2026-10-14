@@ -1,1094 +1,784 @@
 /**
- * 백테스트 — docs/contract.md 4절 「작가가 지적한 것」 11개, 시험 하나씩(이름에 번호).
+ * v4 규약 시험 — docs/contract.md 4절(설계서 docs/v4-redesign.md 4절 + 메인 지시 10-14: 잠든 벽 인트로 · 영상 먼저 히어로 ·
+ * 한 컷이 만들어진 순서(고정 무대 4걸음) · 툴 2×2 · 이전/다음 · 작가 지시 편집).
  * 실패하면 사이트를 고친다. 시험을 느슨하게 고치지 않는다.
- *
- * 태그: @once = 화면 크기와 무관해서 데스크톱 1440 에서만 · @mobile = 모바일 390 에서만 · 없음 = 세 화면 모두.
- * 각 시험은 방을 하나씩 돌며 문제를 모아서 한 번에 보고한다(첫 실패에서 멈추지 않는다).
+ * 태그: @once = 화면 크기와 무관(1440 에서만). 없음 = 1440 · 1280 둘 다.
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import type { Page } from '@playwright/test';
+import { AUTHOR_EDITS } from '../src/data/edits';
 import {
+  ABSENT_ROOMS,
   CONTEST_WORDS_KO,
   CONTEST_WORD_OYE,
-  ABSENT_ROOMS,
-  DOORS,
-  DOOR_TARGETS,
+  CUT_STEPS,
+  HERO_MS,
   IMG_VIDEO_EXT,
   MAIN_WORKS,
   MEDIA_DIR,
-  PROCESS_READY,
+  PROCESS_DOC_DIR,
   PUBLIC_DIR,
   RASTER_VIDEO_EXT,
   ROOMS,
   SEL,
-  SETTLE_MS,
   SOURCE_FORM,
   SRC_DIR,
-  STEPS,
   TOOL_WORKS,
+  WALL_HOLD_FILES,
   WORKS,
-  YT_URL,
+  WORK_ROOMS,
   assertNoProblems,
-  contactProbe,
-  hookProbe,
-  loadSources,
+  boxProbe,
+  contactEmail,
   measureLanding,
   mediaRefs,
-  openToolCard,
+  motionProbe,
   overlayProbe,
   pageTexts,
-  pollProblems,
   readSources,
-  scrollToStep,
+  RESTRAINT,
+  screenStats,
   settle,
-  stepVisibleProbe,
   test,
-  tocState,
+  toCutStep,
+  visibleFontSizes,
   visit,
   walkFiles,
   type Work,
 } from './helpers';
-import type { Locator, Page } from '@playwright/test';
 
-const nameOfRoom = (p: string) => p;
+const norm = (s: string) => s.normalize('NFC').replace(/\s+/g, ' ').trim();
+const TOOLS_ROOM = ROOMS.find((x) => x.kind === 'tools')!;
 
-// ───────────────────────────── 공용 조각 ─────────────────────────────
-
-/** 보이는 [data-video] 를 훑어 겹침 문제를 모은다. mustHave=true 면 영상 자리가 0개일 때도 문제. */
-async function checkOverlay(page: Page, label: string, mustHave: boolean, out: string[], sel: string = SEL.video, tag = 'video') {
-  const end = Date.now() + 3_000;
-  let r = { count: 0, problems: [] as string[] };
-  for (;;) {
-    try {
-      r = await page.evaluate(overlayProbe, { sel, tag });
-    } catch (e) {
-      r = { count: 0, problems: [`측정 오류: ${(e as Error).message.split('\n')[0]}`] };
-    }
-    const settled = r.count > 0 ? r.problems.length === 0 : !mustHave;
-    if (settled || Date.now() >= end) break;
-    await page.waitForTimeout(300);
-  }
-  if (mustHave && r.count === 0) out.push(`${label}: 보이는 영상 자리 ${sel} 가 없음`);
-  for (const p of r.problems) out.push(`${label} ${p}`);
-}
-
-async function docRect(loc: Locator) {
-  return loc.evaluate((el) => {
-    const r = el.getBoundingClientRect();
-    return { x: r.left + scrollX, y: r.top + scrollY, w: r.width, h: r.height };
-  });
-}
-
-/** 영상 자리를 눌러 같은 페이지에 youtube-nocookie iframe 이 생기는지. 문제 목록을 돌려준다. */
-async function playInPlace(page: Page, spot: Locator, w: Work, label: string): Promise<string[]> {
+/** 같은 페이지 안에서 칸에 youtube-nocookie iframe 이 생기는지(새 탭 · 이동 금지) */
+async function expectPlayed(page: Page, cellSel: string, w: Work, label: string, start?: number): Promise<string[]> {
   const problems: string[] = [];
-  const ctx = page.context();
-  const urlBefore = page.url();
-  const pagesBefore = ctx.pages().length;
-  let popups = 0;
-  const onPopup = (p: Page) => {
-    popups++;
-    p.close().catch(() => {}); // 열린 새 탭은 닫아 뒤 단계에 영향이 없게
-  };
-  page.on('popup', onPopup);
+  const cell = page.locator(cellSel).first();
+  const iframe = cell.locator('iframe[src*="youtube-nocookie.com"]').first();
   try {
-    const idAttr = await spot.getAttribute('data-youtube-id');
-    if (idAttr !== w.yt) problems.push(`${label}: data-youtube-id="${idAttr}" (기대 ${w.yt})`);
-    let before: { x: number; y: number; w: number; h: number };
-    try {
-      await spot.scrollIntoViewIfNeeded({ timeout: 8_000 });
-      before = await docRect(spot);
-      await spot.click({ timeout: 8_000 });
-    } catch (e) {
-      problems.push(`${label}: 영상 자리를 누를 수 없음 — ${(e as Error).message.split('\n')[0]}`);
-      return problems;
-    }
-    const iframe = page.locator('iframe[src*="youtube-nocookie.com"]').first();
-    try {
-      await iframe.waitFor({ state: 'attached', timeout: 3_000 });
-    } catch {
-      problems.push(`${label}: 누른 뒤 youtube-nocookie iframe 이 생기지 않음`);
-    }
-    if (await iframe.count()) {
-      const src = (await iframe.getAttribute('src')) ?? '';
-      if (!src.includes(`/embed/${w.yt}`)) problems.push(`${label}: iframe src 에 /embed/${w.yt} 가 없음 (${src})`);
-      const box = await docRect(iframe);
-      const cx = box.x + box.w / 2;
-      const cy = box.y + box.h / 2;
-      if (cx < before.x - 4 || cx > before.x + before.w + 4 || cy < before.y - 4 || cy > before.y + before.h + 4) {
-        problems.push(`${label}: iframe 이 영상 자리 안에 생기지 않음 (자리 ${Math.round(before.x)},${Math.round(before.y)} ${Math.round(before.w)}x${Math.round(before.h)} / iframe 중심 ${Math.round(cx)},${Math.round(cy)})`);
-      }
-    }
-    if (page.url() !== urlBefore) problems.push(`${label}: 주소가 바뀜 ${urlBefore} → ${page.url()}`);
-    if (ctx.pages().length !== pagesBefore || popups > 0) problems.push(`${label}: 새 탭/창이 열림`);
-  } finally {
-    page.off('popup', onPopup);
+    await iframe.waitFor({ state: 'attached', timeout: 4_000 });
+  } catch {
+    return [`${label}: 누른 뒤 영상 칸 안에 youtube-nocookie iframe 이 생기지 않음`];
+  }
+  const src = (await iframe.getAttribute('src')) ?? '';
+  if (!src.includes(`/embed/${w.yt}`)) problems.push(`${label}: iframe src 에 /embed/${w.yt} 가 없음 (${src})`);
+  if (start !== undefined && !new RegExp(`[?&]start=${start}(&|$)`).test(src)) problems.push(`${label}: iframe src 에 start=${start} 가 없음 (${src})`);
+  const a = await cell.boundingBox();
+  const b = await iframe.boundingBox();
+  if (a && b) {
+    const cx = b.x + b.width / 2, cy = b.y + b.height / 2;
+    if (cx < a.x - 2 || cx > a.x + a.width + 2 || cy < a.y - 2 || cy > a.y + a.height + 2) problems.push(`${label}: iframe 이 영상 칸 밖에 생김`);
   }
   return problems;
 }
 
-// ───────────────────────────── 시험 ─────────────────────────────
+async function guardNav(page: Page, fn: () => Promise<void>): Promise<string[]> {
+  const problems: string[] = [];
+  const before = page.url();
+  const pages = page.context().pages().length;
+  let popups = 0;
+  const onPopup = (p: Page) => {
+    popups++;
+    p.close().catch(() => {});
+  };
+  page.on('popup', onPopup);
+  try {
+    await fn();
+  } finally {
+    page.off('popup', onPopup);
+  }
+  if (page.url() !== before) problems.push(`주소가 바뀜 ${before} → ${page.url()}`);
+  if (page.context().pages().length !== pages || popups) problems.push('새 탭/창이 열림');
+  return problems;
+}
 
-test.describe('contract 4절 백테스트', () => {
-  test('1. 작품 상세 3 주소 · 툴 방(카드 4)이 열리고, 홈 출입구 4개가 각 방으로 가며, 프리미어평가 · 소개 · 경력 · 작품목록 · 연락 방은 없다(404)', { tag: '@once' }, async ({ page }) => {
+test.describe('v4 규약(contract.md 4절)', () => {
+  test('V-1. 방 존재 — 홈 · 작품 방 3 · 툴 방이 열리고, 작품 목록 · 소개 · 연락 · 경력 방은 없다(404)', { tag: '@once' }, async ({ page }) => {
     const problems: string[] = [];
-
-    // 작품 상세 3개 주소
+    for (const r of ROOMS) {
+      const st = await visit(page, r.path);
+      if (st !== 200) problems.push(`${r.path} → HTTP ${st}`);
+    }
     for (const w of MAIN_WORKS) {
-      const p = `/works/${w.slug}/`;
-      const st = await visit(page, p);
-      if (st !== 200) {
-        problems.push(`${p} → HTTP ${st}`);
-        continue;
-      }
-      const n = await page.locator(SEL.work(w.slug)).count();
-      if (n !== 1) problems.push(`${p}: ${SEL.work(w.slug)} ${n}개 (1개여야 함)`);
-      if ((await page.locator(`${SEL.video}[data-youtube-id="${w.yt}"]`).count()) < 1) problems.push(`${p}: ${SEL.video}[data-youtube-id="${w.yt}"] 없음`);
+      await visit(page, `/works/${w.slug}/`);
+      if ((await page.locator(SEL.work(w.slug)).count()) !== 1) problems.push(`/works/${w.slug}/: [data-work="${w.slug}"] 가 하나가 아님`);
     }
-
-    // 홈 출입구 4개가 각 방으로 간다
-    for (const k of DOORS) {
-      const st = await visit(page, '/');
-      if (st !== 200) {
-        problems.push(`/ → HTTP ${st} (홈이 없음)`);
-        break;
-      }
-      await settle(page, Math.min(SETTLE_MS, 800));
-      const door = page.locator(SEL.door(k)).first();
-      if ((await door.count()) === 0) {
-        problems.push(`홈에 ${SEL.door(k)} 없음`);
-        continue;
-      }
-      const target = DOOR_TARGETS[k];
-      try {
-        await Promise.all([
-          page.waitForURL((u) => u.pathname.replace(/\/$/, '') === target.replace(/\/$/, ''), { timeout: 5_000 }),
-          door.click({ timeout: 4_000 }),
-        ]);
-      } catch (e) {
-        problems.push(`홈 출입구 ${k} 를 눌러 ${target} 로 가지 못함 (현재 ${new URL(page.url()).pathname}): ${(e as Error).message.split('\n')[0]}`);
-      }
-    }
-
-    // 있으면 안 되는 방은 404 — 작품 목록 · 소개 · 연락 · 경력/이력
+    await visit(page, '/tools/');
+    for (const w of TOOL_WORKS) if ((await page.locator(SEL.tool(w.slug)).count()) !== 1) problems.push(`/tools/: [data-tool="${w.slug}"] 없음`);
+    await visit(page, '/?skipIntro');
+    if ((await page.locator(SEL.wall).count()) !== 1) problems.push('/: 작업 벽 [data-wall] 없음');
     for (const p of ABSENT_ROOMS) {
       const st = await visit(page, p);
-      if (st !== 404) problems.push(`${p} → HTTP ${st} (404 여야 함 — 이 방은 만들지 않는다)`);
+      if (st !== 404) problems.push(`${p} → HTTP ${st} (있으면 안 되는 방)`);
     }
-
-    // 툴 카드 4개 — 눌러서 모달이 열린다
-    {
-      const st = await visit(page, '/tools/');
-      if (st !== 200) problems.push(`/tools/ → HTTP ${st}`);
-      else {
-        const slugs = await page
-          .locator(SEL.toolCard)
-          .evaluateAll((els) => els.map((e) => e.getAttribute('data-work') ?? e.getAttribute('data-tool') ?? '').filter(Boolean).sort());
-        const want = TOOL_WORKS.map((w) => w.slug).sort();
-        if (JSON.stringify(slugs) !== JSON.stringify(want)) problems.push(`/tools/ 의 카드 [${slugs.join(', ')}] (기대 [${want.join(', ')}])`);
-        for (const w of TOOL_WORKS) {
-          await visit(page, '/tools/');
-          const why = await openToolCard(page, w);
-          if (why) problems.push(`/tools/ ${w.slug}: ${why}`);
-        }
-      }
-    }
-
-    // 프리미어평가는 어느 방에도 없다
-    for (const room of ROOMS) {
-      const st = await visit(page, room.path);
-      if (st !== 200) continue;
-      const texts = (await page.evaluate(pageTexts)).join('\n');
-      const squeezed = texts.replace(/\s+/g, '');
-      if (/프리미어평가/.test(squeezed) || /premiere\s*(평가|eval)/i.test(texts) || /요지야마모토|yohji/i.test(squeezed)) {
-        problems.push(`${room.path}: 프리미어평가(요지 야마모토 런웨이) 글자가 있음`);
-      }
-      const hrefs = await page.$$eval('a[href]', (as) => as.map((a) => (a as HTMLAnchorElement).pathname));
-      if (hrefs.some((h) => /premier/i.test(h))) problems.push(`${room.path}: premiere 로 가는 링크가 있음`);
-
-      // 사이트 안 링크는 있는 방으로만 간다(소개 · 연락 · 작품 목록으로 가는 죽은 링크 금지)
-      const live = new Set(ROOMS.map((r) => r.path.replace(/\/$/, '') || '/'));
-      const internal = await page.evaluate(() =>
-        Array.from(document.querySelectorAll<HTMLAnchorElement>('a[href]'))
-          .filter((a) => a.origin === location.origin && !a.pathname.startsWith('/media/') && !/\.[a-z0-9]{2,5}$/i.test(a.pathname))
-          .map((a) => a.pathname.replace(/\/$/, '') || '/'),
-      );
-      for (const h of new Set(internal)) if (!live.has(h)) problems.push(`${room.path}: 없는 방으로 가는 링크 ${h}`);
-
-      // 증명사진은 쓰지 않는다(작가 확인 전까지)
-      const photos = await page.$$eval('img', (imgs) =>
-        imgs.map((i) => `${i.getAttribute('src') ?? ''} ${i.getAttribute('alt') ?? ''}`).filter((s) => /증명|id[-_ ]?photo|headshot|portrait/i.test(s)),
-      );
-      if (photos.length) problems.push(`${room.path}: 증명사진으로 보이는 이미지 ${photos.join(' | ')}`);
-    }
-    for (const f of walkFiles(MEDIA_DIR)) if (/증명|id[-_ ]?photo|headshot/i.test(f)) problems.push(`public/media/${f}: 증명사진은 쓰지 않는다`);
-
-    assertNoProblems('작품 상세 · 툴 방 · 출입구 · 없는 방(404)', problems);
+    assertNoProblems('방 존재', problems);
   });
 
-  test('2. 모든 방에서 상단 바의 연락(이메일 한 줄)이 화면 안에 보인다', async ({ page }, testInfo) => {
-    const problems: string[] = [];
-    for (const room of ROOMS) {
-      const st = await visit(page, room.path);
-      if (st !== 200) {
-        problems.push(`${nameOfRoom(room.path)} → HTTP ${st} (방이 없음)`);
-        continue;
-      }
-      const top = await pollProblems(page, contactProbe, 3_000);
-      for (const p of top) problems.push(`${room.path} (맨 위): ${p}`);
-      // 긴 방은 맨 아래까지 내려도 보여야 한다(상단 바가 늘 붙어 있다)
-      const scrollable = await page.evaluate(() => document.documentElement.scrollHeight > window.innerHeight + 4);
-      if (scrollable) {
-        await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-        await page.waitForTimeout(400);
-        const bottom = await pollProblems(page, contactProbe, 2_000);
-        for (const p of bottom) problems.push(`${room.path} (맨 아래로 스크롤): ${p}`);
-      }
-    }
-    assertNoProblems(`[연락] 보임 · ${testInfo.project.name}`, problems);
-  });
-
-  test('3. 영상 자리 위에 다른 요소가 겹치지 않는다(가운데 · 네 귀퉁이)', async ({ page }, testInfo) => {
-    const problems: string[] = [];
-    const detailPaths = new Set(MAIN_WORKS.map((w) => `/works/${w.slug}/`));
-
-    for (const room of ROOMS) {
-      const st = await visit(page, room.path);
-      if (st !== 200) {
-        problems.push(`${room.path} → HTTP ${st} (방이 없음)`);
-        continue;
-      }
-      await settle(page, Math.min(SETTLE_MS, 800));
-      const isDetail = detailPaths.has(room.path);
-      // 후킹 구역의 로컬 클립 <video> 에도 같은 규칙 (첫 화면이라 풀영상보다 먼저 본다)
-      if (isDetail) await checkOverlay(page, `${room.path} (후킹 클립)`, true, problems, SEL.hookVideo, 'hook');
-      await checkOverlay(page, `${room.path} (재생 전)`, isDetail, problems);
-
-      // 재생 후에도 영상 위에 아무것도 올라오지 않는다
-      if (isDetail && (await page.locator(SEL.video).count()) > 0) {
-        try {
-          await page.locator(SEL.video).first().click({ timeout: 4_000 });
-          await page.locator('iframe[src*="youtube-nocookie.com"]').first().waitFor({ state: 'attached', timeout: 3_000 });
-          await settle(page, 400);
-          await checkOverlay(page, `${room.path} (재생 후)`, false, problems);
-        } catch {
-          /* 누르기 실패는 시험 4 가 따로 보고한다 */
-        }
-      }
-    }
-
-    // 툴 모달 안의 영상 자리
-    if ((await visit(page, '/tools/')) === 200) {
-      for (const w of TOOL_WORKS) {
-        await visit(page, '/tools/');
-        const why = await openToolCard(page, w);
-        if (why) {
-          problems.push(`/tools/ ${w.slug}: ${why}`);
-          continue;
-        }
-        await settle(page, 500);
-        await checkOverlay(page, `/tools/ ${w.slug} 모달`, true, problems);
-      }
-    }
-    assertNoProblems(`영상 위 겹침 · ${testInfo.project.name}`, problems);
-  });
-
-  test('4. 영상 자리를 누르면 같은 페이지 안에 유튜브 iframe 이 생긴다(새 탭 · 이동 금지)', async ({ page }, testInfo) => {
-    const problems: string[] = [];
-
-    for (const w of MAIN_WORKS) {
-      const p = `/works/${w.slug}/`;
-      const st = await visit(page, p);
-      if (st !== 200) {
-        problems.push(`${p} → HTTP ${st} (방이 없음)`);
-        continue;
-      }
-      await settle(page, Math.min(SETTLE_MS, 800));
-      const spot = page.locator(SEL.video).first();
-      if ((await spot.count()) === 0) {
-        problems.push(`${p}: ${SEL.video} 없음`);
-        continue;
-      }
-      problems.push(...(await playInPlace(page, spot, w, p)));
-    }
-
-    for (const w of TOOL_WORKS) {
-      const st = await visit(page, '/tools/');
-      if (st !== 200) {
-        problems.push(`/tools/ → HTTP ${st} (방이 없음)`);
-        break;
-      }
-      const why = await openToolCard(page, w);
-      if (why) {
-        problems.push(`/tools/ ${w.slug}: ${why}`);
-        continue;
-      }
-      const spot = page.locator(SEL.modal).locator(`${SEL.video}[data-youtube-id="${w.yt}"]`).first();
-      problems.push(...(await playInPlace(page, spot, w, `/tools/ ${w.slug} 모달`)));
-    }
-    assertNoProblems(`영상 자리 누르기 · ${testInfo.project.name}`, problems);
-  });
-
-  test('5. 작품 상세 한 페이지 안에 다른 작품의 영상이 없다(작품별 구역)', { tag: '@once' }, async ({ page }) => {
-    const problems: string[] = [];
-    for (const w of MAIN_WORKS) {
-      const p = `/works/${w.slug}/`;
-      const st = await visit(page, p);
-      if (st !== 200) {
-        problems.push(`${p} → HTTP ${st} (방이 없음)`);
-        continue;
-      }
-      const roots = await page.locator('[data-work]').evaluateAll((els) => els.map((e) => e.getAttribute('data-work')));
-      if (roots.length !== 1 || roots[0] !== w.slug) problems.push(`${p}: [data-work] 가 [${roots.join(', ')}] (기대 [${w.slug}] 하나)`);
-
-      const ids = await page.locator(SEL.video).evaluateAll((els) => els.map((e) => e.getAttribute('data-youtube-id')));
-      if (ids.length === 0) problems.push(`${p}: ${SEL.video} 없음`);
-      for (const id of ids) if (id !== w.yt) problems.push(`${p}: 영상 자리 data-youtube-id="${id}" (이 작품은 ${w.yt})`);
-
-      // 다른 작품의 유튜브 ID 가 속성(iframe · 링크 · 데이터)이나 글자 어디에도 없어야 한다
-      const others = WORKS.filter((o) => o.slug !== w.slug);
-      const leaks = await page.evaluate((ids2) => {
-        const hits: string[] = [];
-        const attrs: string[] = [];
-        document.querySelectorAll('*').forEach((e) => {
-          if (['SCRIPT', 'STYLE'].includes(e.tagName)) return;
-          for (const a of Array.from(e.attributes)) attrs.push(a.value);
-        });
-        const text = document.body.innerText;
-        for (const o of ids2) if (attrs.some((v) => v.includes(o.yt)) || text.includes(o.yt)) hits.push(`${o.slug}(${o.yt})`);
-        return hits;
-      }, others.map((o) => ({ slug: o.slug, yt: o.yt })));
-      for (const l of leaks) problems.push(`${p}: 다른 작품 ${l} 의 영상 ID 가 이 페이지에 있음`);
-    }
-    assertNoProblems('작품별 구역', problems);
-  });
-
-  test('6. 모바일 390 에서 가로 넘침이 없다', { tag: '@mobile' }, async ({ page, browser }, testInfo) => {
-    const problems: string[] = [];
-    const vw = testInfo.project.use.viewport?.width ?? 390;
-    const vh = testInfo.project.use.viewport?.height ?? 844;
-
-    // 모바일 에뮬레이션은 넘침이 있으면 레이아웃 폭을 키워 버려 범인이 안 보인다 →
-    // 범인 찾기는 "축소 없는" 같은 폭의 일반 컨텍스트에서 한다.
-    let culpritPage: Page | null = null;
-    const culpritsOf = async (url: string, openCard?: Work): Promise<string> => {
-      if (!culpritPage) {
-        const c = await browser.newContext({ baseURL: testInfo.project.use.baseURL, viewport: { width: vw, height: vh } });
-        await c.route(YT_URL, (r) => r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html>' }));
-        culpritPage = await c.newPage();
-      }
-      await visit(culpritPage, url);
-      if (openCard) await openToolCard(culpritPage, openCard);
-      await settle(culpritPage, 600);
-      const list = await culpritPage.evaluate((w) => {
-        const el = (e: Element) => `<${e.tagName.toLowerCase()}${typeof (e as HTMLElement).className === 'string' && (e as HTMLElement).className ? '.' + (e as HTMLElement).className.trim().split(/\s+/).slice(0, 2).join('.') : ''}>`;
-        const clipped = (e: Element) => {
-          for (let a = e.parentElement; a && a !== document.documentElement && a !== document.body; a = a.parentElement) {
-            const c = getComputedStyle(a);
-            if (c.overflowX !== 'visible' && a.getBoundingClientRect().right <= w + 1) return true;
-          }
-          return false;
-        };
-        const over = Array.from(document.querySelectorAll<HTMLElement>('body *'))
-          .map((e) => ({ e, r: e.getBoundingClientRect() }))
-          .filter(({ e, r }) => r.width > 0 && r.right > w + 1 && getComputedStyle(e).display !== 'none' && !clipped(e));
-        // 부모는 안 넘치는데 자기만 넘치는 것 = 첫 원인
-        const first = over.filter(({ e }) => !e.parentElement || e.parentElement.getBoundingClientRect().right <= w + 1 || e.parentElement === document.body);
-        return (first.length ? first : over)
-          .sort((a, b) => b.r.right - a.r.right)
-          .slice(0, 4)
-          .map(({ e, r }) => `${el(e)} 오른쪽 끝 ${Math.round(r.right)}px`)
-          .join(' · ');
-      }, vw);
-      return list ? ` — 넘치는 요소: ${list}` : '';
-    };
-
-    const probe = (expected: number) =>
-      page.evaluate((w) => {
-        const why: string[] = [];
-        const de = document.documentElement;
-        if (window.innerWidth > w + 1) why.push(`레이아웃 폭 ${window.innerWidth}px > ${w}px (viewport 메타가 없거나, 가로로 넘치는 내용 때문에 모바일 화면이 확대/축소됨)`);
-        if (de.scrollWidth > w + 1) why.push(`documentElement.scrollWidth ${de.scrollWidth} > 화면 ${w}`);
-        if (document.body.scrollWidth > w + 1) why.push(`body.scrollWidth ${document.body.scrollWidth} > 화면 ${w}`);
-        window.scrollTo(60, 0);
-        if (window.scrollX > 0) why.push(`가로로 ${Math.round(window.scrollX)}px 스크롤됨`);
-        window.scrollTo(0, 0);
-        return why;
-      }, expected);
-
-    for (const room of ROOMS) {
-      const st = await visit(page, room.path);
-      if (st !== 200) {
-        problems.push(`${room.path} → HTTP ${st} (방이 없음)`);
-        continue;
-      }
-      await settle(page, Math.min(SETTLE_MS, 800));
-      const why = await probe(vw);
-      if (why.length) problems.push(`${room.path}: ${why.join(' / ')}${await culpritsOf(room.path)}`);
-    }
-    if ((await visit(page, '/tools/')) === 200) {
-      for (const w of TOOL_WORKS) {
-        await visit(page, '/tools/');
-        const why = await openToolCard(page, w);
-        if (why) {
-          problems.push(`/tools/ ${w.slug}: ${why}`);
-          continue;
-        }
-        await settle(page, 400);
-        const over = await probe(vw);
-        if (over.length) problems.push(`/tools/ ${w.slug} 모달: ${over.join(' / ')}${await culpritsOf('/tools/', w)}`);
-      }
-    }
-    if (culpritPage) await (culpritPage as Page).context().close();
-    assertNoProblems('가로 넘침 (모바일 390)', problems);
-  });
-
-  test('7. 콘솔 오류 0 (전 방 · 툴 모달 · 요청 실패 · 4xx/5xx 포함)', async ({ page }, testInfo) => {
+  test('V-2. 콘솔 오류 0 — 전 방 · 인트로 입장 · 영상 재생 · 과정 걸음 · 요청 실패 · 4xx/5xx 포함', async ({ page }, testInfo) => {
     const problems: string[] = [];
     let where = '(시작)';
-    page.on('console', (m) => {
-      if (m.type() === 'error') problems.push(`[${where}] console.error: ${m.text()}${m.location().url ? ` @ ${m.location().url}` : ''}`);
-    });
+    page.on('console', (m) => m.type() === 'error' && problems.push(`[${where}] console.error: ${m.text()}`));
     page.on('pageerror', (e) => problems.push(`[${where}] pageerror: ${e.message.split('\n')[0]}`));
     page.on('requestfailed', (r) => {
       const err = r.failure()?.errorText ?? '';
-      if (/ERR_ABORTED/.test(err)) return; // 이동 중 취소된 요청은 오류 아님
-      problems.push(`[${where}] 요청 실패: ${r.url()} (${err})`);
+      if (!/ERR_ABORTED/.test(err)) problems.push(`[${where}] 요청 실패: ${r.url()} (${err})`);
     });
-    page.on('response', (r) => {
-      if (r.status() >= 400) problems.push(`[${where}] HTTP ${r.status()}: ${r.url()}`);
-    });
-
-    for (const room of ROOMS) {
-      where = room.path;
-      await visit(page, room.path);
-      await settle(page, Math.min(SETTLE_MS, 1000));
-    }
-    where = '/tools/ (카드 열기)';
-    if ((await page.goto('/tools/'))?.status() === 200) {
-      for (const w of TOOL_WORKS) {
-        where = `/tools/ ${w.slug} 모달`;
-        await visit(page, '/tools/');
-        const why = await openToolCard(page, w);
-        if (why) problems.push(`[${where}] ${why}`);
-        await settle(page, 400);
+    page.on('response', (r) => r.status() >= 400 && problems.push(`[${where}] HTTP ${r.status()}: ${r.url()}`));
+    where = '/ 인트로';
+    await visit(page, '/');
+    await settle(page, 1300);
+    await page.mouse.wheel(0, 120);
+    await settle(page, 2800);
+    for (const r of ROOMS) {
+      where = r.path;
+      await visit(page, r.path);
+      await settle(page, 1200);
+      if (r.kind === 'work') for (const k of [1, 2, 3, 4]) await toCutStep(page, k, 500);
+      const btn = page.locator(SEL.play).first();
+      if (await btn.count()) {
+        where = `${r.path} 재생`;
+        await btn.click();
+        await settle(page, 600);
       }
     }
-    // 같은 오류가 여러 번 찍히면 한 줄로
-    const uniq = [...new Set(problems)];
-    assertNoProblems(`콘솔 오류 · ${testInfo.project.name}`, uniq);
+    assertNoProblems(`콘솔 오류 · ${testInfo.project.name}`, [...new Set(problems)]);
   });
 
-  test('8. 공모전 이름(비글루 · OYE · 서울드라마어워즈 · 페스티벌 · 챌린지 · 공모전)이 페이지 글자 어디에도 없다', { tag: '@once' }, async ({ page }) => {
+  test('V-3. 영상 위 덮개 0 — 재생 전(후킹 클립 · 포스터) · 재생 후(iframe) 모두', async ({ page }, testInfo) => {
     const problems: string[] = [];
-    const scan = async (label: string) => {
-      const texts = await page.evaluate(pageTexts);
-      const joined = texts.join('\n');
-      const squeezed = joined.replace(/\s+/g, '');
-      for (const w of CONTEST_WORDS_KO) if (squeezed.includes(w)) problems.push(`${label}: 「${w}」`);
-      if (CONTEST_WORD_OYE.test(joined)) problems.push(`${label}: 「OYE」`);
+    const check = async (label: string) => {
+      const r = await page.evaluate(overlayProbe, { sel: SEL.video, tag: 'video' });
+      if (r.count === 0) problems.push(`${label}: 보이는 영상 칸이 없음`);
+      for (const p of r.problems) problems.push(`${label} ${p}`);
     };
-    for (const room of ROOMS) {
-      const st = await visit(page, room.path);
-      if (st !== 200) {
-        problems.push(`${room.path} → HTTP ${st} (방이 없음 — 글자를 못 읽음)`);
-        continue;
-      }
-      await scan(room.path);
+    for (const r of [...WORK_ROOMS, TOOLS_ROOM]) {
+      await visit(page, r.path);
+      await settle(page, HERO_MS);
+      await check(`${r.path} 재생 전`);
+      await page.locator(SEL.play).first().click();
+      await settle(page, 800);
+      await check(`${r.path} 재생 후`);
     }
-    if ((await visit(page, '/tools/')) === 200) {
-      for (const w of TOOL_WORKS) {
-        await visit(page, '/tools/');
-        if (!(await openToolCard(page, w))) await scan(`/tools/ ${w.slug} 모달`);
-      }
+    assertNoProblems(`영상 위 덮개 · ${testInfo.project.name}`, problems);
+  });
+
+  test('V-4. 페이지 안 재생 — 「▶ 풀영상 재생」 · 클립 직접 클릭 · 툴 4편 모두 같은 자리 iframe(새 탭 · 이동 금지)', { tag: '@once' }, async ({ page }) => {
+    const problems: string[] = [];
+    for (const w of MAIN_WORKS) {
+      const p = `/works/${w.slug}/`;
+      await visit(page, p);
+      await settle(page, HERO_MS);
+      problems.push(...(await guardNav(page, () => page.locator(SEL.play).first().click())).map((m) => `${p} 재생 줄: ${m}`));
+      problems.push(...(await expectPlayed(page, `${SEL.vbox} ${SEL.video}`, w, `${p} 재생 줄`)));
+      await visit(page, p);
+      await settle(page, HERO_MS);
+      problems.push(...(await guardNav(page, () => page.locator(`${SEL.video} .hook`).first().click())).map((m) => `${p} 클립: ${m}`));
+      problems.push(...(await expectPlayed(page, `${SEL.vbox} ${SEL.video}`, w, `${p} 클립`)));
     }
+    for (const w of TOOL_WORKS) {
+      await visit(page, '/tools/');
+      await settle(page, 600);
+      problems.push(...(await guardNav(page, () => page.locator(`${SEL.tool(w.slug)} .play`).click())).map((m) => `/tools/ ${w.slug}: ${m}`));
+      problems.push(...(await expectPlayed(page, `${SEL.tool(w.slug)} ${SEL.video}`, w, `/tools/ ${w.slug}`)));
+    }
+    assertNoProblems('페이지 안 재생', problems);
+  });
+
+  test('V-5. 공모전 낱말 0 — 화면 글자(숨은 글 · alt · meta 포함) · 각 방 HTML · public 의 글 파일', { tag: '@once' }, async ({ page }) => {
+    const problems: string[] = [];
+    const check = (label: string, s: string) => {
+      const sq = s.replace(/\s+/g, '');
+      for (const w of CONTEST_WORDS_KO) if (sq.includes(w)) problems.push(`${label}: 「${w}」`);
+      if (CONTEST_WORD_OYE.test(s)) problems.push(`${label}: 「OYE」`);
+    };
+    for (const r of [...ROOMS, { path: '/' }, { path: '/없는-주소/' }]) {
+      await visit(page, r.path);
+      check(`${r.path} 글자`, (await page.evaluate(pageTexts)).join('\n'));
+      check(`${r.path} HTML`, await page.content());
+    }
+    for (const f of walkFiles(PUBLIC_DIR).filter((f) => /\.(json|txt|html?|svg|css|js|mjs|xml|md|vtt|srt)$/i.test(f))) check(`public/${f}`, fs.readFileSync(path.join(PUBLIC_DIR, f), 'utf8'));
     assertNoProblems('공모전 낱말', problems);
   });
 
-  test('8-b. 사이트에 실리는 파일(public/ 의 글 파일)과 각 방의 HTML 소스(속성 · 숨은 글 포함)에도 공모전 이름이 없다', { tag: '@once' }, async ({ page }) => {
-    // 10-13: 출처 기록(public/media/출처.json)이 주소로 열려 원본 폴더 이름(공모전명)이 새고 있었다 — 화면 글자만 보는 8번으로는 못 잡는다
+  test('V-6. 미디어 출처 — public/media 의 이미지 · 영상은 전부 media-sources.json 에 출처 · 페이지는 /media/ 밖 이미지를 끌어오지 않는다 · 보류 칸 0', { tag: '@once' }, async ({ page, baseURL }) => {
     const problems: string[] = [];
-    const check = (label: string, s: string) => {
-      const squeezed = s.replace(/\s+/g, '');
-      for (const w of CONTEST_WORDS_KO) if (squeezed.includes(w)) problems.push(`${label}: 「${w}」`);
-      if (CONTEST_WORD_OYE.test(s)) problems.push(`${label}: 「OYE」`);
-    };
-    for (const f of walkFiles(PUBLIC_DIR).filter((f) => /\.(json|txt|html?|svg|css|js|mjs|xml|md|vtt|srt)$/i.test(f))) {
-      check(`public/${f}`, fs.readFileSync(path.join(PUBLIC_DIR, f), 'utf8'));
-    }
-    for (const room of ROOMS) {
-      if ((await visit(page, room.path)) !== 200) continue;
-      check(`${room.path} HTML`, await page.content());
-    }
-    assertNoProblems('사이트에 실리는 파일의 공모전 낱말', problems);
-  });
-
-  test('9. 이미지 · 영상 파일은 전부 public/media/ 에 있고 각각 출처.json 에 출처가 있다', { tag: '@once' }, async ({ page, baseURL }) => {
-    const problems: string[] = [];
-
-    // (a) public/media/ 파일 ↔ 출처.json
-    // 출처를 요구하는 것은 이미지 · 영상 파일. 데이터 파일(.json 등)은 대상이 아니다.
-    const files = walkFiles(MEDIA_DIR).filter((f) => IMG_VIDEO_EXT.test(f));
-    // 출처 기록은 사이트에 실리지 않게 public 밖(10-13 — 원본 폴더 경로에 공모전 이름이 들어 있다)
-    const srcFile = path.join(SRC_DIR, 'data', 'media-sources.json');
-    if (fs.existsSync(path.join(MEDIA_DIR, '출처.json'))) problems.push('public/media/출처.json 이 남아 있음 — 출처 기록은 src/data/media-sources.json 에만');
     let sources = new Map<string, string>();
-    if (!fs.existsSync(srcFile)) problems.push('src/data/media-sources.json 이 없음');
-    else {
-      try {
-        sources = readSources(fs.readFileSync(srcFile, 'utf8'));
-      } catch (e) {
-        problems.push(`src/data/media-sources.json 을 읽을 수 없음: ${(e as Error).message}`);
-      }
+    try {
+      sources = readSources(fs.readFileSync(path.join(SRC_DIR, 'data', 'media-sources.json'), 'utf8'));
+    } catch (e) {
+      problems.push(`media-sources.json 을 읽을 수 없음: ${(e as Error).message}`);
     }
-    if (files.length === 0) problems.push('public/media/ 에 파일이 하나도 없음 (포스터 · 증명사진 등이 있어야 함)');
-    for (const f of files) {
-      const src = (sources.get(f) ?? sources.get(path.posix.basename(f)) ?? '').trim();
-      if (!src) problems.push(`출처 없음: public/media/${f}`);
-      else if (!SOURCE_FORM.test(src)) problems.push(`출처가 「완성본 파일명·시점 / 작가 캡처 / 시트」 꼴이 아님: public/media/${f} → "${src}"`);
+    for (const f of walkFiles(MEDIA_DIR).filter((f) => IMG_VIDEO_EXT.test(f))) {
+      const s = (sources.get(f) ?? sources.get(path.posix.basename(f)) ?? '').trim();
+      if (!s) problems.push(`출처 없음: public/media/${f}`);
+      else if (!SOURCE_FORM.test(s)) problems.push(`출처 꼴이 아님: public/media/${f} → "${s}"`);
     }
-
-    // (b) public/ 의 다른 곳 · src/ 에 이미지 · 영상이 숨어 있지 않다 (favicon 은 예외)
-    for (const f of walkFiles(PUBLIC_DIR)) {
-      if (f.startsWith('media/')) continue;
-      if (/^favicon\.[a-z]+$/i.test(f)) continue;
-      if (IMG_VIDEO_EXT.test(f)) problems.push(`public/${f}: 이미지 · 영상은 public/media/ 에 둘 것`);
-    }
-    for (const f of walkFiles(SRC_DIR)) if (RASTER_VIDEO_EXT.test(f)) problems.push(`src/${f}: 이미지 · 영상은 public/media/ 에 둘 것(빌드가 /_astro/ 로 빼 버린다)`);
-
-    // (c) 실제 페이지가 끌어오는 이미지 · 영상 주소가 전부 /media/ 안이고 파일이 있다
+    for (const f of walkFiles(PUBLIC_DIR)) if (!f.startsWith('media/') && IMG_VIDEO_EXT.test(f)) problems.push(`public/${f}: 이미지 · 영상은 public/media/ 에`);
+    for (const f of walkFiles(SRC_DIR)) if (RASTER_VIDEO_EXT.test(f)) problems.push(`src/${f}: 이미지 · 영상은 public/media/ 에`);
     const origin = new URL(baseURL ?? 'http://localhost:4322').origin;
-    for (const room of ROOMS) {
-      const st = await visit(page, room.path);
-      if (st !== 200) continue; // 방 없음은 시험 1 이 보고
+    for (const r of [...ROOMS, { path: '/' }, { path: '/없는-주소/' }]) {
+      await visit(page, r.path);
       for (const href of await page.evaluate(mediaRefs)) {
-        let u: URL;
-        try {
-          u = new URL(href);
-        } catch {
-          problems.push(`${room.path}: 해석 못 할 주소 ${href}`);
-          continue;
-        }
-        if (u.origin !== origin) problems.push(`${room.path}: 외부 이미지 · 영상 ${href}`);
-        else if (!u.pathname.startsWith('/media/')) problems.push(`${room.path}: /media/ 밖의 이미지 · 영상 ${u.pathname}`);
-        else if (!fs.existsSync(path.join(MEDIA_DIR, decodeURIComponent(u.pathname.slice('/media/'.length))))) problems.push(`${room.path}: 가리키는 파일이 없음 ${u.pathname}`);
+        const u = new URL(href);
+        if (u.origin !== origin) problems.push(`${r.path}: 외부 이미지 · 영상 ${href}`);
+        else if (!u.pathname.startsWith('/media/')) problems.push(`${r.path}: /media/ 밖 ${u.pathname}`);
+        else if (!fs.existsSync(path.join(MEDIA_DIR, decodeURIComponent(u.pathname.slice(7))))) problems.push(`${r.path}: 파일 없음 ${u.pathname}`);
+        if (WALL_HOLD_FILES.test(u.pathname)) problems.push(`${r.path}: 작가 확인 전 칸(뮤직비디오 face) ${u.pathname}`);
       }
     }
     assertNoProblems('미디어 출처', [...new Set(problems)]);
   });
 
-  test('10. 움직임 줄이기(prefers-reduced-motion)에서 전환 연출이 꺼진다', { tag: '@once' }, async ({ browser }, testInfo) => {
-    const sample = async (page: Page, ms: number) => {
-      const found = new Map<string, { kind: string; name: string; target: string; pseudo: string; dur: number; infinite: boolean }>();
-      let styleFrames = 0;
-      let lastFrames = 0;
-      const end = Date.now() + ms;
-      while (Date.now() < end) {
-        try {
-          const snap = await page.evaluate(() => {
-            const anims = document
-              .getAnimations()
-              .filter((a) => a.playState === 'running')
-              .map((a) => {
-                const t = a.effect?.getComputedTiming?.();
-                const tgt = (a.effect as KeyframeEffect | null)?.target as Element | null;
-                const cls = tgt && typeof (tgt as HTMLElement).className === 'string' ? (tgt as HTMLElement).className.trim().split(/\s+/).slice(0, 2).join('.') : '';
-                return {
-                  kind: a.constructor.name,
-                  name: (a as CSSAnimation).animationName ?? (a as CSSTransition).transitionProperty ?? a.id ?? '',
-                  target: tgt ? `${tgt.tagName.toLowerCase()}${(tgt as HTMLElement).id ? '#' + (tgt as HTMLElement).id : ''}${cls ? '.' + cls : ''}` : '',
-                  pseudo: (a.effect as KeyframeEffect | null)?.pseudoElement ?? '',
-                  dur: Number(t?.duration ?? 0),
-                  infinite: t?.iterations === Infinity,
-                };
-              });
-            return { anims, frames: (window as unknown as { __qaStyleFrames?: number }).__qaStyleFrames ?? 0 };
-          });
-          for (const a of snap.anims) found.set(`${a.kind}|${a.name}|${a.target}|${a.pseudo}`, a);
-          if (snap.frames < lastFrames) styleFrames += lastFrames; // 새 문서로 넘어감
-          lastFrames = snap.frames;
-        } catch {
-          /* 이동 중 컨텍스트 소멸 — 다음 표본에서 */
-        }
-        await page.waitForTimeout(40);
-      }
-      styleFrames += lastFrames;
-      return { anims: [...found.values()], styleFrames };
-    };
-
-    const run = async (reduce: boolean) => {
-      const context = await browser.newContext({
-        baseURL: testInfo.project.use.baseURL,
-        viewport: { width: 1440, height: 900 },
-        reducedMotion: reduce ? 'reduce' : 'no-preference',
-        locale: 'ko-KR',
-      });
-      // JS 로 그리는 연출(GSAP 등)은 Web Animations 에 안 잡힌다 → 인라인 style 이 바뀐 프레임 수를 센다
-      await context.addInitScript(() => {
-        const w = window as unknown as { __qaStyleFrames: number };
-        w.__qaStyleFrames = 0;
-        let last = -100;
-        new MutationObserver(() => {
-          const t = performance.now();
-          if (t - last > 10) {
-            w.__qaStyleFrames++;
-            last = t;
-          }
-        }).observe(document, { subtree: true, attributes: true, attributeFilter: ['style'] });
-      });
-      await context.route(/^https?:\/\/([a-z0-9-]+\.)*(youtube\.com|youtube-nocookie\.com|ytimg\.com|googlevideo\.com)\//i, (r) =>
-        r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html>' }),
-      );
-      const page = await context.newPage();
-      try {
-        const matches = async () => page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches);
-        // 첫 진입 연출 구간 + 홈 → 작품 전환 구간을 표본으로 잡는다
-        const st = await page.goto('/', { waitUntil: 'load' });
-        const entry = await sample(page, 2_000);
-        const door = page.locator(SEL.door('oneandonly')).first();
-        let navigated = false;
-        let navError = '';
-        let trans = { anims: [] as Awaited<ReturnType<typeof sample>>['anims'], styleFrames: 0 };
-        if ((await door.count()) === 0) navError = `홈에 ${SEL.door('oneandonly')} 출입구가 없어 전환을 눌러 볼 수 없음`;
-        else {
-          const clicking = door.click({ timeout: 4_000 }).catch((e: Error) => {
-            navError = `출입구 누르기 실패: ${e.message.split('\n')[0]}`;
-          });
-          trans = await sample(page, 1_800);
-          await clicking;
-          navigated = /\/works\/oneandonly\/?$/.test(new URL(page.url()).pathname);
-          if (!navigated && !navError) navError = `출입구를 눌러도 /works/oneandonly/ 로 가지 않음 (현재 ${new URL(page.url()).pathname})`;
-        }
-        const reducedOn = await matches().catch(() => reduce);
-        return { status: st?.status() ?? 0, entry, trans, navigated, navError, reducedOn };
-      } finally {
-        await context.close();
-      }
-    };
-
-    const reduced = await run(true);
-    const normal = await run(false);
-
-    const long = (a: { dur: number; infinite: boolean }) => !a.infinite && a.dur > 100;
-    const fmt = (a: { kind: string; name: string; target: string; pseudo: string; dur: number }) => `${a.kind}「${a.name}」 ${a.target}${a.pseudo} ${Math.round(a.dur)}ms`;
-    const reducedLong = [...reduced.entry.anims, ...reduced.trans.anims].filter(long);
-    const reducedInfinite = [...reduced.entry.anims, ...reduced.trans.anims].filter((a) => a.infinite);
-    const normalLong = [...normal.entry.anims, ...normal.trans.anims].filter(long);
-
-    testInfo.annotations.push(
-      { type: '움직임 허용 모드에서 잡힌 연출', description: `긴 애니메이션 ${normalLong.length}개 · 스타일 변화 프레임 ${normal.entry.styleFrames + normal.trans.styleFrames} (표본이 눈 먼 상태인지 가늠용)` },
-      { type: '움직임 줄이기 모드의 무한 반복', description: reducedInfinite.map(fmt).join(' / ') || '없음' },
-    );
-
-    const problems: string[] = [];
-    if (reduced.status !== 200) problems.push(`/ → HTTP ${reduced.status}`);
-    if (!reduced.reducedOn) problems.push('prefers-reduced-motion: reduce 가 브라우저에 적용되지 않음(시험 설정 오류)');
-    if (reduced.navError) problems.push(reduced.navError);
-    for (const a of reducedLong) problems.push(`움직임 줄이기인데 도는 애니메이션: ${fmt(a)}`);
-    const styleFrames = reduced.entry.styleFrames + reduced.trans.styleFrames;
-    if (styleFrames >= 12) problems.push(`움직임 줄이기인데 JS 가 ${styleFrames} 프레임에 걸쳐 인라인 style 을 계속 바꿈(스크립트 연출이 안 꺼짐)`);
-    assertNoProblems('움직임 줄이기', problems);
-  });
-
-  test('11. 첫 화면 전송량 2MB 이하(영상 · 유튜브 제외) · 한글 웹폰트는 서브셋', async ({ page, context }, testInfo) => {
-    const LIMIT = 2 * 1024 * 1024;
-    const FONT_MAX = 300 * 1024; // 서브셋이면 한 파일이 이 안쪽. 통짜 한글 폰트는 보통 1MB 이상.
+  test('V-7. 첫 화면 전송량 2MB 이하(영상 · 유튜브 제외) · 한글 웹폰트는 서브셋', async ({ page, context }, testInfo) => {
     const problems: string[] = [];
     const kb = (n: number) => `${(n / 1024).toFixed(0)}KB`;
-
-    for (const room of ROOMS) {
-      const m = await measureLanding(page, context, room.path);
-      if (m.status !== 200) {
-        problems.push(`${room.path} → HTTP ${m.status} (방이 없음 — 전송량을 못 잼)`);
-        continue;
-      }
-      const nm = (u: string) => {
-        const pn = new URL(u).pathname;
-        return path.basename(pn) || pn || u;
-      };
-      if (m.totalBytes > LIMIT) {
-        problems.push(`${room.path}: 첫 화면 ${kb(m.totalBytes)} > 2048KB — 큰 것: ${m.top.map((t) => `${nm(t.url)} ${kb(t.bytes)}`).join(', ')}`);
-      }
-      for (const f of m.fonts) {
-        const msg = `웹폰트 ${nm(f.url)} ${kb(f.bytes)} > ${kb(FONT_MAX)} (서브셋이 아닌 통짜로 보임)`;
-        if (f.bytes > FONT_MAX && !problems.some((p) => p.endsWith(msg))) problems.push(`${room.path}: ${msg}`);
-      }
+    for (const r of [{ path: '/' }, ...ROOMS]) {
+      const m = await measureLanding(page, context, r.path);
+      if (m.totalBytes > 2 * 1024 * 1024) problems.push(`${r.path}: ${kb(m.totalBytes)} > 2048KB — ${m.top.map((t) => `${path.basename(new URL(t.url).pathname)} ${kb(t.bytes)}`).join(', ')}`);
+      for (const f of m.fonts) if (f.bytes > 300 * 1024) problems.push(`${r.path}: 웹폰트 ${f.url} ${kb(f.bytes)} (서브셋 아님)`);
+      testInfo.annotations.push({ type: '전송량', description: `${r.path} ${kb(m.totalBytes)}` });
     }
     assertNoProblems(`첫 화면 전송량 · ${testInfo.project.name}`, problems);
   });
 
-  // ───────────────────────────── 부가 시험 (11개 밖 — 표식이 없으면 위 시험이 헛돌기 때문) ─────────────────────────────
-
-  test('+A. 작품 상세: 첫 화면 = 후킹(data-hook · 로컬 클립 · 출처.json) · 풀영상(data-video)은 접힘선 아래 · 표식', async ({ page }, testInfo) => {
+  test('V-8. 화면에 빈자리 표시 0 — [… 자리] · [확인 후] · 점선 상자 · data-placeholder 없음', { tag: '@once' }, async ({ page }) => {
     const problems: string[] = [];
-    const { map: sources, error: srcErr } = loadSources();
-    if (srcErr) problems.push(srcErr);
-
-    for (const w of MAIN_WORKS) {
-      const p = `/works/${w.slug}/`;
-      const st = await visit(page, p);
-      if (st !== 200) {
-        problems.push(`${p} → HTTP ${st} (방이 없음)`);
-        continue;
-      }
-      await settle(page, Math.min(SETTLE_MS, 1000));
-
-      // (a) 후킹 구역이 첫 화면(뷰포트 안)에 있고, 그 안 <video> 가 public/media/ 파일이며 출처.json 에 있다
-      let hook = await page.evaluate(hookProbe);
-      if (hook.found && hook.textLen < 8) {
-        // 대본이 타이핑되는 중일 수 있다 — 조금 기다렸다 다시 본다
-        await page.waitForTimeout(2_500);
-        hook = await page.evaluate(hookProbe);
-      }
-      if (!hook.found) problems.push(`${p}: ${SEL.hook} 없음`);
-      else {
-        if (hook.workRoot !== w.slug) problems.push(`${p}: ${SEL.hook} 가 ${SEL.work(w.slug)} 안에 있지 않음 (조상 data-work="${hook.workRoot}")`);
-        const shown = Math.min(hook.bottom, hook.vh) - Math.max(hook.top, 0);
-        const need = Math.min(hook.bottom - hook.top, hook.vh) * 0.5;
-        if (!(shown > 0 && shown >= need)) {
-          problems.push(`${p}: ${SEL.hook} 가 첫 화면에 없음 (y ${Math.round(hook.top)}~${Math.round(hook.bottom)} / 화면 높이 ${hook.vh}, 보이는 부분 ${Math.round(Math.max(shown, 0))}px)`);
-        }
-        if (hook.videoCount === 0) problems.push(`${p}: ${SEL.hook} 안에 <video> 없음`);
-        if (hook.videoCount > 0 && hook.srcs.length === 0) problems.push(`${p}: ${SEL.hookVideo} 에 src(또는 <source src>)가 없음`);
-        for (const src of hook.srcs) {
-          if (!src.startsWith('/media/')) {
-            problems.push(`${p}: 후킹 클립 src ${src} 가 /media/ 밖`);
-            continue;
-          }
-          const rel = decodeURIComponent(src.slice('/media/'.length));
-          if (!fs.existsSync(path.join(MEDIA_DIR, rel))) problems.push(`${p}: 후킹 클립 public/media/${rel} 파일이 없음`);
-          const s = (sources.get(rel) ?? sources.get(path.posix.basename(rel)) ?? '').trim();
-          if (!s) problems.push(`${p}: 후킹 클립 public/media/${rel} 가 출처.json 에 없음`);
-        }
-        if (hook.textLen < 8) problems.push(`${p}: ${SEL.hook} 안에 대본 글자가 거의 없음(${hook.textLen}자 — 타이핑이 안 나옴)`);
-      }
-
-      // (c) 풀영상(data-video, 유튜브)은 첫 화면 아래 — 스크롤해야 보인다
-      const v = page.locator(SEL.video).first();
-      if ((await v.count()) === 0) problems.push(`${p}: ${SEL.video} 없음`);
-      else {
-        const pos = await v.evaluate((el) => {
-          window.scrollTo(0, 0);
-          return { top: el.getBoundingClientRect().top, vh: window.innerHeight };
-        });
-        if (pos.top < pos.vh - 8) problems.push(`${p}: 풀영상 ${SEL.video} 가 첫 화면 안에 있음 (위쪽 y ${Math.round(pos.top)} < 화면 높이 ${pos.vh}) — 접힘선 아래여야 함`);
-        const ratio = await v.getAttribute('data-ratio');
-        if (ratio !== w.ratio) problems.push(`${p}: data-ratio="${ratio}" (기대 ${w.ratio})`);
-      }
-
-      for (const [name, sel] of [['대본', SEL.script], ['크레딧', SEL.credit], ['개요', SEL.overview]] as const) {
-        if ((await page.locator(sel).count()) === 0) problems.push(`${p}: ${name} ${sel} 없음`);
-      }
-      // 과정 구역(data-process)은 과정 데이터가 있는 작품에만 — 없는 작품에 빈 구역을 그리지 않는다(work-room.md 4절 · contract.md 4절 +A)
-      const nProc = await page.locator(SEL.process).count();
-      if (PROCESS_READY.includes(w.slug) && nProc !== 1) problems.push(`${p}: 과정 ${SEL.process} ${nProc}개 (과정 데이터가 있으니 1개여야 함)`);
-      if (!PROCESS_READY.includes(w.slug) && nProc !== 0) problems.push(`${p}: 과정 데이터가 없는데 ${SEL.process} 가 ${nProc}개 있음`);
+    for (const r of [...ROOMS, { path: '/' }]) {
+      await visit(page, r.path);
+      const t = (await page.evaluate(pageTexts)).join('\n');
+      for (const m of t.match(/\[[^\]\n]*(자리|확인 후|작가 문구|비움)[^\]\n]*\]/g) ?? []) problems.push(`${r.path}: 「${m}」`);
+      if (await page.locator('[data-placeholder]').count()) problems.push(`${r.path}: [data-placeholder] 가 있음`);
+      const dashed = await page.evaluate(() => Array.from(document.querySelectorAll<HTMLElement>('body *')).filter((e) => /dashed|dotted/.test(getComputedStyle(e).borderTopStyle + getComputedStyle(e).borderBottomStyle)).length);
+      if (dashed) problems.push(`${r.path}: 점선 테두리 ${dashed}개`);
     }
-    assertNoProblems(`작품 상세 첫 화면 · 표식 · ${testInfo.project.name}`, problems);
+    assertNoProblems('빈자리 표시', problems);
   });
 
-  test('+B. 홈: 한 화면(스크롤 없음) · 출입구 4개가 화면 안 네 모서리에 하나씩', async ({ page }, testInfo) => {
+  test('V-9. 글자 크기 단계 — 홈(인트로 · 벽) ≤ 4 · 작품 방 첫 화면 ≤ 6', async ({ page }, testInfo) => {
     const problems: string[] = [];
-    const st = await visit(page, '/');
-    if (st !== 200) problems.push(`/ → HTTP ${st}`);
-    await settle(page, Math.min(SETTLE_MS, 1000));
-    const scrolls = await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
-    if (scrolls > 4) problems.push(`홈이 한 화면을 ${scrolls}px 넘어 스크롤됨(홈은 스크롤 없음)`);
+    const sizes = async (label: string, max: number) => {
+      const r = await page.evaluate(visibleFontSizes);
+      testInfo.annotations.push({ type: '글자 크기', description: `${label}: ${r.sizes.join(' · ')}` });
+      if (r.sizes.length > max) problems.push(`${label}: ${r.sizes.length}단계 > ${max} — ${r.sizes.map((s) => `${s}px「${r.samples[String(s)]}」`).join(', ')}`);
+    };
+    await visit(page, '/');
+    await settle(page, 2600);
+    await sizes('홈 인트로', 4);
+    await visit(page, '/?skipIntro');
+    await settle(page, 1500);
+    await sizes('홈 벽', 4);
+    for (const r of WORK_ROOMS) {
+      await visit(page, r.path);
+      await settle(page, HERO_MS);
+      await sizes(`${r.path} 첫 화면`, 6);
+    }
+    assertNoProblems(`글자 크기 단계 · ${testInfo.project.name}`, problems);
+  });
+
+  test('V-10. 상자(테두리 있는 칸) — 홈 0 · 작품 방 · 툴 방은 표(메타 1)와 다음 작품 위 괘선 · 과정 연결 상자뿐', { tag: '@once' }, async ({ page }) => {
+    const problems: string[] = [];
+    for (const p of ['/', '/?skipIntro']) {
+      await visit(page, p);
+      await settle(page, 1500);
+      const b = await page.evaluate(boxProbe);
+      if (b.boxes.length || b.tables) problems.push(`${p}: 상자 ${b.boxes.length} · 표 ${b.tables} — ${b.boxes.slice(0, 5).join(', ')}`);
+    }
+    for (const r of [...WORK_ROOMS, TOOLS_ROOM]) {
+      await visit(page, r.path);
+      await settle(page, HERO_MS);
+      const b = await page.evaluate(boxProbe);
+      if (b.boxes.length) problems.push(`${r.path}: 표 · 다음 작품 · 과정 상자 밖 상자 ${b.boxes.length} — ${b.boxes.slice(0, 5).join(', ')}`);
+      if (b.tables > 2) problems.push(`${r.path}: 표 ${b.tables}개 > 2`);
+    }
+    assertNoProblems('상자', problems);
+  });
+
+  test('V-11. 움직임이 진입 뒤 멈춘다 — 진입 + 3초 뒤 getAnimations(실행 중) 0 · GSAP 실행 중 0 (벽 드래그 관성 · 스크롤 걸음 제외)', async ({ page }, testInfo) => {
+    const problems: string[] = [];
+    const probe = async (label: string) => {
+      const m = await page.evaluate(motionProbe);
+      if (m.css.length) problems.push(`${label}: CSS/WAAPI 실행 중 ${m.css.length} — ${m.css.slice(0, 4).join(', ')}`);
+      if (m.gsap !== 0) problems.push(`${label}: GSAP 실행 중 ${m.gsap}`);
+    };
+    await visit(page, '/');
+    await settle(page, 1300);
+    await page.mouse.wheel(0, 120);
+    await settle(page, 2000 + 3000);
+    await probe('/ 입장 뒤');
+    await visit(page, '/?skipIntro');
+    await settle(page, 3000);
+    await probe('/?skipIntro');
+    for (const r of [...WORK_ROOMS, TOOLS_ROOM]) {
+      await visit(page, r.path);
+      await settle(page, HERO_MS + 3000);
+      await probe(r.path);
+    }
+    assertNoProblems(`움직임 멈춤 · ${testInfo.project.name}`, problems);
+  });
+
+  test('V-12. 작품 방 첫 화면 — 영상 칸 60% 이상 · 제목(잘림 없음) · 대본 줄 · 메타 표(역할) 모두 보임 · 가로 넘침 없음', async ({ page }, testInfo) => {
+    const problems: string[] = [];
+    for (const r of WORK_ROOMS) {
+      await visit(page, r.path);
+      await settle(page, HERO_MS);
+      const m = await page.evaluate(
+        ({ t, role, v, line }) => {
+          const R = (s: string) => document.querySelector(s)?.getBoundingClientRect().toJSON() ?? null;
+          const tEl = document.querySelector<HTMLElement>(t);
+          return { vw: innerWidth, vh: innerHeight, sw: document.documentElement.scrollWidth, t: R(t), role: R(role), v: R(v), line: R(line), tw: tEl?.scrollWidth ?? 0, tc: tEl?.clientWidth ?? 0 };
+        },
+        { t: SEL.title, role: SEL.metaRow('role'), v: `.hero ${SEL.video}`, line: SEL.line },
+      );
+      const inView = (b: DOMRect | null) => !!b && b.top >= 0 && b.bottom <= m.vh && b.left >= 0 && b.right <= m.vw + 0.5;
+      if (!inView(m.t as DOMRect)) problems.push(`${r.path}: 제목이 첫 화면 밖`);
+      if (m.tw > m.tc + 1) problems.push(`${r.path}: 제목이 칸에 안 들어감(잘림) ${m.tw} > ${m.tc}`);
+      if (!inView(m.line as DOMRect)) problems.push(`${r.path}: 대본 첫 줄이 첫 화면 밖`);
+      // 9:16 은 메타 표가 영상 옆(첫 화면) · 16:9 는 영상 아래(첫 화면 작업물 ≥ 50% — 절제 규칙 6 · 메인 지시 10-14)
+      if (m.v && m.v.height > m.v.width && !inView(m.role as DOMRect)) problems.push(`${r.path}: 메타 표 역할 행이 첫 화면 밖`);
+      if (!m.v) problems.push(`${r.path}: 영상 칸 없음`);
+      else {
+        const vis = Math.max(0, Math.min(m.v.bottom, m.vh) - Math.max(m.v.top, 0)) / m.v.height;
+        if (vis < 0.6) problems.push(`${r.path}: 영상 칸이 첫 화면에 ${(vis * 100).toFixed(0)}% 보임(60% 이상이어야)`);
+        // 절제 규칙 6 — 첫 화면 작업물 면적 ≥ 50%. 9:16 세로 영상 한 편은 1440×900 에서 물리적으로 ≈ 24~31% 가 최대라
+        // (제목 · 메타가 첫 화면에 같이 있으려면) 영상 칸 높이 ≥ 80% 화면으로 대신 잰다 — 메인 · 작가 확인 필요(보고서)
+        const st = await page.evaluate(screenStats);
+        const vertical = m.v.height > m.v.width;
+        if (!vertical && st.media < RESTRAINT.firstMedia) problems.push(`${r.path}: 첫 화면 작업물 면적 ${(st.media * 100).toFixed(0)}% < 50%`);
+        if (vertical && m.v.height < m.vh * 0.8) problems.push(`${r.path}: 세로 영상 칸 높이 ${Math.round(m.v.height)} < 화면 80%`);
+        testInfo.annotations.push({ type: '영상 칸', description: `${r.path} 영상 칸 ${(vis * 100).toFixed(0)}% 보임 · 작업물 면적 ${(st.media * 100).toFixed(0)}%` });
+      }
+      if (m.sw > m.vw + 1) problems.push(`${r.path}: 가로 넘침 ${m.sw} > ${m.vw}`);
+    }
+    assertNoProblems(`작품 방 첫 화면 · ${testInfo.project.name}`, problems);
+  });
+
+  test('V-13. 홈 → 작품 방 2클릭 이내에 풀영상 재생 — 벽 목록 · 벽 타일 두 길', async ({ page }, testInfo) => {
+    const problems: string[] = [];
+    for (const w of MAIN_WORKS) {
+      await visit(page, '/?skipIntro');
+      await settle(page, 800);
+      await page.locator(SEL.wallLink(w.slug)).click(); // 클릭 1
+      await page.waitForURL(`**/works/${w.slug}/`, { timeout: 6_000 }).catch(() => problems.push(`목록 ${w.slug}: 방으로 가지 않음 (${page.url()})`));
+      await page.locator(SEL.work(w.slug)).waitFor({ timeout: 6_000 }).catch(() => {});
+      await settle(page, 400);
+      await page.locator(SEL.play).first().click(); // 클릭 2
+      problems.push(...(await expectPlayed(page, `${SEL.vbox} ${SEL.video}`, w, `목록 → ${w.slug}`)));
+    }
+    await visit(page, '/?skipIntro');
+    await settle(page, 1200);
     const vp = page.viewportSize()!;
-    const quadrants = new Map<string, string>();
-    for (const k of DOORS) {
-      const door = page.locator(SEL.door(k)).first();
-      if ((await door.count()) === 0) {
-        problems.push(`${SEL.door(k)} 없음`);
-        continue;
-      }
-      const box = await door.boundingBox();
-      if (!box || box.x < 0 || box.y < 0 || box.x + box.width > vp.width + 0.5 || box.y + box.height > vp.height + 0.5) {
-        problems.push(`${SEL.door(k)} 가 화면 밖`);
-        continue;
-      }
-      const q = `${box.y + box.height / 2 < vp.height / 2 ? '위' : '아래'}${box.x + box.width / 2 < vp.width / 2 ? '왼쪽' : '오른쪽'}`;
-      if (quadrants.has(q)) problems.push(`출입구 ${k} 와 ${quadrants.get(q)} 가 같은 모서리(${q})에 있음 — 네 모서리에 하나씩이어야 함`);
-      quadrants.set(q, k);
+    await page.mouse.move(vp.width / 2 + 30, vp.height / 2 + 20);
+    await settle(page, 300);
+    await page.mouse.click(vp.width / 2 + 30, vp.height / 2 + 20); // 클릭 1
+    await page.waitForURL(/\/(works\/[a-z]+|tools)\//, { timeout: 6_000 }).catch(() => problems.push(`가운데 타일: 방으로 가지 않음 (${page.url()})`));
+    await settle(page, 1200);
+    const u = new URL(page.url());
+    const w = u.pathname.startsWith('/works/') ? WORKS.find((x) => u.pathname.includes(x.slug)) : WORKS.find((x) => x.slug === u.hash.slice(1));
+    if (!w) problems.push(`가운데 타일: 어느 작품 방인지 모름 (${page.url()})`);
+    else {
+      const box = w.group === 'main' ? SEL.vbox : `${SEL.tool(w.slug)} ${SEL.vbox}`;
+      await page.locator(`${box} .play`).first().click(); // 클릭 2
+      problems.push(...(await expectPlayed(page, `${box} ${SEL.video}`, w, `타일 → ${w.slug}`)));
     }
-    assertNoProblems(`홈 출입구 배치 · ${testInfo.project.name}`, problems);
+    assertNoProblems(`2클릭 재생 · ${testInfo.project.name}`, problems);
   });
 
-  // ───────────────────────────── 작품 안 목차 (3절: data-toc · data-toc-item · data-step) ─────────────────────────────
-  const mapKey = (key: string) => (key.startsWith('#') ? (STEPS[Number(key.slice(1))] ?? key) : key);
-  const sameSet = (a: readonly string[], b: readonly string[]) => JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
-
-  test('+C. 작품 상세 과정 목차: 6칸 ↔ 단계 패널 6 짝 · 누르면 그 패널이 화면에 옴 · 스크롤하면 aria-current="step" 이 옮겨 감 (과정 데이터가 없는 작품은 목차 · 단계가 없다)', async ({ page }, testInfo) => {
+  test('V-14. 연락 링크는 mailto — 주소가 없으면 연락 링크 · 빈자리 표시 모두 없다', { tag: '@once' }, async ({ page }) => {
     const problems: string[] = [];
-    for (const w of MAIN_WORKS) {
-      const p = `/works/${w.slug}/`;
-      const st = await visit(page, p);
-      if (st !== 200) {
-        problems.push(`${p} → HTTP ${st} (방이 없음)`);
-        continue;
-      }
-      await settle(page, 600);
-      const s0 = await page.evaluate(tocState);
-      if (!PROCESS_READY.includes(w.slug)) {
-        // 과정 데이터가 오기 전 — 과정 구역 · 목차 · 단계를 그리지 않는다(work-room.md 4절)
-        if (s0.hasToc || s0.steps.length) problems.push(`${p}: 과정 데이터가 없는데 [data-toc] ${s0.hasToc ? '있음' : '없음'} · [data-step] ${s0.steps.length}개`);
-        testInfo.annotations.push({ type: '과정 데이터 없음', description: `${w.slug} — 목차 시험을 건너뜀` });
-        continue;
-      }
-      if (!s0.hasToc) {
-        problems.push(`${p}: [data-toc] 없음`);
-        continue;
-      }
-
-      // (a) 목차 6칸 ↔ 단계 패널 6개(같은 순서)
-      const before = problems.length;
-      const keys = s0.items.map((i) => mapKey(i.key));
-      if (s0.items.length !== STEPS.length) problems.push(`${p}: [data-toc-item] ${s0.items.length}개 (6개여야 함)`);
-      if (JSON.stringify(keys) !== JSON.stringify([...STEPS])) problems.push(`${p}: 목차 칸 [${keys.join(', ')}] 가 과정 6단계 [${STEPS.join(', ')}] 순서와 다름`);
-      if (JSON.stringify(s0.steps) !== JSON.stringify([...STEPS])) problems.push(`${p}: [data-step] 가 [${s0.steps.join(', ')}] (plan · script · sheet · segment · generate · edit 순서로 각 1개여야 함)`);
-      if (!sameSet(keys, s0.steps)) problems.push(`${p}: 목차 칸과 패널이 짝이 안 맞음`);
-      if (problems.length > before) continue;
-
-      // (b) 항목을 누르면 그 단계가 화면 안으로 온다
-      for (let i = 0; i < s0.items.length; i++) {
-        const key = mapKey(s0.items[i].key);
-        await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior }));
-        await page.waitForTimeout(150);
-        const item = page.locator('[data-toc] [data-toc-item]').nth(i);
-        const inner = item.locator('a, button');
-        const target = (await inner.count()) > 0 ? inner.first() : item;
-        try {
-          await target.click({ timeout: 4_000 });
-        } catch (e) {
-          problems.push(`${p}: 목차 항목 ${key} 를 누를 수 없음 — ${(e as Error).message.split('\n')[0]}`);
-          continue;
-        }
-        for (const why of await pollProblems(page, stepVisibleProbe, 3_000, 200, key)) problems.push(`${p}: 목차 ${key} 를 눌렀는데 ${why}`);
-      }
-
-      // (c) 스크롤해서 단계가 바뀌면 aria-current="step" 이 따라 옮겨 간다 (내려갔다 올라오기)
-      const order = [...s0.steps, ...[...s0.steps].reverse()];
-      for (const key of order) {
-        const moved = await page.evaluate(scrollToStep, key);
-        if (!moved) {
-          problems.push(`${p}: [data-step="${key}"] 없음`);
-          continue;
-        }
-        const end = Date.now() + 2_500;
-        let cur: string[] = [];
-        let ok = false;
-        while (Date.now() < end) {
-          await page.waitForTimeout(200);
-          const s = await page.evaluate(tocState);
-          cur = s.items.filter((i) => i.current === 'step').map((i) => mapKey(i.key));
-          if (cur.length === 1 && cur[0] === key) {
-            ok = true;
-            break;
-          }
-        }
-        if (!ok) problems.push(`${p}: 단계 ${key} 를 보는데 aria-current="step" 인 항목이 [${cur.join(', ') || '없음'}]`);
+    const email = contactEmail();
+    test.info().annotations.push({ type: 'CONTACT_EMAIL', description: email || '(비어 있음 — 링크 없음 상태를 시험)' });
+    for (const r of [...ROOMS, { path: '/' }]) {
+      await visit(page, r.path);
+      const links = await page.locator(SEL.contact).evaluateAll((els) => els.map((e) => e.getAttribute('href') ?? ''));
+      const mail = await page.locator('a[href^="mailto:"]').count();
+      if (!email) {
+        if (links.length || mail) problems.push(`${r.path}: 주소가 비었는데 연락 링크가 있음 (${links.join(', ')})`);
+        if (/이메일 자리|\[이메일/.test((await page.evaluate(pageTexts)).join(' '))) problems.push(`${r.path}: 이메일 빈자리 표시`);
+      } else {
+        if (!links.length) problems.push(`${r.path}: 연락 링크 없음`);
+        for (const h of links) if (h !== `mailto:${email}`) problems.push(`${r.path}: 연락 링크가 mailto:${email} 가 아님 (${h})`);
+        if (!r.path.startsWith('/?') && r.path !== '/' && !(await page.locator('[data-contact-foot]').count())) problems.push(`${r.path}: 푸터 큰 연락 링크 없음`);
       }
     }
-    assertNoProblems(`작품 안 목차 · ${testInfo.project.name}`, problems);
+    assertNoProblems('연락 링크', problems);
   });
 
-  test('+D. 작품 상세 과정 목차가 과정 구역을 스크롤하는 동안 화면 안에 남는다(고정)', { tag: '@desktop' }, async ({ page }, testInfo) => {
+  test('V-15. 인트로 = 잠든 벽 — 같은 벽이 ×2.2 · 어둡게 · 영상 칸은 미룸 · 자동 진행 없음 · 휠 한 칸이면 벽이 물러나고 이름은 상단 바로 · 재방문 · 직링크 생략', { tag: '@once' }, async ({ browser }) => {
     const problems: string[] = [];
-    for (const w of MAIN_WORKS) {
-      const p = `/works/${w.slug}/`;
-      if (!PROCESS_READY.includes(w.slug)) {
-        testInfo.annotations.push({ type: '과정 데이터 없음', description: `${w.slug} — 목차 고정 시험을 건너뜀` });
-        continue;
-      }
-      const st = await visit(page, p);
-      if (st !== 200) {
-        problems.push(`${p} → HTTP ${st} (방이 없음)`);
-        continue;
-      }
-      await settle(page, 600);
-      if ((await page.locator('[data-toc]').count()) === 0) {
-        problems.push(`${p}: [data-toc] 없음`);
-        continue;
-      }
-      // 첫 단계 패널이 화면 위에 닿은 뒤부터 과정 구역(끝 짝 포함)의 마지막 화면까지 다섯 지점 — 목차는 과정 구역 안에서만 붙어 있다
-      const range = await page.evaluate(() => {
-        const first = document.querySelector('[data-step]');
-        const body = document.querySelector('.proc-body');
-        const start = first ? first.getBoundingClientRect().top + window.scrollY - 120 : 0;
-        const end = body ? body.getBoundingClientRect().bottom + window.scrollY - window.innerHeight : 0;
-        return { start: Math.max(start, 0), max: Math.max(end, start, 0) };
-      });
-      for (let k = 0; k < 5; k++) {
-        const y = Math.round(range.start + ((range.max - range.start) * k) / 4);
-        await page.evaluate((yy) => window.scrollTo({ top: yy, behavior: 'instant' as ScrollBehavior }), y);
-        await page.waitForTimeout(250);
-        const r = await page.evaluate(() => {
-          const t = document.querySelector<HTMLElement>('[data-toc]');
-          if (!t) return null;
-          const b = t.getBoundingClientRect();
-          const vis = t.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true, opacityProperty: true, visibilityProperty: true } as CheckVisibilityOptions);
-          return { top: b.top, bottom: b.bottom, left: b.left, right: b.right, vh: window.innerHeight, vw: window.innerWidth, vis };
-        });
-        if (!r) problems.push(`${p}: [data-toc] 사라짐`);
-        else if (!r.vis || r.top < -0.5 || r.left < -0.5 || r.bottom > r.vh + 0.5 || r.right > r.vw + 0.5) {
-          problems.push(`${p} (스크롤 ${y}px): 목차가 화면 밖/숨김 (y ${Math.round(r.top)}~${Math.round(r.bottom)}, x ${Math.round(r.left)}~${Math.round(r.right)} / 화면 ${r.vw}x${r.vh}${r.vis ? '' : ', 숨김'})`);
-        }
-      }
-    }
-    assertNoProblems(`목차 고정 · ${testInfo.project.name}`, problems);
-  });
-
-  test('+E. 모바일 390 에서 목차가 가로로 넘치지 않는다', { tag: '@mobile' }, async ({ page }, testInfo) => {
-    const problems: string[] = [];
-    for (const w of MAIN_WORKS) {
-      const p = `/works/${w.slug}/`;
-      const st = await visit(page, p);
-      if (st !== 200) {
-        problems.push(`${p} → HTTP ${st} (방이 없음)`);
-        continue;
-      }
-      await settle(page, 600);
-      if ((await page.locator('[data-toc]').count()) === 0) {
-        problems.push(`${p}: [data-toc] 없음`);
-        continue;
-      }
-      const max = await page.evaluate(() => Math.max(document.documentElement.scrollHeight - window.innerHeight, 0));
-      for (const y of [0, Math.round(max / 2), max]) {
-        await page.evaluate((yy) => window.scrollTo({ top: yy, behavior: 'instant' as ScrollBehavior }), y);
-        await page.waitForTimeout(200);
-        const why = await page.evaluate(() => {
-          const out: string[] = [];
-          const t = document.querySelector<HTMLElement>('[data-toc]');
-          if (!t) return ['[data-toc] 사라짐'];
-          const vw = window.innerWidth;
-          if (t.scrollWidth > t.clientWidth + 1) out.push(`목차 안쪽이 가로로 넘침 (scrollWidth ${t.scrollWidth} > clientWidth ${t.clientWidth})`);
-          const b = t.getBoundingClientRect();
-          if (b.left < -0.5 || b.right > vw + 0.5) out.push(`목차 상자가 화면 밖 (x ${Math.round(b.left)}~${Math.round(b.right)} / 화면 ${vw})`);
-          t.querySelectorAll<HTMLElement>('[data-toc-item]').forEach((el, i) => {
-            const r = el.getBoundingClientRect();
-            if (r.width > 0 && (r.left < -0.5 || r.right > vw + 0.5)) out.push(`항목 ${i + 1} 이 화면 밖 (x ${Math.round(r.left)}~${Math.round(r.right)} / 화면 ${vw})`);
-          });
-          return out;
-        });
-        for (const m of why) problems.push(`${p} (스크롤 ${y}px): ${m}`);
-      }
-    }
-    assertNoProblems(`목차 가로 넘침 · ${testInfo.project.name}`, [...new Set(problems)]);
-  });
-
-  // 작가 10-13 「대본 써지면서 옆에 파앗 하면서 영상이 떠야지」 — 시안 히어로_v1 연출(종이 | 간격 | 화면, 줄 → 연결선 → 슬릿 → 열림 + 앰비언트)
-  test('+F. 후킹(히어로 v1): (a) 처음엔 화면이 닫혀 있고 대본 첫 줄이 다 쳐진 뒤 열린다 (b) 열린 뒤 앰비언트가 보이고 영상 가운데 맨 위는 video (c) 종이와 화면 사이 가로 간격 ≥ 60px', async ({ page }, testInfo) => {
-    const problems: string[] = [];
-    // 프레임마다 표본: 화면(클립 틀)의 보이는 높이 · 대본 첫 줄이 쳐진 글자 수 — 페이지 스크립트보다 먼저 심는다
-    await page.addInitScript(() => {
-      type S = { t: number; vis: number; h: number; typed: number; len: number };
-      const w = window as unknown as { __hookS: S[] };
-      w.__hookS = [];
-      const tick = () => {
-        const hook = document.querySelector<HTMLElement>('[data-hook]');
-        const fr = hook?.querySelector<HTMLElement>('[data-hook-frame]');
-        if (hook && fr) {
-          const r = fr.getBoundingClientRect();
-          let vis = r.height;
-          const m = /inset\(([^)]*)\)/.exec(getComputedStyle(fr).clipPath);
-          if (m) {
-            const p = m[1].trim().split(/\s+/);
-            const px = (s: string) => (s.endsWith('%') ? (parseFloat(s) / 100) * r.height : parseFloat(s) || 0);
-            vis = Math.max(0, r.height - px(p[0]) - px(p[2] ?? p[0]));
-          }
-          // 「대본 첫 줄」 = 종이에서 처음 쳐지는 줄(흐린 앞 지문 다음의 첫 [data-line])
-          const first = hook.querySelector<HTMLElement>('[data-script] [data-line]');
-          const on = first?.querySelector('.on');
-          const off = first?.querySelector('.off');
-          const typed = on ? (on.textContent ?? '').length : -1;
-          const len = on && off ? typed + (off.textContent ?? '').length : -1;
-          w.__hookS.push({ t: performance.now(), vis, h: r.height, typed, len });
-        }
-        requestAnimationFrame(tick);
-      };
-      requestAnimationFrame(tick);
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'ko-KR' });
+    const page = await ctx.newPage();
+    await visit(page, '/');
+    await settle(page, 2500);
+    if (!(await page.locator(`${SEL.introLayer} .intro-name`).isVisible())) problems.push('첫 방문: 인트로 이름이 안 보임');
+    for (const t of ['김영건', 'AI 영상 · AI 숏드라마 · 대본', '스크롤하여 입장']) if (!(await page.getByText(t, { exact: true }).first().isVisible())) problems.push(`첫 방문: 「${t}」 안 보임`);
+    if (await page.locator(`${SEL.introLayer} img`).count()) problems.push('인트로에 따로 떠 있는 그림이 있음(잠든 벽이어야)');
+    const cam = await page.evaluate(() => {
+      const c = document.querySelector<HTMLElement>('[data-cam]');
+      if (!c) return null;
+      const cs = getComputedStyle(c);
+      const m = new DOMMatrix(cs.transform);
+      return { scale: m.a, filter: cs.filter };
     });
+    if (!cam || cam.scale < 2 || !/brightness\(0\.3/.test(cam.filter)) problems.push(`인트로 동안 벽이 가깝고 어둡지 않음 (${JSON.stringify(cam)})`);
+    const vids = await page.locator('[data-wall] video').evaluateAll((els) => els.map((v) => ({ pre: (v as HTMLVideoElement).preload, paused: (v as HTMLVideoElement).paused })));
+    if (vids.length !== 3) problems.push(`벽 영상 칸 ${vids.length}개 (3개여야)`);
+    if (vids.some((v) => v.pre !== 'none' || !v.paused)) problems.push(`입장 전 벽 영상이 미뤄지지 않음 ${JSON.stringify(vids)}`);
+    await settle(page, 2500);
+    if (!(await page.locator(SEL.introLayer).isVisible())) problems.push('입력 없이 인트로가 넘어감(자동 진행)');
+    await page.mouse.wheel(0, 100);
+    await settle(page, 2600);
+    if (await page.locator(SEL.introLayer).isVisible()) problems.push('휠 한 칸(100)으로 입장하지 않음');
+    const after = await page.evaluate(() => {
+      const c = document.querySelector<HTMLElement>('[data-cam]')!;
+      const cs = getComputedStyle(c);
+      const name = document.querySelector<HTMLElement>('.tb-name')!;
+      return { t: cs.transform, f: cs.filter, nameO: getComputedStyle(name).opacity, playing: [...document.querySelectorAll<HTMLVideoElement>('[data-wall] video')].filter((v) => !v.paused).length };
+    });
+    if (after.t !== 'none' || after.f !== 'none') problems.push(`입장 뒤 벽이 제 크기 · 밝기로 돌아오지 않음 (${after.t} · ${after.f})`);
+    if (after.nameO !== '1') problems.push(`입장 뒤 상단 바 이름이 안 보임 (opacity ${after.nameO})`);
+    if (!after.playing) problems.push('입장 뒤 보이는 벽 영상 칸이 재생되지 않음');
+    if (!(await page.locator(SEL.wallRead).isVisible())) problems.push('입장 뒤 벽 읽음이 안 보임');
+    await visit(page, '/');
+    await settle(page, 1000);
+    if (await page.locator(SEL.introLayer).isVisible()) problems.push('같은 세션 재방문인데 인트로가 다시 나옴');
+    await ctx.close();
+    const c2 = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const p2 = await c2.newPage();
+    await visit(p2, '/?skipIntro');
+    await settle(p2, 800);
+    if (await p2.locator(SEL.introLayer).isVisible()) problems.push('?skipIntro 인데 인트로가 나옴');
+    await c2.close();
+    const c3 = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const p3 = await c3.newPage();
+    await visit(p3, '/works/butter/');
+    await p3.locator('[data-back]').click();
+    await settle(p3, 1500);
+    if (await p3.locator(SEL.introLayer).isVisible()) problems.push('작품 방 직링크 → 「← 작품」 인데 인트로가 나옴');
+    await c3.close();
+    assertNoProblems('인트로', problems);
+  });
 
+  test('V-16. 작가 원문(data-src)은 공백 정규화 후 _분석/작품과정/<slug>.md 안에 그대로 있다(작가 지시 편집 적용 뒤)', { tag: '@once' }, async ({ page }) => {
+    const problems: string[] = [];
     for (const w of MAIN_WORKS) {
       const p = `/works/${w.slug}/`;
-      const res = await page.goto(p, { waitUntil: 'commit' });
-      if ((res?.status() ?? 0) !== 200) {
-        problems.push(`${p} → HTTP ${res?.status()}`);
+      const doc = path.join(PROCESS_DOC_DIR, `${w.slug}.md`);
+      if (!fs.existsSync(doc)) {
+        problems.push(`${p}: 대조 문서 ${doc} 가 없음`);
         continue;
       }
-      // 연출이 끝나 완성 상태(.done)가 될 때까지 — 입력을 주지 않는다(입력 = 즉시 완성이라 연출을 못 본다)
-      const finished = await page
-        .waitForFunction(() => document.querySelector('[data-hook]')?.classList.contains('done') === true, null, { timeout: 12_000, polling: 100 })
-        .then(() => true)
-        .catch(() => false);
-      if (!finished) problems.push(`${p}: 12초 안에 연출이 끝나지 않음([data-hook].done 이 안 붙음)`);
-      await page.waitForTimeout(400);
-
-      // (a) 닫힘 → 첫 줄 다 쳐짐 → 열림
-      const S = await page.evaluate(() => (window as unknown as { __hookS: { t: number; vis: number; h: number; typed: number; len: number }[] }).__hookS);
-      if (S.length < 10) problems.push(`${p}: 표본이 너무 적음(${S.length})`);
-      else {
-        if (S[0].vis > 2) problems.push(`${p}: (a) 처음부터 화면이 열려 있음 — 첫 표본의 보이는 높이 ${Math.round(S[0].vis)}px / ${Math.round(S[0].h)}px (닫힌 슬릿에서 시작해야 함)`);
-        const k = S.findIndex((s) => s.vis > 2);
-        if (k < 0) problems.push(`${p}: (a) 화면이 끝까지 열리지 않음`);
-        else {
-          const at = S[k];
-          if (!(at.len > 0 && at.typed >= at.len)) problems.push(`${p}: (a) 대본 첫 줄이 다 쳐지기 전에 화면이 열림 — 열리기 시작할 때 ${at.typed}/${at.len}자`);
-          const typedBefore = S.slice(0, k).some((s) => s.typed > 0 && s.vis <= 2);
-          if (!typedBefore) problems.push(`${p}: (a) 화면이 닫힌 동안 대본이 쳐지는 구간이 없음`);
-          if (!S.some((s) => s.vis >= s.h - 2)) problems.push(`${p}: (a) 화면이 다 열리지 않음(최대 ${Math.round(Math.max(...S.map((s) => s.vis)))}px)`);
-        }
+      let md = norm(fs.readFileSync(doc, 'utf8'));
+      for (const e of AUTHOR_EDITS.filter((x) => x.slug === w.slug)) md = md.split(e.from).join(e.to); // 작가 지시 편집(src/data/edits.ts)
+      await visit(page, p);
+      const items = await page.locator(SEL.verbatim).evaluateAll((els) => els.map((e) => ({ t: e.textContent ?? '', src: e.getAttribute('data-src') ?? '' })));
+      if (!(await page.locator(`${SEL.intro} [data-src]`).count())) problems.push(`${p}: 소개에 원문 표시가 없음`);
+      if (!(await page.locator(`${SEL.process} [data-src]`).count())) problems.push(`${p}: 과정 대본 문장에 원문 표시가 없음`);
+      for (const i of items) {
+        const t = norm(i.t);
+        if (!t) problems.push(`${p}: 빈 원문 표시(data-src="${i.src}")`);
+        else if (!md.includes(t)) problems.push(`${p}: 「${t.slice(0, 40)}…」 (data-src="${i.src}") 가 ${w.slug}.md 에 그대로 없음`);
       }
+      const all = (await page.evaluate(pageTexts)).join(' ');
+      for (const e of AUTHOR_EDITS.filter((x) => x.slug === w.slug)) if (all.includes(e.from)) problems.push(`${p}: 작가 지시로 바꾼 낱말 「${e.from}」 이 남아 있음`);
+      test.info().annotations.push({ type: '원문 대조', description: `${w.slug} — ${items.length}개` });
+    }
+    assertNoProblems('작가 원문 대조', problems);
+  });
 
-      // (b) 앰비언트(화면 뒤 빛)가 보이고, 영상 상자 가운데의 맨 위는 영상 자신
-      const b = await page.evaluate(() => {
-        const out: string[] = [];
-        const hook = document.querySelector<HTMLElement>('[data-hook]')!;
-        const v = hook.querySelector<HTMLVideoElement>('video');
-        const amb = hook.querySelector<HTMLCanvasElement>('[data-hook-ambient]');
-        if (!v) return ['영상 없음'];
-        if (!amb) return ['앰비언트 캔버스 [data-hook-ambient] 없음'];
-        window.scrollTo(0, 0);
-        const op = parseFloat(getComputedStyle(amb).opacity);
-        if (!(op > 0)) out.push(`앰비언트 캔버스 opacity ${op} (보여야 함)`);
-        if (getComputedStyle(amb).display === 'none' || getComputedStyle(amb).visibility === 'hidden') out.push('앰비언트 캔버스가 숨겨짐');
-        try {
-          const d = amb.getContext('2d')!.getImageData(0, 0, amb.width, amb.height).data;
-          let lit = 0;
-          for (let i = 3; i < d.length; i += 4) if (d[i] > 0) lit++;
-          if (lit === 0) out.push('앰비언트 캔버스에 그려진 영상 빛이 없음(빈 캔버스)');
-        } catch (e) {
-          out.push(`앰비언트 캔버스를 읽을 수 없음: ${(e as Error).message}`);
+  test('V-17. 한 컷이 만들어진 순서 — 걸음 4개(대본 · 시트 · 연출 · 완성) · 걸음마다 차례로 활성 · 연결선 양 끝이 낱말 · 상자 안 · 와이프 끝에 완성 100% · ④ 누르면 그 시각부터 재생', async ({ page }, testInfo) => {
+    const problems: string[] = [];
+    for (const w of MAIN_WORKS) {
+      const p = `/works/${w.slug}/`;
+      await visit(page, p);
+      await settle(page, 1200);
+      const labels = await page.locator('[data-process] [data-step-go]').allTextContents();
+      if (labels.map((s) => s.trim()).join(',') !== CUT_STEPS.join(',')) problems.push(`${p}: 걸음 ${labels.join(',')}`);
+      if (/프롬프트/.test((await page.evaluate(pageTexts)).join(' '))) problems.push(`${p}: 「프롬프트」 낱말`);
+      for (const k of [1, 2, 3, 4]) {
+        if (!(await toCutStep(page, k))) {
+          problems.push(`${p}: 핀 구간을 못 찾음`);
+          break;
         }
-        const r = v.getBoundingClientRect();
-        const a = amb.getBoundingClientRect();
-        if (!(a.width > r.width && a.height > r.height)) out.push(`앰비언트가 화면 둘레로 번지지 않음(캔버스 ${Math.round(a.width)}x${Math.round(a.height)} ≤ 화면 ${Math.round(r.width)}x${Math.round(r.height)})`);
-        const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-        if (top !== v) out.push(`영상 상자 가운데의 맨 위가 영상이 아님: <${top?.tagName.toLowerCase()} class="${(top as HTMLElement | null)?.className ?? ''}">`);
-        // 캔버스는 영상 뒤에 깔려야 한다 — 눌림을 무시하고 겹친 순서를 보면 영상이 캔버스보다 위
-        const st = document.createElement('style');
-        st.textContent = '[data-hook-ambient]{pointer-events:auto !important}';
-        document.head.appendChild(st);
-        const stack = document.elementsFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-        st.remove();
-        const iv = stack.indexOf(v);
-        const ia = stack.indexOf(amb);
-        if (ia >= 0 && iv >= 0 && ia < iv) out.push('앰비언트 캔버스가 영상 위에 겹침(영상 뒤여야 함)');
+        const st = await page.evaluate((k) => {
+          const stage = document.querySelector<HTMLElement>('[data-process] [data-stage]')!;
+          const cur = [...stage.querySelectorAll('[data-step-go]')].findIndex((b) => b.getAttribute('aria-current') === 'step');
+          const sr = stage.getBoundingClientRect();
+          const inside = (x: number, y: number, r: DOMRect, pad = 3) => x >= r.left - pad && x <= r.right + pad && y >= r.top - pad && y <= r.bottom + pad;
+          const ln = (n: string) => {
+            const l = stage.querySelector<SVGLineElement>(`[data-line="${n}"]`)!;
+            const g = (a: string) => Number(l.getAttribute(a)) ;
+            return { x1: g('x1') + sr.left, y1: g('y1') + sr.top, x2: g('x2') + sr.left, y2: g('y2') + sr.top, o: Number(getComputedStyle(l).opacity), fw: l.dataset.fromWord };
+          };
+          const rect = (s: string) => stage.querySelector(s)?.getBoundingClientRect() ?? null;
+          const out: string[] = [];
+          const pinned = Math.abs(sr.top - (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bar-h')) || 58)) < 4;
+          if (!pinned) out.push(`무대가 고정되지 않음(top ${Math.round(sr.top)})`);
+          if (cur !== k - 1) out.push(`걸음 ${k} 인데 활성 표시가 ${cur + 1}`);
+          if (k === 2) {
+            const l = ln('1');
+            const word = rect(`u[data-word="${l.fw}"]`), box = rect('[data-box="sheet"]');
+            if (l.o < 0.9) out.push('연결선 1 이 보이지 않음');
+            if (!word || !inside(l.x1, l.y1, word)) out.push('연결선 1 시작이 밑줄 낱말 밖');
+            if (!box || !inside(l.x2, l.y2, box)) out.push('연결선 1 끝이 시트 상자 밖');
+          }
+          if (k === 3) {
+            const l = ln('2');
+            const from = l.fw ? rect(`u[data-word="${l.fw}"]`) : rect('[data-box="sheet2"]');
+            const box = rect('[data-box="board"]');
+            if (l.o < 0.9) out.push('연결선 2 가 보이지 않음');
+            if (!from || !inside(l.x1, l.y1, from)) out.push('연결선 2 시작이 시트 상자(또는 낱말) 밖');
+            if (!box || !inside(l.x2, l.y2, box)) out.push('연결선 2 끝이 연출 상자 밖');
+          }
+          if (k === 4) {
+            const f = stage.querySelector<HTMLElement>('[data-final]')!;
+            const cp = getComputedStyle(f).clipPath;
+            if (!(cp === 'none' || /inset\(0(px|%)? 0(px|%)? 0(px|%)? 0(px|%)?\)|inset\(0(px|%)?\)/.test(cp))) out.push(`와이프 끝에 완성 프레임이 다 드러나지 않음 (${cp})`);
+          }
+          return out;
+        }, k);
+        for (const m of st) problems.push(`${p} 걸음 ${k}: ${m}`);
+      }
+      // ④ — 「▶ 이 장면 보기」 → 위 영상 칸에 그 시각부터
+      const btn = page.locator(SEL.cutPlay);
+      const start = Number(await btn.getAttribute('data-start'));
+      await btn.click();
+      await settle(page, 900);
+      problems.push(...(await expectPlayed(page, `${SEL.vbox} ${SEL.video}`, w, `${p} ④ 이 장면 보기`, start)));
+    }
+    assertNoProblems(`한 컷이 만들어진 순서 · ${testInfo.project.name}`, problems);
+  });
+
+  test('V-18. 작업 벽 — 장면 38장(wall.json 42 − 보류 4) · 영상 칸 3 · 이웃 칸에 같은 장면 없음 · 호버한 칸만 컬러 · 읽음 「작품 · 형식 · 연도」 · 목록 7편', { tag: '@once' }, async ({ page }) => {
+    const problems: string[] = [];
+    await visit(page, '/?skipIntro');
+    await settle(page, 1500);
+    const srcs = await page.locator('[data-wall] .item').evaluateAll((els) => els.map((e) => e.getAttribute('data-src') ?? ''));
+    const uniq = new Set(srcs.filter(Boolean));
+    const wallJson = path.join(SRC_DIR, 'data', 'wall.json');
+    if (fs.existsSync(wallJson)) {
+      const all = JSON.parse(fs.readFileSync(wallJson, 'utf8')) as { slug: string; n: number }[];
+      const want = all.filter((x) => !(x.slug === 'musicvideo' && [1, 2, 3, 5].includes(x.n))).length;
+      if (uniq.size !== want) problems.push(`벽 장면 ${uniq.size}장 (기대 ${want} = wall.json ${all.length} − 작가 확인 전 뮤직비디오 4)`);
+      for (const s of uniq) if (!s.startsWith('/media/wall/')) problems.push(`벽 장면이 /media/wall/ 밖: ${s}`);
+    }
+    for (const s of uniq) if (WALL_HOLD_FILES.test(s)) problems.push(`보류 칸이 벽에: ${s}`);
+    const vids = await page.locator('[data-wall] .item[data-video] video').evaluateAll((els) => els.map((v) => v.getAttribute('src') ?? ''));
+    if (vids.length !== 3 || !vids.every((v) => /\/media\/hook_[a-z]+\.mp4$/.test(v))) problems.push(`벽 영상 칸 ${vids.length}개 (${vids.join(', ')}) — 주력 3편 후킹 클립이어야`);
+    const ROWS = 7;
+    for (let i = 0; i < srcs.length; i++) {
+      const near = [...(i % ROWS < ROWS - 1 ? [i + 1] : []), ...[ROWS - 1, ROWS, ROWS + 1].map((d) => (i + d) % srcs.length)];
+      for (const j of near) if (srcs[i] && srcs[i] === srcs[j]) problems.push(`칸 ${i} · ${j} 이웃에 같은 장면 ${srcs[i]}`);
+    }
+    const vp = page.viewportSize()!;
+    await page.mouse.move(vp.width / 2 + 30, vp.height / 2 + 20);
+    await settle(page, 600);
+    const f = await page.evaluate(([x, y]) => {
+      const el = document.elementFromPoint(x, y)?.closest('.item__image');
+      const media = el?.querySelector('img, video');
+      const others = Array.from(document.querySelectorAll('[data-wall] .item__image :is(img, video)')).filter((i) => i !== media).slice(0, 40);
+      return { hovered: media ? getComputedStyle(media).filter : '(없음)', colored: others.filter((i) => /grayscale\(0\)/.test(getComputedStyle(i).filter)).length };
+    }, [vp.width / 2 + 30, vp.height / 2 + 20]);
+    if (!/grayscale\(0\)/.test(f.hovered)) problems.push(`호버한 칸이 컬러가 아님 (${f.hovered})`);
+    if (f.colored) problems.push(`호버하지 않은 칸 ${f.colored}개가 컬러`);
+    const read = (await page.locator(SEL.wallRead).textContent())?.trim() ?? '';
+    if (!/^.+ · .+ · \d{4}$/.test(read)) problems.push(`가운데 읽음이 「작품 · 형식 · 연도」 꼴이 아님: 「${read}」`);
+    for (const w of WORKS) {
+      const href = await page.locator(SEL.wallLink(w.slug)).getAttribute('href');
+      const want = w.group === 'main' ? `/works/${w.slug}/` : `/tools/#${w.slug}`;
+      if (href !== want) problems.push(`목록 ${w.slug}: href ${href} (기대 ${want})`);
+    }
+    if ((await page.locator('[data-wall] nav a').count()) !== 7) problems.push('목록이 7편이 아님');
+    assertNoProblems('작업 벽', problems);
+  });
+
+  test('V-19. 404 — HTTP 404 · 흐린 격자 35칸 · 가운데 문장 하나 · 「작품으로 돌아가기 ↗」', { tag: '@once' }, async ({ page }) => {
+    const problems: string[] = [];
+    const st = await visit(page, '/없는-주소/');
+    if (st !== 404) problems.push(`HTTP ${st} (404 여야 함)`);
+    if ((await page.locator('.e404-grid i').count()) !== 35) problems.push('격자가 35칸이 아님');
+    if ((await page.locator('h1').count()) !== 1) problems.push('가운데 문장(h1)이 하나가 아님');
+    if ((await page.locator('a', { hasText: '작품으로 돌아가기' }).getAttribute('href')) !== '/') problems.push('「작품으로 돌아가기」 가 / 로 가지 않음');
+    assertNoProblems('404', problems);
+  });
+
+  test('V-20. 움직임 줄이기 — 인트로 없음 · 작품 방 첫 상태 그대로 · 과정은 핀 없이 4장면 세로 · 선은 그려진 상태 · 움직임 0', { tag: '@once' }, async ({ browser }) => {
+    const problems: string[] = [];
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
+    const page = await ctx.newPage();
+    await visit(page, '/');
+    await settle(page, 600);
+    if (await page.locator(SEL.introLayer).isVisible()) problems.push('/: 움직임 줄이기인데 인트로가 나옴');
+    for (const r of WORK_ROOMS) {
+      await visit(page, r.path);
+      await settle(page, 500);
+      const s = await page.evaluate((t) => {
+        const el = document.querySelector(t) as HTMLElement | null;
+        const stages = [...document.querySelectorAll<HTMLElement>('[data-process] [data-stage]')];
+        const lines = (st: HTMLElement | undefined, n: string) => (st ? Number(getComputedStyle(st.querySelector(`[data-line="${n}"]`)!).opacity) : 0);
+        return {
+          o: el ? getComputedStyle(el).opacity : '?',
+          cp: getComputedStyle(document.querySelector('.hero [data-video]')!).clipPath,
+          states: stages.map((x) => x.dataset.state).join(','),
+          spacer: !!document.querySelector('.pin-spacer'),
+          l1: lines(stages[1], '1'),
+          l2: lines(stages[2], '2'),
+        };
+      }, SEL.title);
+      if (s.o !== '1') problems.push(`${r.path}: 제목이 바로 안 보임 (${s.o})`);
+      if (s.cp !== 'none' && !/inset\(0(px|%)?\)/.test(s.cp)) problems.push(`${r.path}: 영상 칸이 잘려 있음 (${s.cp})`);
+      if (s.states !== '1,2,3,4') problems.push(`${r.path}: 과정 장면이 4장 세로가 아님 (${s.states})`);
+      if (s.spacer) problems.push(`${r.path}: 움직임 줄이기인데 핀이 걸림`);
+      if (s.l1 < 0.9 || s.l2 < 0.9) problems.push(`${r.path}: 연결선이 그려진 상태가 아님 (${s.l1}, ${s.l2})`);
+      const m = await page.evaluate(motionProbe);
+      if (m.css.length || m.gsap > 0) problems.push(`${r.path}: 움직임 ${m.css.length + Math.max(0, m.gsap)}`);
+    }
+    await ctx.close();
+    assertNoProblems('움직임 줄이기', problems);
+  });
+
+  test('V-21. 툴 방 — 영상 4개 2×2 격자 · 영상 밖에 제목 · 분류 · 길이 · 마인드헌터 「모작」 · 격자는 한 화면 반 안', async ({ page }, testInfo) => {
+    const problems: string[] = [];
+    await visit(page, '/tools/');
+    const boxes = await page.locator('[data-tool]').evaluateAll((els) => els.map((e) => ({ s: e.getAttribute('data-tool'), r: e.getBoundingClientRect().toJSON() })));
+    if (boxes.map((b) => b.s).join(',') !== TOOL_WORKS.map((w) => w.slug).join(',')) problems.push(`순서 ${boxes.map((b) => b.s).join(',')}`);
+    if (boxes.length === 4) {
+      const [a, b, c, d] = boxes.map((x) => x.r);
+      if (Math.abs(a.top - b.top) > 2 || Math.abs(c.top - d.top) > 2 || c.top <= a.bottom - 2 || b.left <= a.right - 2) problems.push('2×2 격자가 아님');
+      const vh = page.viewportSize()!.height;
+      if (Math.max(c.bottom, d.bottom) > vh * 1.5) problems.push(`격자 아래끝 ${Math.round(Math.max(c.bottom, d.bottom))} > 1.5 화면(${vh * 1.5})`);
+    }
+    for (const w of TOOL_WORKS) {
+      const box = page.locator(SEL.tool(w.slug));
+      const t = (await box.locator('.tool-cap').textContent()) ?? '';
+      if (!t.includes(w.title)) problems.push(`${w.slug}: 영상 밖 제목 없음`);
+      if (w.slug === 'mindhunter' && !t.includes('모작')) problems.push('마인드헌터: 「모작」 없음');
+      if (!/\d:\d\d/.test((await box.locator('.play').textContent()) ?? '')) problems.push(`${w.slug}: 길이 없음`);
+    }
+    assertNoProblems(`툴 방 · ${testInfo.project.name}`, problems);
+  });
+
+  test('V-22. 작품 방 길이 ≤ 3.5화면(핀 스크롤 거리 포함 · 「더 읽기」 접힌 상태) · 구역 ≤ 6 · 크레딧 표 없음 — 절제 규칙 8 · 9', async ({ page }, testInfo) => {
+    const problems: string[] = [];
+    for (const r of WORK_ROOMS) {
+      await visit(page, r.path);
+      await settle(page, 1200);
+      const m = await page.evaluate(() => {
+        const room = document.querySelector<HTMLElement>('.room')!;
+        const sections = Array.from(room.children).filter((e) => (e as HTMLElement).getBoundingClientRect().height > 1).length;
+        return { h: document.documentElement.scrollHeight, vh: innerHeight, open: !!document.querySelector('details[open]'), tables: document.querySelectorAll('table').length, sections };
+      });
+      if (m.open) problems.push(`${r.path}: 「더 읽기」 가 처음부터 펼쳐져 있음`);
+      if (m.h > RESTRAINT.lengthScreens * m.vh) problems.push(`${r.path}: 문서 ${m.h}px > 3.5 화면(${RESTRAINT.lengthScreens * m.vh}px)`);
+      if (m.sections > RESTRAINT.sections) problems.push(`${r.path}: 구역 ${m.sections} > 6`);
+      if (m.tables !== 1) problems.push(`${r.path}: 표 ${m.tables}개 (메타 표 하나만 — 크레딧 표 없음)`);
+      testInfo.annotations.push({ type: '방 길이', description: `${r.path} ${m.h}px = ${(m.h / m.vh).toFixed(2)} 화면 · 구역 ${m.sections}` });
+    }
+    assertNoProblems(`작품 방 길이 · ${testInfo.project.name}`, problems);
+  });
+
+  test('V-23. 같은 그림 파일이 한 방에서 두 번 이상 보이지 않는다', { tag: '@once' }, async ({ page }) => {
+    const problems: string[] = [];
+    for (const r of [...WORK_ROOMS, TOOLS_ROOM]) {
+      await visit(page, r.path);
+      await settle(page, 800);
+      const files = await page.evaluate(() => {
+        const out: string[] = [];
+        const key = (u: string) => new URL(u, location.href).pathname.replace(/_(360|720)\.(avif|webp|jpg)$/, '');
+        document.querySelectorAll<HTMLImageElement>('img').forEach((i) => (i.getAttribute('src') ? out.push(key(i.getAttribute('src')!)) : null));
+        document.querySelectorAll<HTMLVideoElement>('video[poster]').forEach((v) => out.push(key(v.getAttribute('poster')!)));
         return out;
       });
-      for (const m of b) problems.push(`${p}: (b) ${m}`);
-
-      // (c) 종이와 화면을 떼어 놓는다 — 그 사이가 연결선 · 타임코드 자리
-      const gap = await page.evaluate(() => {
-        const hook = document.querySelector<HTMLElement>('[data-hook]')!;
-        const paper = hook.querySelector<HTMLElement>('[data-script]');
-        const v = hook.querySelector<HTMLVideoElement>('video');
-        if (!paper || !v) return null;
-        return v.getBoundingClientRect().left - paper.getBoundingClientRect().right;
-      });
-      if (gap == null) problems.push(`${p}: (c) 후킹 안에 대본 [data-script] 또는 영상이 없음`);
-      else if (gap < 60) problems.push(`${p}: (c) 종이와 화면 사이 간격 ${Math.round(gap)}px (60px 이상이어야 함 — 한 틀로 붙이지 않는다)`);
+      const seen = new Map<string, number>();
+      for (const f of files) seen.set(f, (seen.get(f) ?? 0) + 1);
+      for (const [f, n] of seen) if (n > 1) problems.push(`${r.path}: ${f} 가 ${n}번`);
     }
-    assertNoProblems(`후킹 연출(히어로 v1) · ${testInfo.project.name}`, problems);
+    assertNoProblems('같은 그림 반복', problems);
+  });
+
+  test('V-24. 이동 — 상단 바 「← 이전 · 다음 →」 · 키보드 ← → 로 작품 방 순환(오직 → 첫 인상 → 버터 → 툴 → 오직)', { tag: '@once' }, async ({ page }) => {
+    const problems: string[] = [];
+    const order = ['/works/oneandonly/', '/works/firstimpression/', '/works/butter/', '/tools/'];
+    for (let i = 0; i < order.length; i++) {
+      await visit(page, order[i]);
+      const prev = await page.locator('[data-prev]').getAttribute('href');
+      const next = await page.locator('[data-next-link]').getAttribute('href');
+      if (prev !== order[(i + 3) % 4]) problems.push(`${order[i]}: 상단 바 이전 ${prev}`);
+      if (next !== order[(i + 1) % 4]) problems.push(`${order[i]}: 상단 바 다음 ${next}`);
+    }
+    await visit(page, order[0]);
+    await settle(page, 600);
+    await page.keyboard.press('ArrowRight');
+    await page.waitForURL(`**${order[1]}`, { timeout: 5_000 }).catch(() => problems.push(`→ 키: ${page.url()} (기대 ${order[1]})`));
+    await settle(page, 800);
+    await page.keyboard.press('ArrowLeft');
+    await page.waitForURL(`**${order[0]}`, { timeout: 5_000 }).catch(() => problems.push(`← 키: ${page.url()} (기대 ${order[0]})`));
+    assertNoProblems('이동', problems);
+  });
+  test('V-25. 절제 규칙(한 화면) — 글자 크기 ≤ 5(16px 이하 ≤ 3) · 글꼴 ≤ 2 · 라벨/번호/메타 ≤ 12 · 테두리 상자 ≤ 2 · 괘선 ≤ 5 · 글 조각 ≤ 20 · 이징 ≤ 3 · 전환 시간 ≤ 6 / 홈 첫 화면 글자 크기 ≤ 4 · 글 조각 ≤ 12', async ({ page }, testInfo) => {
+    const problems: string[] = [];
+    const check = async (label: string, home = false) => {
+      const st = await page.evaluate(screenStats);
+      const R = RESTRAINT;
+      const over = (what: string, n: number, max: number, list?: (string | number)[]) => n > max && problems.push(`${label}: ${what} ${n} > ${max}${list ? ` — ${list.slice(0, 14).join(', ')}` : ''}`);
+      over('글자 크기', st.sizes.length, home ? R.homeSizes : R.sizes, st.sizes);
+      over('16px 이하 글자 크기', st.small.length, R.small, st.small);
+      over('글꼴', st.families.length, R.families, st.families);
+      over('라벨 · 번호 · 메타', st.labels.length, R.labels, st.labels);
+      over('테두리 상자', st.boxes.length, R.boxes, st.boxes);
+      over('괘선', st.rules.length, R.rules, st.rules);
+      over('글 조각', st.fragments, home ? R.homeFragments : R.fragments);
+      over('이징', st.eases.length, R.eases, st.eases);
+      over('전환 시간', st.durations.length, R.durations, st.durations);
+      testInfo.annotations.push({ type: '한 화면', description: `${label}: 크기 ${st.sizes.join('·')} · 라벨 ${st.labels.length} · 상자 ${st.boxes.length} · 괘선 ${st.rules.length} · 글 조각 ${st.fragments} · 작업물 ${(st.media * 100).toFixed(0)}%` });
+    };
+    await visit(page, '/');
+    await settle(page, 2600);
+    await check('/ 인트로', true);
+    await visit(page, '/?skipIntro');
+    await settle(page, 1500);
+    await check('/ 벽', true);
+    for (const r of [...WORK_ROOMS, TOOLS_ROOM]) {
+      await visit(page, r.path);
+      await settle(page, HERO_MS);
+      const H = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
+      const vh = page.viewportSize()!.height;
+      for (let y = 0; y <= H; y += vh) {
+        await page.evaluate((y) => window.scrollTo(0, y), y);
+        await settle(page, 900);
+        await check(`${r.path} @${y}`);
+      }
+      if (r.kind === 'work') for (const k of [1, 2, 3, 4]) {
+        await toCutStep(page, k, 1200);
+        await check(`${r.path} 과정 걸음 ${k}`);
+      }
+    }
+    assertNoProblems(`절제 규칙 · ${testInfo.project.name}`, problems);
+  });
+
+  test('V-26. 같은 사실은 한 곳에만(길이 · 형식 · 제작 기간 · 툴 목록) · 장치 ≤ 6 — 절제 규칙 10 · 12', { tag: '@once' }, async ({ page }) => {
+    const problems: string[] = [];
+    for (const r of WORK_ROOMS) {
+      await visit(page, r.path);
+      await settle(page, HERO_MS);
+      const m = await page.evaluate(() => {
+        const txt = Array.from(document.querySelectorAll('body *'))
+          .filter((e) => (e as HTMLElement).checkVisibility?.({ visibilityProperty: true }) && !e.closest('details:not([open])'))
+          .flatMap((e) => Array.from(e.childNodes).filter((n) => n.nodeType === 3).map((n) => n.textContent ?? ''))
+          .join('\n');
+        const cells = Object.fromEntries(Array.from(document.querySelectorAll('[data-meta] tr')).map((tr) => [tr.getAttribute('data-meta-row'), tr.querySelector('td')?.textContent?.trim() ?? '']));
+        const play = document.querySelector('[data-vbox] .play')?.textContent ?? '';
+        const devices = ['nav[data-nav]', '[data-vbox]', 'table', 'details', '[data-process]', '[data-next], [data-contact-foot]'].filter((s) => document.querySelector(s)).length;
+        return { txt, cells, play, devices, toolRows: document.querySelectorAll('[data-meta-row="tools"]').length };
+      });
+      const count = (needle: string) => (needle ? m.txt.split(needle).length - 1 : 0);
+      const dur = m.play.match(/\d+:\d{2}/)?.[0] ?? '';
+      if (!dur) problems.push(`${r.path}: 재생 줄에 길이가 없음`);
+      else if (count(dur) !== 1) problems.push(`${r.path}: 길이 「${dur}」 가 ${count(dur)}곳`);
+      for (const k of ['format', 'period']) if (m.cells[k] && count(m.cells[k]) !== 1) problems.push(`${r.path}: 「${m.cells[k]}」 가 ${count(m.cells[k])}곳`);
+      if (m.toolRows !== 1) problems.push(`${r.path}: 툴 목록 ${m.toolRows}곳`);
+      if (m.devices > RESTRAINT.devices) problems.push(`${r.path}: 장치 ${m.devices} > 6`);
+    }
+    assertNoProblems('같은 사실 · 장치', problems);
   });
 });

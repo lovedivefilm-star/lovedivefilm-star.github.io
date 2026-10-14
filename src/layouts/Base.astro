@@ -1,87 +1,70 @@
 ---
 /**
- * 모든 방의 틀 — 상단 바 · 글꼴 · 공통 스크립트.
- * 방 사이 전환 = Josh Goldsmith 블록 디졸브(정밀 joshgoldsmith.md §5): 새 방은 바로 그려지고, 그 위를 덮은 16×9 칸이
- * 칸마다 0~450ms 난수 지연으로 한 번에 꺼진다(1ms step-end). 칸에는 대본 첫머리 글자를 한 자씩 얹었다(「글자 언어는 전환에만」).
- * 사이트 안 링크로 넘어왔을 때만(sessionStorage) · 움직임 줄이기면 없음.
+ * 모든 방의 틀 — v4. 글꼴 2종 · Astro View Transitions(<ClientRouter />) · 공통 스크립트.
+ * 방 사이 전환 = 브라우저 View Transitions(Astro ClientRouter) — 벽에서 누른 그림이 작품 방의 판으로 이어진다(transition:name="plate").
+ * 직접 짠 블록 디졸브는 삭제(설계서 3절).
  */
+import { ClientRouter } from 'astro:transitions';
 import '../styles/tokens.css';
 import '../styles/global.css';
-import TopBar from '../components/TopBar.astro';
-import { FONT_CSS, FONT_ORIGINS, SITE } from '../data/site';
-import { NIB_TEXT } from '../data/scripts';
+import { FONT_ORIGINS, SANS_CSS, SERIF, SERIF_FONTS, SITE } from '../data/site';
 
 type Props = {
   title?: string;
-  here?: { no?: string; label: string };
-  /** 지금 단계(작품 방) */
-  step?: string;
-  /** 홈 첫 진입 연출을 쓸지 */
-  intro?: boolean;
-  bodyClass?: string;
+  /** body[data-page] — home | work | tools | 404 */
+  page: 'home' | 'work' | 'tools' | '404';
+  description?: string;
 };
-const { title, here, step, intro = false, bodyClass } = Astro.props;
+const { title, page, description } = Astro.props;
 const fullTitle = title ? `${title} · ${SITE.name}` : SITE.title;
-// 방 전환 칸 16×9 — 지연은 빌드마다 같은 난수(선형 합동), 글자는 「오직 당신의 것」 대본 첫머리를 읽는 순서대로 한 자씩
-const COLS = 16;
-const ROWS = 9;
-const DMAX = 450;
-let seed = 20261013;
-const rnd = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
-const stream = NIB_TEXT.join(' ').replace(/\s+/g, ' ');
-const cells = Array.from({ length: COLS * ROWS }, (_, k) => ({ d: Math.round(rnd() * DMAX), ch: stream[k] ?? '' }));
 const favicon =
-  "data:image/svg+xml," +
-  encodeURIComponent(
-    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='#1E1E1C'/><path d='M16 27 C17 24 22 17 22 13 C22 11 21 10 20 9 L20 4 L12 4 L12 9 C11 10 10 11 10 13 C10 17 15 24 16 27 Z' fill='#FFEEC8'/><circle cx='16' cy='12' r='1.6' fill='#1E1E1C'/><path d='M16 13.5 L16 26' stroke='#1E1E1C' stroke-width='1.2'/><circle cx='16' cy='29.5' r='1.4' fill='#FFEEC8'/></svg>",
-  );
+  'data:image/svg+xml,' +
+  encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='#050505'/><circle cx='16' cy='16' r='4.5' fill='#0090FF'/></svg>");
+const serifAlt = Object.fromEntries(Object.entries(SERIF_FONTS).map(([k, v]) => [k, v.css]));
 ---
 
 <!doctype html>
-<html lang="ko">
+<html lang="ko" data-serif={SERIF}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{fullTitle}</title>
-    <meta name="description" content={SITE.description} />
+    <meta name="description" content={description ?? SITE.description} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description ?? SITE.description} />
     <link rel="icon" href={favicon} />
     {FONT_ORIGINS.map((o) => <link rel="preconnect" href={o} crossorigin />)}
-    {FONT_CSS.map((href) => <link rel="stylesheet" href={href} />)}
-    <script is:inline>
-      /* 움직임 허용일 때만 data-motion — 연출용 CSS 는 전부 이 표식 아래에서만 돈다(움직임 줄이기면 처음부터 완성 상태) */
-      try {
-        if (!matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.setAttribute('data-motion', '');
-      } catch (e) {}
-    </script>
-    <script is:inline>
-      /* 사이트 안 링크로 넘어온 첫 그림에만 블록 디졸브 */
-      try {
-        if (document.documentElement.hasAttribute('data-motion') && sessionStorage.getItem('yk-nav')) {
-          document.documentElement.setAttribute('data-dissolve', '');
-        }
-        sessionStorage.removeItem('yk-nav');
-      } catch (e) {}
-    </script>
-    {
-      intro && (
-        <script is:inline>
+    <link rel="stylesheet" href={SANS_CSS} />
+    <link rel="stylesheet" href={SERIF_FONTS[SERIF].css} data-serif-css />
+    <script is:inline define:vars={{ serifAlt, serifDefault: SERIF }}>
+      /* 검수용 글꼴 바꿔 보기 — ?serif=noto | hahmlet (기본은 src/data/site.ts SERIF). 방을 옮겨도 유지(세션). */
+      (function () {
+        var KEY = 'yk-serif';
+        function apply() {
+          var want = null;
           try {
-            if (document.documentElement.hasAttribute('data-motion') && !sessionStorage.getItem('yk-intro')) {
-              document.documentElement.setAttribute('data-intro', '');
-              sessionStorage.setItem('yk-intro', '1');
-            }
+            var q = new URLSearchParams(location.search).get('serif');
+            if (q && serifAlt[q]) sessionStorage.setItem(KEY, q);
+            want = sessionStorage.getItem(KEY);
           } catch (e) {}
-        </script>
-      )
-    }
+          if (!want || !serifAlt[want] || want === serifDefault) return;
+          document.documentElement.setAttribute('data-serif', want);
+          if (!document.querySelector('link[data-serif-alt="' + want + '"]')) {
+            var l = document.createElement('link');
+            l.rel = 'stylesheet';
+            l.href = serifAlt[want];
+            l.setAttribute('data-serif-alt', want);
+            document.head.appendChild(l);
+          }
+        }
+        apply();
+        document.addEventListener('astro:after-swap', apply);
+      })();
+    </script>
+    <ClientRouter fallback="swap" />
   </head>
-  <body class={bodyClass}>
-    <TopBar here={here} step={step} />
-    <main id="main">
-      <slot />
-    </main>
-    <slot name="after" />
-    <div class="dissolve" aria-hidden="true">{cells.map((c) => <i style={`--d:${c.d}ms`}>{c.ch.trim()}</i>)}</div>
+  <body data-page={page}>
+    <slot />
     <script>
       import '../scripts/site';
     </script>
