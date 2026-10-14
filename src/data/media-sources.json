@@ -225,10 +225,6 @@
     "source": "콘티: G:/내 드라이브/ai 단편 영화/조선파이터_비글루/01_연출/2026-09-27_스토리보드_콘티_v2_원본/out/v5_web/S6-D_d1B.jpg",
     "note": "03 — Blender 구도 + GPT Image 2.5 Sunburst(WaveSpeed)"
   },
-  "process/oneandonly/oo_03_3.jpg": {
-    "source": "블로킹맵: G:/내 드라이브/ai 단편 영화/조선파이터_비글루/05_에셋/2026-10-05_S6-D_블로킹맵/ PNG 4장 합침",
-    "note": "03 — Python 스크립트"
-  },
   "process/oneandonly/oo_05_1.jpg": {
     "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
     "time": "02:29.833",
@@ -1593,11 +1589,6 @@
     "source": "완성본 AI 숏드라마/오직 당신의 것_EP.01_v1.1.mp4",
     "time": "02:34.85",
     "note": "한 컷이 만들어진 순서 ④ 완성 — 720×1280 원본 프레임"
-  },
-  "process/oneandonly/oo_cut_board.jpg": {
-    "source": "블로킹맵 — process/oneandonly/oo_03_3.jpg 의 2번 칸(컷 1 끝) 잘라 냄",
-    "time": "—",
-    "note": "원본 05_에셋/2026-10-05_S6-D_블로킹맵/S6-D_d1_끝_블로킹맵 (팀 제작 · Python)"
   },
   "process/butter/bt_cut_final.jpg": {
     "source": "완성본 AI 숏드라마/트레일러_버터!_김영건.mp4",

@@ -50,14 +50,14 @@ export const CUTS: Record<string, Cut> = {
       cap: '‘장옷’ → 장옷 시트 · 팀 제작',
     },
     board: {
-      img: `${P}/oneandonly/oo_cut_board.jpg`,
-      w: 394,
-      h: 700,
-      alt: '블로킹맵 — 뒷모습 머리 · 어깨 · 해 위치',
-      // 시트 뒷모습 전체 → 블로킹맵의 같은 뒷모습(머리 · 어깨) — 의상이 아니라 인물 자세 · 위치끼리
+      img: `${P}/oneandonly/oo_03_2.jpg`,
+      w: 576,
+      h: 1024,
+      alt: '콘티 — 뒷모습 · 쪽머리 · 머리 위로 들어 올린 천',
+      // 시트 뒷모습 → 콘티의 같은 뒷모습(쪽머리 · 어깨 · 들어 올린 천) — 완성 2:34.85 와 자세가 같다. 10-14 작가 「블로킹맵 쓰지마」 → 블로킹맵 대신 콘티
       from: { kind: 'sheet', box: [36, 4, 27, 95] },
-      box: [22, 17, 78, 83],
-      cap: '구도: 블로킹맵(Python) — 머리 · 어깨 · 해 자리',
+      box: [22, 30, 56, 70],
+      cap: '구도: 콘티 — Blender 구도 → GPT Image 2.5',
       note: '이 장면 컷 2개 · 7.6초',
     },
     final: { img: `${P}/oneandonly/oo_cut_final.jpg`, w: 720, h: 1280, alt: '완성본 2:34.85', t: 154.85, cap: 'Seedance 2.5 생성 · Premiere Pro 편집' },

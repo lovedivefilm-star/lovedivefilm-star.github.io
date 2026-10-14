@@ -84,12 +84,11 @@ export const ONEANDONLY: WorkRoom = {
       },
       {
         key: 'sheet',
-        chips: ['시트 10장 — 인물 6 · 소품 3 · 장소 1', '콘티 S6-D 4칸 · Blender 구도 + GPT Image 2.5', '블로킹맵 4장 · Python'],
+        chips: ['시트 10장 — 인물 6 · 소품 3 · 장소 1', '콘티 S6-D 4칸 · Blender 구도 + GPT Image 2.5'],
         lit: [1, 2, 3],
         pics: [
           { src: `${M}/oo_03_1.jpg`, cap: '여주 의상 시트 — 팀 제작(툴 기록 없음)', w: 1600, h: 904, kind: 'sheet' },
           { src: `${M}/oo_03_2.jpg`, cap: '콘티 칸 — Blender 로 세운 구도를 GPT Image 2.5 Sunburst(WaveSpeed)로 스케치', w: 576, h: 1024, kind: 'conti' },
-          { src: `${M}/oo_03_3.jpg`, cap: '블로킹맵 — Python 스크립트로 그린 윤곽선 · 영상 생성에 참조로 넣음', w: 1594, h: 700, kind: 'blocking' },
         ],
       },
       {
@@ -103,7 +102,7 @@ export const ONEANDONLY: WorkRoom = {
       },
       {
         key: 'generate',
-        chips: ['Seedance 2.5 (ByteDance · reference-to-video) · Higgsfield API', '시트 10장 + 블로킹맵 4장 + 대본 → 컷 2개 (11초)', '720p · 9:16 · 24fps · 소리 켬'],
+        chips: ['Seedance 2.5 (ByteDance · reference-to-video) · Higgsfield API', '시트 10장 + 대본 → 컷 2개 (11초)', '720p · 9:16 · 24fps · 소리 켬'],
         lit: [1, 2, 3],
         pics: [
           { src: `${M}/oo_05_1.jpg`, cap: '완성본 2:29.8 · 컷 1', w: 720, h: 1280, kind: 'frame' },
