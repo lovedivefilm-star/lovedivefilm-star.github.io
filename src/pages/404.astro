@@ -6,9 +6,9 @@
  */
 import Base from '../layouts/Base.astro';
 import { SITE } from '../data/site';
-import { WALL_TILES, wallOrder } from '../data/wall';
+import { WALL_404 } from '../data/wall';
 
-const frames = wallOrder(WALL_TILES).slice(0, 12);
+const frames = WALL_404;
 const cells = Array.from({ length: 35 }, (_, i) => ({
   t: frames[i % frames.length],
   o: (0.28 + ((i * 13) % 47) / 100).toFixed(2),

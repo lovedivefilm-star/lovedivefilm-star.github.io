@@ -1,34 +1,124 @@
 ---
 /**
- * 홈 = 인트로(잠든 벽) + 작업 벽(docs/v4-redesign.md 2절 · 메인 지시 10-14 · Kavieng 2-3).
- * 벽 = React Bits DomeGallery(흑백 · 마우스가 올라간 타일만 컬러 · 드래그 · 휠 · 3칸은 후킹 클립) — src/components/react/WorkWall.tsx.
- * 인트로 동안 같은 벽이 카메라 틀([data-cam]) 안에서 ×2.2 · 어둡게 · 흐리게 · 아주 느리게 돌고, 입장하면 물러나 지금 크기가 된다(src/scripts/site.ts initIntro).
- * 아래 가운데 읽음 · 오른쪽 아래 작품 7편 목록 · 왼쪽 아래 「드래그해서 둘러보기」. 카운터 · 필터 탭 없음.
+ * 홈 — v5 1단계c(작가 10-14 「처음에는 … 이름만 나오고 들어가면 작품이 뜨면 되잖아」 · 「걍 오목으로 가」 ·
+ * 「그냥 직사각형을 사다리꼴로 자른다고 생각해봐 그걸 입체감있게 오목으로 가져가고」 · 메인 해석 · docs/review-gate.md).
+ *  1) 첫 화면 = 이름만(Kavieng 인트로 문법): 가운데 큰 「김영건」 + 직무 한 줄 + 「스크롤하여 입장」. 휠 · 클릭 · 키 · 터치 한 번이면 입장.
+ *     같은 세션 재방문 · 직링크(#) · ?skipIntro · 움직임 줄이기면 인트로 없이 바로 작품 화면. 상단 바 연락은 인트로 동안에도 보인다.
+ *  2) 입장: 큰 이름이 상단 바 「김영건」 자리로(GSAP Flip, .7s) · 카드가 제자리로(.8s power3.out, .06s 간격) — 합 ≤ 1.2s(site.ts initHome).
+ *  3) 작품 화면 = 오목 면의 사다리꼴 카드 5장(src/data/lens.ts — 직사각형 그림 · 영상의 윗변 · 아랫변만 비스듬히, 세로 이음매는 곧은 수직선) — 묶음 92vw × ≈80vh.
+ *     순서 오직 → 첫 인상 → 버터! → 테크니컬 작업 → 대본 맛보기.
+ *     ①②③ 그 작품 후킹 클립 첫 장면 흑백 · 호버 / 포커스면 그 카드만 컬러 + 클립 재생 + 앞으로(.2s). 카드 왼쪽 아래 꼭짓점 아래에 늘 「제목 →」 · 「종류 · 길이」(글은 수평).
+ *     ④ 같은 사다리꼴 안을 수평 이음매로 4등분(16:9 포스터 cover) · 칸 → /tools/#slug. ⑤ 종이를 사다리꼴로 자르되 글 상자는 안쪽 반듯한 영역 — 전환 단추 · 카드 안 스크롤 · 「크게 읽기」(<dialog>).
  */
 import Base from '../layouts/Base.astro';
 import TopBar from '../components/TopBar.astro';
-import Intro from '../components/Intro.astro';
-import WorkWall from '../components/react/WorkWall';
-import { MAIN_WORKS, WORKS } from '../data/works';
-import { WALL_TILES, wallOrder } from '../data/wall';
+import { MAIN_WORKS, TOOL_WORKS } from '../data/works';
+import { TASTER } from '../data/taster';
+import { applyEdits } from '../data/edits';
+import { SCRIPT_CARD_LABEL, SITE, TOOLS_LABEL } from '../data/site';
+import { CARDS } from '../data/lens';
 
-const order = wallOrder(WALL_TILES);
-const images = order.map((t) => ({ src: t.src, slug: t.slug, k: t.k, avif: t.avif, webp: t.webp }));
-const works = WORKS.map((w) => ({
-  slug: w.slug,
-  title: w.title,
-  format: w.format ?? w.category ?? '',
-  year: w.year ?? '',
-  href: w.group === 'main' ? `/works/${w.slug}/` : `/tools/#${w.slug}`,
-}));
-// 벽 칸 3개 = 주력 3편의 후킹 클립(음소거 · 반복 · 보일 때만 재생)
-const videos = MAIN_WORKS.filter((w) => w.hook).map((w) => ({ slug: w.slug, src: w.hook!.clip, poster: w.hook!.poster }));
+const mains = MAIN_WORKS.filter((w) => w.hook);
+const titleOf = (slug: string) => MAIN_WORKS.find((w) => w.slug === slug)?.title ?? '';
+const pages = TASTER.map((t) => ({ ...t, title: titleOf(t.slug), lines: t.lines.map((l) => ({ ...l, s: applyEdits(t.slug, l.s) })) }));
 ---
 
 <Base page="home">
-  <Intro />
-  <div class="wall-cam" data-cam>
-    <WorkWall client:load images={images} works={works} videos={videos} hint="드래그해서 둘러보기" listLabel="작품" />
-  </div>
+  <script is:inline>
+    /* 칠하기 전에 — 첫 방문이면 이름만 나오는 인트로(html[data-intro]). 재방문 · 직링크(#) · ?skipIntro · 움직임 줄이기면 없음 */
+    (function () {
+      try {
+        var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var seen = sessionStorage.getItem('yk-entered');
+        if (!reduce && !seen && location.hash.length < 2 && !/(^|[?&])skipIntro/.test(location.search)) document.documentElement.setAttribute('data-intro', '');
+        else sessionStorage.setItem('yk-entered', '1');
+      } catch (e) {}
+    })();
+  </script>
   <TopBar variant="home" />
+  <div class="intro" data-intro-layer aria-hidden="true">
+    <p class="intro-name" data-intro-name>{SITE.name}</p>
+    <p class="intro-job">{SITE.job}</p>
+    <p class="intro-hint">스크롤하여 입장</p>
+  </div>
+  <main class="works" aria-label="작품">
+    <div class="lens" data-cards>
+      {
+        mains.map((w, i) => (
+          <div class="piece piece--main" data-card={w.slug} style={CARDS[i].vars}>
+            <a class="piece-link" href={`/works/${w.slug}/`} data-card-link aria-label={`${w.title} — ${w.format} · ${w.duration}`}>
+              <span class="piece-media" data-card-media>
+                <video src={w.hook!.clip} poster={w.hook!.poster} muted loop playsinline preload="none" aria-hidden="true" tabindex="-1" />
+              </span>
+              <span class="card-cap">
+                <span class="cap-t go">{w.title}</span>
+                <span class="cap-m">{`${w.format} · ${w.duration}`}</span>
+              </span>
+            </a>
+          </div>
+        ))
+      }
+      <div class="piece piece--tools" data-card="tools" style={CARDS[3].vars}>
+        <span class="piece-media piece-media--tools" data-card-media>
+          {
+            TOOL_WORKS.map((t, k) => (
+              <a class="tool-cell" href={`/tools/#${t.slug}`} data-tool-cell={t.slug} aria-label={`${t.title} — ${TOOLS_LABEL}`} style={CARDS[3].cells![k]}>
+                <img src={t.poster} alt="" width="960" height="540" decoding="async" />
+              </a>
+            ))
+          }
+        </span>
+        <a class="card-cap" href="/tools/" data-tools-link>
+          <span class="cap-t go">{TOOLS_LABEL}</span>
+          <span class="cap-m">{TOOL_WORKS.map((t) => t.title).join(' · ')}</span>
+        </a>
+      </div>
+      <div class="piece piece--script" data-card="script" style={CARDS[4].vars}>
+        <div class="piece-media paper" data-card-media data-script-card>
+          <div class="paper-safe">
+            <div class="paper-tabs" role="tablist" aria-label="대본 고르기">
+              {
+                pages.map((p, i) => (
+                  <button type="button" role="tab" id={`tab-${p.slug}`} aria-controls={`taster-${p.slug}`} aria-selected={i === 0 ? 'true' : 'false'} tabindex={i === 0 ? 0 : -1} data-taster-tab={p.slug}>
+                    {p.tab}
+                  </button>
+                ))
+              }
+            </div>
+            <div class="paper-scroll" data-taster-scroll tabindex="0" aria-label="대본 맛보기 — 카드 안에서 스크롤">
+              {
+                pages.map((p, i) => (
+                  <div class="paper-page" role="tabpanel" id={`taster-${p.slug}`} aria-labelledby={`tab-${p.slug}`} data-taster-page={p.slug} data-work-title={p.title} data-src={p.src} data-artifact hidden={i !== 0}>
+                    {p.lines.map((l) =>
+                      l.t === 'scene' ? (
+                        <p class="sc">{l.s}</p>
+                      ) : l.t === 'dia' && l.who ? (
+                        <p class="dia">
+                          <span class="who">{l.who}</span>
+                          {l.s.slice(l.who.length)}
+                        </p>
+                      ) : (
+                        <p class="act">{l.s}</p>
+                      ),
+                    )}
+                  </div>
+                ))
+              }
+            </div>
+            <button type="button" class="paper-big" data-reader-open aria-haspopup="dialog">크게 읽기</button>
+          </div>
+        </div>
+        <p class="card-cap"><span class="cap-t">{SCRIPT_CARD_LABEL}</span></p>
+      </div>
+    </div>
+  </main>
+  <dialog class="reader" data-reader aria-labelledby="reader-title">
+    <div class="reader-in">
+      <div class="reader-head">
+        <h2 class="reader-title" id="reader-title" data-reader-title></h2>
+        <button type="button" class="reader-x" data-reader-close aria-label="닫기">✕</button>
+      </div>
+      <div class="reader-body" data-reader-body tabindex="0"></div>
+    </div>
+  </dialog>
 </Base>

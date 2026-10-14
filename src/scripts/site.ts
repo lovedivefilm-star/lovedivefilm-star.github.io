@@ -1,7 +1,7 @@
 /**
  * 사이트 동작 — v4(메인 지시 10-14 반영). 방마다 있는 부품만 켠다. Astro ClientRouter 라 `astro:page-load` 마다 켜고 `astro:before-swap` 에 되돌린다.
  * 움직임은 진입 · 전환 · 스크롤 걸음에서만, 끝나면 멈춘다. 움직임 줄이기면 전부 건너뛰고 완성 상태(과정은 4장면 세로).
- * 라이브러리 = GSAP 3.15(코어 · SplitText · TextPlugin · ScrollTrigger · Observer · Flip — 전부 무료) · lite-youtube 1.9(MIT).
+ * 라이브러리 = GSAP 3.15(코어 · SplitText · TextPlugin · ScrollTrigger · Observer · Flip — 전부 무료) · lite-youtube 1.9(MIT). v5 1단계b: 홈(인트로 → 조각 5개) · 연락 복사.
  */
 import gsap from 'gsap';
 import { SplitText } from 'gsap/SplitText';
@@ -16,7 +16,6 @@ gsap.registerPlugin(SplitText, TextPlugin, ScrollTrigger, Observer, Flip);
 
 declare global {
   interface Window {
-    __ykEnterAt?: number;
     /** 시험용 — 지금 돌고 있는 GSAP 트윈 수(스크롤에 묶인 스크럽은 멈춰 있으면 0) */
     __motion?: () => number;
   }
@@ -47,8 +46,9 @@ function init() {
       sessionStorage.setItem('yk-entered', '1');
     } catch {}
   }
+  initContact();
   ctx = gsap.context(() => {
-    if (page === 'home') initIntro();
+    if (page === 'home') initHome();
     if (page === 'work') {
       initRoom();
       initCut();
@@ -66,64 +66,215 @@ function cleanup() {
   offs.splice(0).forEach((f) => f());
 }
 
-/* ───────────── 홈 인트로 = 잠든 벽(메인 지시 10-14) ─────────────
- * 같은 벽이 ×2.2 · brightness .32 · blur 2px 로 깔려 있고(CSS html[data-intro] .wall-cam) 아주 느리게 돈다(WorkWall).
- * 진입(Kavieng 2-1): 덮개 · 이름 .9s → 직함 +.5s → 안내 +1.05s(.62). 자동 진행 없음.
- * 입장(휠 36px · 클릭 · 키 · 터치, 처음 .9s 무시 — Kavieng 2-2): 카메라가 뒤로(×2.2 → 1, 어둠 · 흐림 걷힘, 1.1s power3.inOut),
- * 큰 이름은 GSAP Flip 으로 상단 바 이름 자리로, 상단 바 · 벽 위 글이 이어서 나타난다. */
+/* ───────────── 홈(v5 1단계b) — 인트로(이름만) → 작품 화면(조각 5개) ─────────────
+ * 인트로(html[data-intro] — 첫 방문만): 휠(누적 36px) · 클릭 · 키 · 터치 한 번이면 입장. 처음 .3s 는 무시(앞 방의 관성 스크롤).
+ * 입장: 큰 이름 → 상단 바 「김영건」 자리(GSAP Flip.fit .7s power3.inOut) · 조각들이 제자리로(.8s power3.out · .06s 간격, .12s 부터) — 합 ≤ 1.2s.
+ * ①②③ 마우스를 올리거나 키보드 포커스가 오면 그 조각만 컬러 + 앞으로(CSS) + 후킹 클립 재생, 벗어나면 멈추고 포스터로. 움직임 줄이기면 재생 없음(컬러만).
+ * ⑤ 대본 — 두 작품 전환(탭: 누르기 · ← →) · 「크게 읽기」 = <dialog>(ESC · 바깥 · ✕). */
 function initIntro() {
   const html = document.documentElement;
   const layer = document.querySelector<HTMLElement>('[data-intro-layer]');
   if (!layer || !html.hasAttribute('data-intro')) return;
-  layer.classList.add('is-on');
-  const name = layer.querySelector<HTMLElement>('.intro-name')!;
-  const job = layer.querySelector<HTMLElement>('.intro-job')!;
-  const hint = layer.querySelector<HTMLElement>('.intro-hint')!;
-  const cover = layer.querySelector<HTMLElement>('.intro-cover')!;
-  const cam = document.querySelector<HTMLElement>('[data-cam]');
-  gsap.set([name, job, hint, cover], { autoAlpha: 0 });
-  const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
-  tl.to(cover, { autoAlpha: 1, duration: 0.9 }, 0)
-    .to(name, { autoAlpha: 1, duration: 0.9 }, 0)
-    .to(job, { autoAlpha: 1, duration: 0.6 }, 0.5)
-    .to(hint, { autoAlpha: 0.62, duration: 0.6 }, 1.05);
-
+  const name = layer.querySelector<HTMLElement>('[data-intro-name]')!;
+  const rest = [...layer.querySelectorAll<HTMLElement>('.intro-job, .intro-hint')];
+  const barName = document.querySelector<HTMLElement>('[data-bar-name]');
+  const barL = document.querySelector<HTMLElement>('.tb-l');
+  const pieces = gsap.utils.toArray<HTMLElement>('[data-cards] .piece');
   let entered = false;
   let obs: Observer | null = null;
   const enter = () => {
     if (entered) return;
     entered = true;
     obs?.kill();
-    tl.progress(1);
-    window.__ykEnterAt = performance.now();
     try {
       sessionStorage.setItem('yk-entered', '1');
     } catch {}
-    const barName = document.querySelector<HTMLElement>('.tb-name');
-    const barRest = [...document.querySelectorAll<HTMLElement>('.tb-job, .tb-r')];
-    const ui = [...document.querySelectorAll<HTMLElement>('.wall-ui > *'), document.querySelector<HTMLElement>('.wall-dot')].filter(Boolean) as HTMLElement[];
-    gsap.set([barName, ...barRest, ...ui], { autoAlpha: 0 });
-    document.dispatchEvent(new CustomEvent('yk:enter')); // 벽이 멈추고 영상 칸이 깨어난다(WorkWall)
-    const out = gsap.timeline({
+    gsap.set(pieces, { autoAlpha: 0, y: 34, scale: 0.97 });
+    gsap.set(barL, { autoAlpha: 1 });
+    const job = barL?.querySelector('.tb-job');
+    gsap.set([barName, job].filter(Boolean), { autoAlpha: 0 });
+    const tl = gsap.timeline({
       onComplete: () => {
         html.removeAttribute('data-intro');
-        layer.classList.remove('is-on');
-        if (cam) gsap.set(cam, { clearProps: 'transform,filter' });
+        // 조각은 자리(left · top · 크기 · --clip)를 인라인 style 로 갖고 있다 — GSAP 이 쓴 것만 지운다
+        gsap.set([...pieces, barL, barName, job, layer, name, ...rest].filter(Boolean), { clearProps: 'opacity,visibility,transform,translate,scale,rotate,backgroundColor' });
       },
     });
-    out.to([job, hint], { autoAlpha: 0, duration: 0.35, ease: 'power3.out' }, 0).to(cover, { autoAlpha: 0, duration: 0.6, ease: 'power3.out' }, 0);
-    if (cam) out.fromTo(cam, { scale: 2.2, filter: 'brightness(0.32) blur(2px)' }, { scale: 1, filter: 'brightness(1) blur(0px)', duration: 1.1, ease: 'power3.inOut' }, 0);
+    tl.to(rest, { autoAlpha: 0, duration: 0.25, ease: 'power3.out' }, 0)
+      .to(layer, { backgroundColor: 'rgba(5,5,5,0)', duration: 0.5, ease: 'power3.out' }, 0.05);
     if (barName) {
-      const fit = Flip.fit(name, barName, { scale: true, duration: 1.1, ease: 'power3.inOut' });
-      if (fit) out.add(fit as gsap.core.Tween, 0);
-      out.to(barName, { autoAlpha: 1, duration: 0.25, ease: 'power3.out' }, 0.85).to(name, { autoAlpha: 0, duration: 0.2, ease: 'power3.out' }, 0.9);
-    } else out.to(name, { autoAlpha: 0, duration: 0.4, ease: 'power3.out' }, 0);
-    out.to(barRest, { autoAlpha: 1, duration: 0.4, ease: 'power3.out' }, 0.9).to(ui, { autoAlpha: 1, duration: 0.42, ease: 'power3.out', stagger: 0.05 }, 1.0);
-    gsap.delayedCall(4.6, () => html.removeAttribute('data-intro')); // 안전장치(Kavieng 4.6s)
+      const fit = Flip.fit(name, barName, { scale: true, duration: 0.7, ease: 'power3.inOut' });
+      if (fit) tl.add(fit as gsap.core.Tween, 0);
+      tl.to(barName, { autoAlpha: 1, duration: 0.2, ease: 'power3.out' }, 0.6).to(name, { autoAlpha: 0, duration: 0.15, ease: 'power3.out' }, 0.65);
+    } else tl.to(name, { autoAlpha: 0, duration: 0.3 }, 0);
+    tl.to(pieces, { autoAlpha: 1, y: 0, scale: 1, duration: 0.8, ease: 'power3.out', stagger: 0.06 }, 0.12);
+    if (job) tl.to(job, { autoAlpha: 1, duration: 0.3, ease: 'power3.out' }, 0.75);
   };
-  gsap.delayedCall(0.9, () => {
-    obs = Observer.create({ target: window, type: 'wheel,touch,pointer', tolerance: 36, onUp: enter, onDown: enter, onPress: enter });
-    on(window, 'keydown', () => enter());
+  const t0 = performance.now();
+  const go = (e?: Event) => {
+    if (performance.now() - t0 < 300) return;
+    if (e && (e.target as HTMLElement | null)?.closest?.('header')) return; // 상단 바(연락 · 복사)는 그대로 동작
+    enter();
+  };
+  obs = Observer.create({ target: window, type: 'wheel,touch', tolerance: 36, onUp: () => go(), onDown: () => go() });
+  on(window, 'pointerdown', (e) => go(e));
+  on(window, 'keydown', (e) => {
+    if (e.key === 'Tab' || e.altKey || e.ctrlKey || e.metaKey) return; // Tab 은 상단 바 연락으로 가는 길
+    go(e);
+  });
+  offs.push(() => obs?.kill());
+}
+
+function initHome() {
+  initIntro();
+
+  document.querySelectorAll<HTMLAnchorElement>('[data-card-link]').forEach((a) => {
+    const v = a.querySelector('video');
+    if (!v) return;
+    const play = () => {
+      a.classList.add('is-on');
+      if (reduce()) return;
+      v.play().catch(() => {});
+    };
+    const stop = () => {
+      a.classList.remove('is-on');
+      v.pause();
+      if (v.currentTime > 0) v.load(); // 벗어나면 대표 정지 장면(포스터)으로 — load() 가 포스터를 다시 보이게 한다(preload none)
+    };
+    const hoverable = matchMedia('(hover: hover)').matches;
+    const ev: [string, () => void][] = [
+      ['focus', play],
+      ['blur', stop],
+      ...(hoverable ? ([['pointerenter', play], ['pointerleave', () => a !== document.activeElement && stop()]] as [string, () => void][]) : []),
+    ];
+    // 누른 카드만 방 전환 이름(lead)을 얻는다 — 작품 방 영상 칸으로 이어짐(Astro View Transitions)
+    const name = () => (a.querySelector<HTMLElement>('[data-card-media]')!.style.viewTransitionName = 'lead');
+    ev.push(['click', name]);
+    ev.forEach(([k, f]) => a.addEventListener(k, f));
+    offs.push(() => ev.forEach(([k, f]) => a.removeEventListener(k, f)));
+  });
+
+  // ⑤ 대본 카드 — 전환 단추(탭)
+  const tabs = [...document.querySelectorAll<HTMLButtonElement>('[data-taster-tab]')];
+  const scroller = document.querySelector<HTMLElement>('[data-taster-scroll]');
+  const select = (k: number, focus = false) => {
+    tabs.forEach((b, i) => {
+      const on = i === k;
+      b.setAttribute('aria-selected', String(on));
+      b.tabIndex = on ? 0 : -1;
+      const page = document.getElementById(b.getAttribute('aria-controls') ?? '');
+      if (page) page.hidden = !on;
+    });
+    if (scroller) scroller.scrollTop = 0;
+    if (focus) tabs[k]?.focus();
+  };
+  tabs.forEach((b, i) => {
+    const click = () => select(i);
+    const key = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        select((i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length, true);
+      }
+    };
+    b.addEventListener('click', click);
+    b.addEventListener('keydown', key);
+    offs.push(() => {
+      b.removeEventListener('click', click);
+      b.removeEventListener('keydown', key);
+    });
+  });
+
+  // ⑤ 크게 읽기 — 지금 고른 대본을 가운데 큰 종이로(복제해 넣는다 — 같은 글을 두 번 두지 않게)
+  const dlg = document.querySelector<HTMLDialogElement>('[data-reader]');
+  const open = document.querySelector<HTMLButtonElement>('[data-reader-open]');
+  if (dlg && open) {
+    const body = dlg.querySelector<HTMLElement>('[data-reader-body]')!;
+    const title = dlg.querySelector<HTMLElement>('[data-reader-title]')!;
+    const show = () => {
+      const page = document.querySelector<HTMLElement>('[data-taster-page]:not([hidden])');
+      if (!page) return;
+      const c = page.cloneNode(true) as HTMLElement;
+      c.removeAttribute('id');
+      c.removeAttribute('role');
+      c.removeAttribute('aria-labelledby');
+      c.removeAttribute('data-taster-page');
+      body.replaceChildren(c);
+      title.textContent = `${page.dataset.workTitle ?? ''} — 대본 앞부분`;
+      dlg.showModal();
+      body.scrollTop = 0;
+      body.focus();
+    };
+    const close = () => dlg.open && dlg.close();
+    const outside = (e: MouseEvent) => e.target === dlg && close();
+    const closed = () => {
+      body.replaceChildren();
+      open.focus();
+    };
+    const x = dlg.querySelector<HTMLButtonElement>('[data-reader-close]')!;
+    open.addEventListener('click', show);
+    x.addEventListener('click', close);
+    dlg.addEventListener('click', outside);
+    dlg.addEventListener('close', closed);
+    offs.push(() => {
+      open.removeEventListener('click', show);
+      x.removeEventListener('click', close);
+      dlg.removeEventListener('click', outside);
+      dlg.removeEventListener('close', closed);
+      if (dlg.open) dlg.close();
+    });
+  }
+}
+
+/* 작품 방 → 홈으로 돌아올 때 — 그 작품 카드가 방 전환 이름(lead)을 받아 영상 칸에서 카드로 이어진다 */
+document.addEventListener('astro:before-swap', (e) => {
+  const from = document.querySelector<HTMLElement>('.room[data-work]')?.dataset.work;
+  if (!from) return;
+  const doc = (e as Event & { newDocument: Document }).newDocument;
+  const media = doc.querySelector<HTMLElement>(`[data-card="${from}"] [data-card-media]`);
+  if (media) media.style.viewTransitionName = 'lead';
+});
+
+/* ───────────── 연락 — 주소 복사(모든 방 상단 바) — 누르면 「복사됨」 1.5초 ───────────── */
+function initContact() {
+  document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((b) => {
+    const label = b.querySelector<HTMLElement>('[data-copy-label]');
+    const status = b.parentElement?.querySelector<HTMLElement>('[data-copy-status]');
+    const text = label?.textContent ?? '';
+    let t = 0;
+    const copy = async () => {
+      const v = b.dataset.copy ?? '';
+      let ok = false;
+      try {
+        await navigator.clipboard.writeText(v);
+        ok = true;
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = v;
+        ta.setAttribute('readonly', '');
+        ta.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+        document.body.append(ta);
+        ta.select();
+        try {
+          ok = document.execCommand('copy');
+        } catch {}
+        ta.remove();
+      }
+      if (!label) return;
+      label.textContent = ok ? '복사됨' : v;
+      b.toggleAttribute('data-copied', true);
+      if (status) status.textContent = ok ? `메일 주소를 복사했습니다 — ${v}` : v;
+      window.clearTimeout(t);
+      t = window.setTimeout(() => {
+        label.textContent = text;
+        b.removeAttribute('data-copied');
+        if (status) status.textContent = '';
+      }, 1500);
+    };
+    b.addEventListener('click', copy);
+    offs.push(() => {
+      b.removeEventListener('click', copy);
+      window.clearTimeout(t);
+    });
   });
 }
 
@@ -200,7 +351,7 @@ function initCut() {
   const l2 = q<SVGLineElement>('[data-line="2"]');
   const sent = q('[data-sent]');
 
-  // 시트의 두 자리 — A(오른쪽 큰 자리, 걸음 2) · B(왼쪽 아래, 걸음 3~) 를 재서 A→B 를 transform 으로(Flip 과 같은 셈)
+  // 시트의 두 자리 — A(오른쪽 큰 자리, 걸음 2) · B(왼쪽 아래, 걸음 3~) 를 재서 A→B 를 transform 으로(GSAP Flip 과 같은 셈)
   stage.dataset.state = '2';
   const rA = sheet.getBoundingClientRect();
   stage.dataset.state = 'anim';

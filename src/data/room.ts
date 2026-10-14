@@ -6,6 +6,7 @@ import { MAIN_WORKS, TOOL_WORKS, WORKS, type Work } from './works';
 import { roomOf } from './process';
 import { STAGES, type Pic, type ScriptLine as ExLine, type StageKey, mmss } from './process/types';
 import { SCRIPTS, type ScriptLine } from './scripts';
+import { TOOLS_LABEL } from './site';
 
 export type MetaRow = { k: string; v: string; key: string };
 
@@ -60,7 +61,7 @@ export function titleSize(s: string, cap = 'clamp(64px, 10.4vw, 150px)'): string
 }
 
 /** 다음 작품 — 주력 3 → 툴 방 → 처음(Kavieng: 마지막 다음은 처음으로) */
-export const ROOM_ORDER = [...MAIN_WORKS.map((w) => ({ key: w.slug, href: `/works/${w.slug}/`, title: w.title })), { key: 'tools', href: '/tools/', title: '툴' }];
+export const ROOM_ORDER = [...MAIN_WORKS.map((w) => ({ key: w.slug, href: `/works/${w.slug}/`, title: w.title })), { key: 'tools', href: '/tools/', title: TOOLS_LABEL }];
 export const nextOf = (key: string) => ROOM_ORDER[(ROOM_ORDER.findIndex((r) => r.key === key) + 1) % ROOM_ORDER.length];
 export const prevOf = (key: string) => ROOM_ORDER[(ROOM_ORDER.findIndex((r) => r.key === key) + ROOM_ORDER.length - 1) % ROOM_ORDER.length];
 

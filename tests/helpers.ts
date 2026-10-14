@@ -1,5 +1,5 @@
 /**
- * 시험 공용 — v4(docs/contract.md 1~3절을 코드로 옮긴 것).
+ * 시험 공용 — v4 → v5 1단계(홈 · 상단 바). docs/contract.md 1~3절 · docs/review-gate.md 3 · 5-1 절을 코드로 옮긴 것.
  * 표식(셀렉터)은 전부 여기 한 곳. 제작이 표식을 바꾸면 여기만 고친다.
  */
 import { test as base, type BrowserContext, type Page } from '@playwright/test';
@@ -30,9 +30,9 @@ export const roomPath = (w: Work) => (w.group === 'main' ? `/works/${w.slug}/` :
 
 // ───────────────────────── 1절 방(페이지)과 주소 ─────────────────────────
 export type Room = { key: string; path: string; name: string; kind: 'home' | 'work' | 'tools' };
-// 홈(인트로 + 벽) · 작품 방 3 · 툴 방. 404 는 따로(V-1).
+// 홈(카드 5장) · 작품 방 3 · 툴 방. 404 는 따로(V-1). 홈은 첫 방문 진입(카드 올라옴)을 건너뛴 상태로 잰다(?skipIntro).
 export const ROOMS: Room[] = [
-  { key: 'home', path: '/?skipIntro', name: '홈(벽)', kind: 'home' },
+  { key: 'home', path: '/?skipIntro', name: '홈(카드)', kind: 'home' },
   ...MAIN_WORKS.map((w) => ({ key: `works-${w.slug}`, path: `/works/${w.slug}/`, name: w.title, kind: 'work' as const })),
   { key: 'tools', path: '/tools/', name: '툴', kind: 'tools' },
 ];
@@ -43,12 +43,20 @@ export const ABSENT_ROOMS = ['/works/', '/about/', '/contact/', '/career/', '/re
 export const SEL = {
   nav: 'nav[data-nav]',
   contact: '[data-nav="contact"]',
-  // 홈
-  introLayer: '[data-intro-layer]',
-  wall: '[data-wall]',
-  wallTile: '[data-wall] .item__image',
-  wallRead: '[data-wall-read]',
-  wallLink: (slug: string) => `[data-wall-link="${slug}"]`,
+  copy: '[data-copy]',
+  // 홈(v5 1단계)
+  cards: '[data-cards]',
+  card: (k: string) => `[data-cards] [data-card="${k}"]`,
+  cardLink: (slug: string) => `[data-card="${slug}"] [data-card-link]`,
+  cardMedia: '[data-cards] [data-card] [data-card-media]',
+  job: '[data-job]',
+  toolCell: (slug: string) => `[data-tool-cell="${slug}"]`,
+  tasterTab: (slug: string) => `[data-taster-tab="${slug}"]`,
+  tasterPage: (slug: string) => `[data-taster-page="${slug}"]`,
+  tasterScroll: '[data-taster-scroll]',
+  readerOpen: '[data-reader-open]',
+  reader: 'dialog[data-reader]',
+  readerClose: '[data-reader-close]',
   // 방
   work: (slug: string) => `[data-work="${slug}"]`,
   meta: '[data-meta]',
@@ -73,6 +81,13 @@ export const CUT_SNAP = [0, 1 / 3, 2 / 3, 1];
 
 /** 작가 원문 대조 문서 폴더 — `<slug>.md`(V-16) */
 export const PROCESS_DOC_DIR = process.env.QA_PROCESS_DOC_DIR ?? 'G:/내 드라이브/포폴 웹사이트 만들기/_분석/작품과정';
+/** 작가 원문 폴더의 뿌리 — data-src 가 `_분석/…` 꼴이면 이 아래 파일과 대조(홈 대본 맛보기 = `_분석/대본/*.txt`) */
+export const ANALYSIS_ROOT = process.env.QA_ANALYSIS_ROOT ?? 'G:/내 드라이브/포폴 웹사이트 만들기';
+
+/** 홈 카드 순서(작가 10-14 v5 구체화 ① — 오직 당신의 것 첫 카드 · 대본 카드 맨 뒤) */
+export const HOME_CARDS = ['oneandonly', 'firstimpression', 'butter', 'tools', 'script'] as const;
+/** 화면에 나오면 안 되는 낱말(review-gate 2절 금지 목록 — 내부 용어 · 작가 10-14 「블로킹맵 쓰지마」). 「원테이크」(촬영 용어)는 생성 테이크가 아니라 뺀다 */
+export const FORBIDDEN_WORDS: RegExp[] = [/블로킹맵/, /세그먼트/, /(?<!원)테이크/];
 
 // ───────────────────────── 공모전 낱말 ─────────────────────────
 export const CONTEST_WORDS_KO = ['비글루', '서울드라마어워즈', '페스티벌', '챌린지', '공모전'];
@@ -425,7 +440,7 @@ export function contactEmail(): string {
   return s.match(/export const CONTACT_EMAIL\s*=\s*['"]([^'"]*)['"]/)?.[1] ?? '';
 }
 
-/** 작가 확인 전 벽 칸(src/data/wall.ts WALL_HOLD) — 어느 방에도 나오면 안 된다 */
+/** 작가 확인 전 뮤직비디오 얼굴 프레임(review-gate 2절) — 어느 방에도 나오면 안 된다 */
 export const WALL_HOLD_FILES = /\/media\/wall\/musicvideo_(1|2|3|5)_/;
 
 /** 과정 고정 무대의 걸음 k(1~4) 끝 위치로 스크롤(스냅 위치 그대로) — 핀 구간은 [data-process] 의 data-pin-start/end */
@@ -459,6 +474,8 @@ export type ScreenStat = {
   eases: string[];
   durations: string[];
   media: number;
+  /** 보이는 글자 중 가장 작은 계산 크기(px) */
+  minFont: number;
 };
 export function screenStats(): ScreenStat {
   const vis = { checkOpacity: true, checkVisibilityCSS: true, opacityProperty: true, visibilityProperty: true } as CheckVisibilityOptions;
@@ -473,6 +490,7 @@ export function screenStats(): ScreenStat {
   const sizes = new Set<number>(), families = new Set<string>(), eases = new Set<string>(), durations = new Set<string>();
   const labels: string[] = [], boxes: string[] = [], rules: string[] = [];
   let fragments = 0;
+  let minFont = Infinity;
   for (const e of Array.from(document.body.querySelectorAll('*'))) {
     if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEMPLATE', 'svg', 'line'].includes(e.tagName)) continue;
     if (!shown(e)) continue;
@@ -497,8 +515,15 @@ export function screenStats(): ScreenStat {
     // 글
     const own = Array.from(e.childNodes).filter((n) => n.nodeType === 3 && (n.textContent ?? '').trim()).map((n) => (n.textContent ?? '').trim()).join(' ');
     if (!own) continue;
-    fragments++;
     const fs = Math.round(parseFloat(cs.fontSize));
+    minFont = Math.min(minFont, parseFloat(cs.fontSize));
+    if (e.closest('[data-artifact]')) {
+      // 작업물(대본 종이)의 글은 UI 조각이 아니다 — 글 조각 · 라벨에서 빼고 크기 · 글꼴만 센다(메인 v5 지시)
+      sizes.add(fs);
+      families.add(cs.fontFamily.split(',')[0].replace(/["']/g, '').trim().toLowerCase());
+      continue;
+    }
+    fragments++;
     sizes.add(fs);
     families.add(cs.fontFamily.split(',')[0].replace(/["']/g, '').trim().toLowerCase());
     const block = ((e.closest('p,li,td,th,h1,h2,h3,button,a,figcaption,summary') ?? e).textContent ?? '').trim();
@@ -529,8 +554,10 @@ export function screenStats(): ScreenStat {
     eases: [...eases],
     durations: [...durations],
     media: on / grid.length,
+    minFont: Number.isFinite(minFont) ? minFont : 0,
   };
 }
 
-/** 절제 규칙 상한(3절) */
-export const RESTRAINT = { sizes: 5, small: 3, families: 2, labels: 12, boxes: 2, rules: 5, fragments: 20, eases: 3, durations: 6, sections: 6, devices: 6, lengthScreens: 3.5, homeSizes: 4, homeFragments: 12, firstMedia: 0.5 };
+/** 절제 규칙 상한(_분석/감사/2026-10-14_레퍼런스절제.md 3절 · docs/review-gate.md 3절 장치 예산).
+ * v5 1단계: 홈도 review-gate 3절 값(글자 크기 ≤ 5 · 글 조각 ≤ 20)으로 — 옛 홈 상한(크기 4 · 조각 12)은 인트로 벽용이었다(메인 1단계 지시 「옛 홈 시험은 정리」). */
+export const RESTRAINT = { sizes: 5, small: 3, families: 2, labels: 12, boxes: 2, rules: 5, fragments: 20, eases: 3, durations: 6, sections: 6, devices: 6, lengthScreens: 3.5, homeSizes: 5, homeFragments: 20, firstMedia: 0.5, minFont: 12, infoFont: 14, jobFont: 16, tap: 44 };

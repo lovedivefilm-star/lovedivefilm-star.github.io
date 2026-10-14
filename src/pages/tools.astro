@@ -1,6 +1,6 @@
 ---
 /**
- * 툴 방 — 작품 방과 같은 원칙(메인 지시 10-14): 영상 4개를 2×2 격자(각 16:9, 누르면 그 자리 재생 — lite-youtube · 우리 포스터)
+ * 툴 방(화면 이름 「테크니컬 작업」 — src/data/site.ts TOOLS_LABEL) — 작품 방과 같은 원칙(메인 지시 10-14): 영상 4개를 2×2 격자(각 16:9, 누르면 그 자리 재생 — lite-youtube · 우리 포스터)
  * + 영상 밖 아래에 제목 · 분류 · 길이 · 「모작」 · 출처(데이터 있을 때만). 한 화면 반 이내. 벽의 툴 타일은 이 방의 그 영상 자리(#slug)로.
  */
 import Base from '../layouts/Base.astro';
@@ -9,15 +9,16 @@ import NextWork from '../components/NextWork.astro';
 import Footer from '../components/Footer.astro';
 import { TOOL_WORKS } from '../data/works';
 import { nextOf, prevOf } from '../data/room';
+import { TOOLS_LABEL } from '../data/site';
 
 const next = nextOf('tools');
 const prev = prevOf('tools');
 ---
 
-<Base page="tools" title="툴">
+<Base page="tools" title={TOOLS_LABEL}>
   <TopBar variant="room" prev={prev} next={next} />
   <article class="room" data-work="tools" data-prev-href={prev.href} data-next-href={next.href}>
-    <div class="g"><h1 class="tools-title">툴</h1></div>
+    <div class="g"><h1 class="tools-title">{TOOLS_LABEL}</h1></div>
     <div class="g tools-grid">
       {
         TOOL_WORKS.map((t) => (

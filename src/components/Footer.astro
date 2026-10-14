@@ -1,16 +1,8 @@
 ---
-/** 푸터 — 큰 연락 링크 「연락하기 ↗」(Kavieng 2-4 · 8-5). 주소(CONTACT_EMAIL)가 없으면 그리지 않는다. */
-import { CONTACT_EMAIL } from '../data/site';
+/**
+ * 푸터 — v5 1단계: 연락은 모든 방 상단 바(「연락」 mailto + 「주소 복사」)로 옮겼다. 같은 연락을 방 끝에 한 번 더 크게 두지 않는다
+ * (review-gate 3절 「같은 사실 한 곳」 · 「하나 넣으면 하나 뺀다」 — 상단 바 연락을 넣고 푸터 큰 「연락하기 ↗」 를 뺐다). 방 끝 여백만.
+ */
 ---
 
-{
-  CONTACT_EMAIL ? (
-    <footer class="foot">
-      <a href={`mailto:${CONTACT_EMAIL}`} data-nav="contact" data-contact-foot>
-        연락하기 <span class="ar" aria-hidden="true">↗</span>
-      </a>
-    </footer>
-  ) : (
-    <div class="end" aria-hidden="true" />
-  )
-}
+<div class="end" aria-hidden="true"></div>

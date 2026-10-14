@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────────────────────
-   전역 — v4(메인 지시 10-14 반영). 값은 tokens.css. 출처(Kavieng 절 번호 · 오픈소스)는 docs/sources.md 「v4」.
+   전역 — v4 → v5 1단계c(홈 · 상단 바만 v5, 작품 방은 v4 그대로 — 2단계에서). 값은 tokens.css. 출처(Kavieng 절 번호 · 오픈소스)는 docs/sources.md 「v4」.
    상자(테두리 있는 칸)는 표(.tbl) · 다음 작품 위 괘선(.next) · 과정 무대의 연결 상자(정지 그림 위 표시)뿐 — 시험 V-10.
    ───────────────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
@@ -20,44 +20,105 @@ ul, ol { list-style: none; }
 .u:hover, .u:focus-visible, .u[aria-current='page'] { color: var(--fg); }
 .u:hover::after, .u:focus-visible::after { transform: scaleX(1); }
 
-/* ── 상단 바 ── */
-.tb { position: fixed; z-index: 40; top: 0; left: 0; right: 0; height: var(--bar-h); display: flex; align-items: center; justify-content: space-between; padding: 0 var(--gutter); font-size: var(--t-13); background: var(--bg); }
+/* ── 상단 바(모든 방 공통 — v5 1단계 · review-gate 5-1: 글자 14px · 눌림 높이 ≥ 44px · 연락 mailto + 주소 복사) ── */
+.tb { position: fixed; z-index: 40; top: 0; left: 0; right: 0; height: var(--bar-h); display: flex; align-items: center; justify-content: space-between; padding: 0 var(--gutter); font-size: var(--t-14); background: var(--bg); }
+.tb-in { display: contents; }
 .tb-l, .tb-r { display: flex; align-items: center; gap: 18px; }
-.tb-name { font-weight: 700; letter-spacing: -0.01em; color: var(--fg); display: inline-block; }
+.tb-a { display: inline-flex; align-items: center; min-height: 44px; }
+.tb .u::after { bottom: 11px; }
+.tb-name { font-weight: 700; letter-spacing: -0.01em; color: var(--fg); }
 .tb-pn { max-width: 22ch; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-body[data-page='home'] .tb { background: transparent; padding: 0 var(--gutter-wall); align-items: flex-start; padding-top: 17px; text-shadow: var(--shadow-ui); pointer-events: none; }
-body[data-page='home'] .tb a { pointer-events: auto; }
-body[data-page='home'] .tb-name { font-size: var(--t-bar-name); line-height: 0.76; letter-spacing: -0.025em; }
-.tb-job { font-size: var(--t-12); color: var(--fg-70); line-height: 1.2; margin-left: 4px; }
+.tb-copy { color: var(--fg-70); transition: color var(--dur-link) var(--ease-quick); }
+.tb-copy:hover, .tb-copy:focus-visible, .tb-copy[data-copied] { color: var(--fg); }
 
-/* ── 홈: 벽 + 인트로(잠든 벽) ── */
-html:has(body[data-page='home']) { overflow: hidden; }
-body[data-page='home'] { height: 100svh; overflow: hidden; }
-.wall-cam { position: fixed; inset: 0; transform-origin: 50% 50%; }
-.wall { position: fixed; inset: 0; }
-.wall-dot { position: absolute; left: 50%; top: 50%; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%; background: var(--point); box-shadow: 0 0 12px rgba(0, 0, 0, 0.9); pointer-events: none; z-index: 10; }
-.wall-ui { position: absolute; inset: 0; pointer-events: none; z-index: 10; font-size: var(--t-12); text-shadow: var(--shadow-ui); }
-.wall-ui a { pointer-events: auto; }
-.wall-hint { position: absolute; left: var(--gutter-wall); bottom: 26px; color: var(--fg-70); }
-.wall-read { position: absolute; left: 50%; bottom: 47px; transform: translateX(-50%); max-width: 32vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
-.wall-list { position: absolute; right: var(--gutter-wall); bottom: 18px; }
-.wall-list li { line-height: 24px; text-align: right; }
-.wall-list a { color: var(--fg-70); transition: color var(--dur-link) var(--ease-quick); }
-.wall-list a:hover, .wall-list a:focus-visible { color: var(--fg); }
-/* 인트로 동안: 같은 벽이 가깝고 크게(×2.2) · 어둡게(.32) · 흐리게(2px). 벽 위 글 · 점 · 상단 바 글은 숨김 */
-html[data-intro] .wall-cam { transform: scale(2.2); filter: brightness(0.32) blur(2px); }
-html[data-intro] .wall-ui, html[data-intro] .wall-dot, html[data-intro] .tb-l > *, html[data-intro] .tb-r { opacity: 0; }
+/* ── 홈(v5 1단계c) — 인트로(이름만) → 작품 화면(오목 면의 사다리꼴 카드 5장) ──
+   조각 좌표 · 셈 = src/data/lens.ts. 묶음 = 92vw × min(80svh, 화면 − 상단 바 − 제목 줄 자리). */
+.tb-l--home { gap: 14px; }
+.tb-h { font-size: var(--t-16); font-weight: 700; }
+.tb-l--home .tb-name { font-size: var(--t-16); }
+.tb-job { font-size: var(--t-16); color: var(--fg-70); }
 
-.intro { position: fixed; inset: 0; z-index: 30; display: none; cursor: default; }
-html[data-intro] .intro, .intro.is-on { display: block; }
-/* 글 뒤 타원 어둠 덮개 — Kavieng 404(2-6): #050505 42% → .93 62% → 투명 82%, blur 18px */
-.intro-cover { position: absolute; inset: 22% 17%; background: radial-gradient(ellipse at center, #050505 42%, rgba(5, 5, 5, 0.93) 62%, transparent 82%); filter: blur(18px); pointer-events: none; }
-.intro-name { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -62%); margin: 0; font-family: var(--serif); font-weight: 400; font-size: var(--t-name); line-height: 0.9; letter-spacing: var(--ls-big); white-space: nowrap; color: var(--fg); transform-origin: 0 0; }
-.intro-job { position: absolute; left: 0; right: 0; top: calc(50% + var(--t-name) * 0.36 + 28px); text-align: center; font-size: var(--t-13); letter-spacing: 0.02em; }
-.intro-hint { position: absolute; left: 0; right: 0; bottom: 26px; text-align: center; font-size: var(--t-12); letter-spacing: 0.14em; opacity: 0.62; }
+/* 인트로 — 가운데 큰 이름 + 직무 한 줄 + 「스크롤하여 입장」(Kavieng 2-1 · 이름 clamp(78px, 15.2vw, 230px)) */
+.intro { position: fixed; inset: 0; z-index: 30; display: none; background: var(--bg); cursor: default; }
+html[data-intro] .intro { display: grid; place-items: center; align-content: center; }
+html[data-intro] body { overflow: hidden; }
+html[data-intro] .tb-l { opacity: 0; }
+.intro-name { font-family: var(--serif); font-weight: 400; font-size: var(--t-name); line-height: 0.9; letter-spacing: var(--ls-big); white-space: nowrap; color: var(--fg); transform-origin: 0 0; }
+.intro-job { margin-top: 36px; font-size: var(--t-20); letter-spacing: 0.02em; color: var(--fg); }
+.intro-hint { position: absolute; left: 0; right: 0; bottom: 28px; text-align: center; font-size: var(--t-14); letter-spacing: 0.14em; color: var(--fg-70); }
+html[data-intro] .piece { opacity: 0; }
 @media (prefers-reduced-motion: no-preference) {
-  html[data-intro] .intro-name, html[data-intro] .intro-job, html[data-intro] .intro-hint, html[data-intro] .intro-cover { opacity: 0; }
+  html[data-intro] .intro-name { animation: intro-in 0.6s var(--ease-quick) both; }
+  html[data-intro] .intro-job { animation: intro-in 0.6s var(--ease-quick) 0.2s both; }
+  html[data-intro] .intro-hint { animation: intro-in 0.6s var(--ease-quick) 0.45s both; }
 }
+@keyframes intro-in { from { opacity: 0; } }
+
+/* 작품 화면 — 조각 묶음(렌즈) */
+.works { min-height: 100svh; display: grid; place-items: center; padding: calc(var(--bar-h) + 10px) 0 calc(var(--lens-cap) + 14px); --lens-cap: 52px; }
+.lens { position: relative; width: 92vw; height: min(80svh, calc(100svh - var(--bar-h) - 10px - var(--lens-cap) - 14px)); }
+.piece { position: absolute; left: var(--l); top: var(--t); width: var(--w); height: var(--h); pointer-events: none; }
+.piece-link { position: absolute; inset: 0; display: block; pointer-events: none; }
+.piece-media { position: absolute; inset: 0; display: block; overflow: hidden; clip-path: var(--clip); background: var(--tile-bg); pointer-events: auto; transform-origin: 50% 50%; transition: transform var(--dur-color) var(--ease-quick); }
+.piece-media video { width: 100%; height: 100%; object-fit: cover; }
+/* 입체감 — 사다리꼴 윤곽 · 이음매는 그대로 두고, 카드 안 그림 · 영상만 바깥 카드일수록 안쪽을 향해 살짝 돌린다(--turn: ±7° · ±3.5° · 0) */
+.piece-media video, .tool-cell img { transform: perspective(900px) rotateY(var(--turn, 0deg)) scale(1.08); }
+/* 흑백 → 컬러(Kavieng 2-3 값 · 가장자리 조각은 살짝 어둡게) — 호버(마우스 기기) · 키보드 포커스 · 그 조각만 */
+.piece-media video, .tool-cell img { filter: grayscale(1) brightness(calc(0.75 * var(--dim, 1))) contrast(1.08); transition: filter var(--dur-color) var(--ease-quick); }
+.piece-link:focus-visible video, .piece-link.is-on video, .tool-cell:focus-visible img { filter: grayscale(0) brightness(1) contrast(1); }
+.piece-link:focus-visible .piece-media, .piece-link.is-on .piece-media, .piece--tools:focus-within .piece-media, .piece--script:focus-within .piece-media { transform: scale(1.03); }
+.piece:has(.is-on), .piece:hover, .piece:focus-within { z-index: 2; }
+@media (hover: hover) {
+  .piece-link:hover video, .tool-cell:hover img { filter: grayscale(0) brightness(1) contrast(1); }
+  .piece-media:hover { transform: scale(1.03); }
+}
+.piece-link:focus-visible { outline: 3px solid var(--fg); outline-offset: 4px; }
+.tool-cell:focus-visible { outline: none; }
+.tool-cell:focus-visible img { outline: 3px solid var(--fg); outline-offset: -3px; }
+@media (prefers-reduced-motion: reduce) {
+  .piece-media { transition: none; transform: none !important; }
+  .piece-media video, .tool-cell img { transform: none; }
+}
+/* 제목 줄 — 조각 아랫변 바로 아래 · 왼쪽 아래 꼭짓점에 맞춰 · 늘 보임(≥ 14px) · → 는 호버 없이 보이는 눌림 단서 */
+.card-cap { position: absolute; left: var(--cap-l); top: var(--cap-t); width: var(--cap-w); display: grid; row-gap: 2px; margin-top: 10px; font-size: var(--t-14); line-height: 1.4; word-break: keep-all; pointer-events: auto; }
+.cap-t { color: var(--fg); }
+.cap-t.go::after { content: ' →' / ''; display: inline-block; margin-left: 2px; transition: transform var(--dur-color) var(--ease-quick); }
+.piece-link:hover .go::after, .piece-link:focus-visible .go::after, a.card-cap:hover .go::after, a.card-cap:focus-visible .go::after { transform: translateX(4px); }
+.cap-m { color: var(--fg-70); }
+/* ④ 테크니컬 작업 — 조각 안 16:9 칸 4개(비스듬한 이음매) */
+.piece-media--tools { background: none; }
+.tool-cell { position: absolute; display: block; overflow: hidden; left: var(--cl); top: var(--ct); width: var(--cw2); height: var(--ch); clip-path: var(--cclip); pointer-events: auto; }
+.tool-cell img { width: 100%; height: 100%; object-fit: cover; }
+/* ⑤ 대본 맛보기 — 종이(#F0EFE9 · #050505 · Hahmlet)를 사다리꼴로 자르고, 글 상자는 안쪽 반듯한 안전 영역 */
+.paper { background: var(--fg); color: var(--bg); filter: brightness(calc(0.6 + 0.4 * var(--dim, 1))); }
+.paper-safe { position: absolute; left: var(--safe-l); top: var(--safe-t); width: var(--safe-w); height: var(--safe-h); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+.paper-tabs { display: flex; gap: 14px; font-size: var(--t-14); }
+.paper-tabs button, .paper-big { min-height: 36px; color: rgba(5, 5, 5, 0.66); }
+.paper-tabs button[aria-selected='true'] { color: var(--bg); box-shadow: inset 0 -2px 0 var(--point); }
+.paper-tabs button:focus-visible, .paper-big:focus-visible, .paper-scroll:focus-visible { outline: 3px solid var(--bg); outline-offset: -3px; }
+.paper-scroll { overflow-y: auto; overscroll-behavior: contain; padding: 8px 2px 12px 0; scrollbar-width: thin; scrollbar-color: rgba(5, 5, 5, 0.4) transparent; mask-image: linear-gradient(transparent, #000 10px, #000 calc(100% - 14px), transparent); }
+.paper-big { justify-self: start; font-size: var(--t-14); color: var(--bg); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--point); }
+.paper-page, .reader-body { font-family: var(--serif); font-size: var(--t-16); line-height: 1.6; word-break: keep-all; overflow-wrap: anywhere; }
+.paper-page p + p, .reader-body p + p { margin-top: 0.55em; }
+.paper-page .sc, .reader-body .sc { margin-top: 1.1em; letter-spacing: 0.01em; }
+.paper-page .sc:first-child, .reader-body .sc:first-child { margin-top: 0; }
+.paper-page .who, .reader-body .who { display: block; font-family: var(--sans); font-size: var(--t-14); color: rgba(5, 5, 5, 0.66); }
+.paper-page .dia, .reader-body .dia { padding-left: 1em; }
+/* 크게 읽기 — 화면 가운데 큰 종이(<dialog> · ESC · 바깥 · ✕) */
+.reader { width: min(760px, 92vw); max-height: min(88svh, 980px); padding: 0; border: 0; border-radius: 8px; background: var(--fg); color: var(--bg); overflow: hidden; }
+.reader::backdrop { background: rgba(5, 5, 5, 0.82); }
+.reader[open] { display: grid; }
+.reader-in { display: grid; grid-template-rows: auto minmax(0, 1fr); max-height: min(88svh, 980px); }
+.reader-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 12px 6px 32px; }
+.reader-title { font-family: var(--sans); font-size: var(--t-14); font-weight: 400; color: rgba(5, 5, 5, 0.66); }
+.reader-x { width: 44px; height: 44px; display: inline-grid; place-items: center; font-size: var(--t-20); color: var(--bg); border-radius: 50%; }
+.reader-x:focus-visible, .reader-body:focus-visible { outline: 3px solid var(--bg); outline-offset: -3px; }
+.reader-body { overflow-y: auto; overscroll-behavior: contain; padding: 8px 32px 40px; font-size: var(--t-17); line-height: 1.75; }
+.reader-body .paper-page { font-size: inherit; line-height: inherit; }
+@media (prefers-reduced-motion: no-preference) {
+  .reader[open] { animation: reader-in 0.2s var(--ease-quick); }
+}
+@keyframes reader-in { from { opacity: 0; transform: translateY(8px); } }
 
 /* ── 방 공통 격자(4절: 바깥 40 · 12열 · 열 간격 20) ── */
 .room { padding-top: var(--bar-h); }
@@ -212,6 +273,6 @@ body[data-page='404'] { height: 100svh; overflow: hidden; }
 .e404-name { position: absolute; left: var(--gutter-wall); top: 17px; font-size: 21px; line-height: 0.78; font-weight: 700; }
 .e404-no { position: absolute; right: var(--gutter-wall); top: 17px; font-size: var(--t-15); color: var(--fg-70); }
 
-/* 방 전환 — 벽 타일 그림 → 작품 방 영상 칸(lead)은 Astro View Transitions. 그 밖의 뿌리 전환은 짧은 페이드만 */
+/* 방 전환 — 홈 카드(누른 카드에만 이름 lead — site.ts) ↔ 작품 방 영상 칸(lead)은 Astro View Transitions(≤ 400ms — review-gate 5-1). 그 밖의 뿌리 전환은 짧은 페이드만 */
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.28s; }
-::view-transition-group(lead) { animation-duration: 0.62s; animation-timing-function: cubic-bezier(0.87, 0, 0.13, 1); }
+::view-transition-group(lead) { animation-duration: 0.4s; animation-timing-function: cubic-bezier(0.87, 0, 0.13, 1); }

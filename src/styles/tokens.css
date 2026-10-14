@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────────────────────
-   토큰 — v4(2026-10-14, docs/v4-redesign.md 0절). 수치 정본 = _분석/레퍼런스/정밀/Kavieng.md(절 번호는 각 줄 끝).
+   토큰 — v4 → v5 1단계(2026-10-14, docs/v4-redesign.md 0절). 수치 정본 = _분석/레퍼런스/정밀/Kavieng.md(절 번호는 각 줄 끝).
    색: 바탕 #050505 · 글자 #F0EFE9(작가 지정) · 보조 = 글자색 70% / 57%(Kavieng #AAA9A2 · #8A8A84 의 역할) · 괘선 19% ·
        포인트 #0090FF(Radix Colors 3.0.0 blue-dark 9) — 가운데 점 · 링크 호버 밑줄에만.
    글꼴 2종: Pretendard(정보 12–17px) · 한글 세리프(이름 · 제목 · 대본 — 기본 Hahmlet, 후보 Noto Serif KR · src/data/site.ts SERIF).
@@ -13,21 +13,20 @@
   --rule: rgba(240, 239, 233, 0.19);    /* 어두운 판 괘선 */
   --point: #0090FF;
   --tile-bg: #111;                      /* 타일 · 갤러리 프레임 바탕 */
-  --shadow-ui: 0 1px 9px rgba(0, 0, 0, 0.95); /* 벽 위 글자 그림자(2-3) */
 
   --sans: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
   --serif: 'Hahmlet', 'Noto Serif KR', 'Nanum Myeongjo', 'Batang', serif;   /* 기본 = src/data/site.ts SERIF(html[data-serif]) */
 
-  /* 글자 크기(4절) */
-  --t-12: 12px;
-  --t-13: 13px;
+  /* 글자 크기(4절 · v5 1단계: review-gate 5-1 — 모든 글자 ≥ 12px · 정보 ≥ 14px · 본문 ≥ 16px) */
+  --t-14: 14px;                                 /* 상단 바 · 카드 아래 · 정보 */
   --t-15: 15px;
+  --t-16: 16px;                                 /* 홈 대본 카드 본문 */
   --t-17: 17px;
-  --t-bar-name: 18px;                           /* 벽 상단 이름 700 */
+  --t-20: 20px;
+  --t-name: clamp(78px, 15.2vw, 230px);         /* 홈 인트로 이름(Kavieng 2-1) — 1440: 219px · 1280: 195px */
   --t-line: clamp(20px, 1.7vw, 25px);           /* 히어로 대본 한 줄(설명 줄 자리 24.5px) */
   --t-story: clamp(20px, 1.9vw, 27px);          /* 스토리 본문 · 대본 발췌 */
   --t-tool: clamp(24px, 2.1vw, 30px);           /* 툴 방 영상 제목(Press 제목 30px) */
-  --t-name: clamp(78px, 15.2vw, 230px);         /* 인트로 이름(2-1) */
   --t-next: clamp(66px, 9.2vw, 140px);          /* 다음 작품(2-4) */
   --t-foot: clamp(72px, 11.2vw, 170px);         /* 푸터 연락(2-4) */
   --t-404: clamp(72px, 8.4vw, 154px);           /* 404 문장(2-6) */
@@ -42,6 +41,7 @@
   /* 움직임(3절) */
   --ease-quick: cubic-bezier(0.16, 1, 0.3, 1);
   --dur-link: 0.28s;
+  --dur-color: 0.2s;                            /* 홈 카드 흑백 → 컬러(review-gate 5-1 호버 100~300ms) */
   --dur-arrow: 0.4s;
 }
 
