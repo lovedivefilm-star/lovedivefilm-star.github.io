@@ -1,0 +1,15 @@
+---
+/** Splitting is purely typographic: the two spans must concatenate to the exact authored line. */
+import type { PageLine } from '../data/pages';
+type Props = { line: PageLine; src: string; focused?: boolean };
+const { line, src, focused = false } = Astro.props;
+const name = line.t === 'dia' && line.who ? line.who.split('(')[0].trim() : '';
+const separator = name && line.s.startsWith(name) ? line.s.slice(name.length).match(/^\s*/)?.[0] ?? '' : '';
+const speaker = name && line.s.startsWith(name) ? line.s.slice(0, name.length + separator.length) : '';
+const dialogue = speaker ? line.s.slice(speaker.length) : line.s;
+const sourceCue = speaker && line.who ? line.who.slice(name.length) : '';
+const cue = sourceCue && dialogue.startsWith(sourceCue) ? sourceCue : '';
+const spoken = cue ? dialogue.slice(cue.length) : dialogue;
+if (speaker + dialogue !== line.s) throw new Error('Script line formatting changed the source text');
+---
+<p class:list={['process-script-line', 'script-line', focused && 'script-line--focused', line.t === 'scene' && 'script-line--scene', line.t === 'act' && 'script-line--action', !!speaker && 'script-line--dialogue']} data-src={src} data-script-focus={focused ? '' : undefined} data-script-scene={line.t === 'scene' ? '' : undefined}>{speaker ? <><span class="script-speaker" data-script-speaker>{speaker}</span><span class="script-dialogue" data-script-dialogue>{cue ? <><span class="script-cue" data-script-cue>{cue}</span><span class="script-spoken">{spoken}</span></> : dialogue}</span></> : <span data-script-action>{line.s}</span>}</p>

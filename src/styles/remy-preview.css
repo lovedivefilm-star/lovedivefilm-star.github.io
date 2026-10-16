@@ -1,0 +1,108 @@
+/* Remy shipped CSS: chrome inset 40px; bg #111; gray-150 #cbc7c2;
+   active cream #fcf8ef; inactive saturation 0 / opacity .5; compact BP760.
+   REA evidence and exact shipped source are in ../_local/qa-remy-preview/reference.
+   Persistent selectors, script marker and actual clip playhead are user-directed adaptations.
+   Remy module14935: N=clamp(1-|slot-pos|), opacity=.5+.5*N, saturation=N.
+   User-requested adaptation: scale=.88+.12*N, blur=.6px*(1-N), on an inner visual.
+   Scaling follows positioning, preserving native-resolution ceilings and fixed stage geometry. */
+*,*::before,*::after{box-sizing:border-box}
+:root{color-scheme:dark;--remy-bg:#111;--remy-fg:#cbc7c2;--remy-cream:#fcf8ef;--remy-gutter:40px}
+html,body{margin:0;background:var(--remy-bg);color:var(--remy-fg);font-family:'Pretendard Variable',Pretendard,'Malgun Gothic',sans-serif}
+button,a{-webkit-tap-highlight-color:transparent}
+button{font:inherit;cursor:pointer;color:inherit;border:0;background:none}
+a{color:inherit;text-decoration:none}
+button:focus-visible,a:focus-visible{outline:2px solid var(--remy-cream);outline-offset:5px}
+.remy{height:100svh;min-height:620px;display:grid;grid-template-rows:96px minmax(0,1fr)92px 36px;overflow:hidden;background:var(--remy-bg)}
+.remy-header{position:relative;z-index:2;margin:40px var(--remy-gutter) 0;font-size:clamp(14px,1.05vw,18px);line-height:1.2;letter-spacing:-.02em;display:flex;align-items:flex-start}
+.remy-name{font-size:clamp(22px,1.69vw,30px);font-weight:400;line-height:1.1;color:var(--remy-cream);white-space:nowrap}
+.remy-tagline{margin:0 0 0 max(48px,calc(8.33vw - 80px));font-size:14px;font-weight:400;line-height:1.25}
+.remy-nav{margin-left:auto;display:flex;gap:40px;align-items:flex-start}
+.remy-nav a{min-height:44px;display:flex;align-items:flex-start;padding-top:1px}
+.remy-nav a:hover,.remy-nav [aria-current]{color:var(--remy-cream)}
+.remy-nav sup{font-size:11px;margin-left:3px}
+.remy-stage{--remy-caption-base:72px;--remy-caption-reserve:var(--remy-caption-base);position:relative;min-height:0;touch-action:pan-y;isolation:isolate}
+.remy-strip{visibility:hidden;position:absolute;inset:0;overflow:hidden;touch-action:pan-y;user-select:none;cursor:grab}
+.remy.is-layout-ready .remy-strip{visibility:visible}
+.remy-card{position:absolute;left:50%;top:calc(50% - var(--remy-caption-reserve)/2);padding:0;display:block;overflow:hidden;transform:translate(-50%,-50%);transition:transform .6s cubic-bezier(.4,0,.15,1);will-change:transform}
+.remy-card-visual{position:relative;display:block;width:100%;height:100%;overflow:hidden;pointer-events:none;background:#111;opacity:calc(.5 + .5 * var(--remy-focus,0));filter:saturate(var(--remy-focus,0)) blur(calc(.6px * (1 - var(--remy-focus,0))));transform:scale(calc(.88 + .12 * var(--remy-focus,0)));transform-origin:center}
+.remy-card video{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none}
+.remy-cover{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain;pointer-events:none}
+.remy-card.has-preview-frame .remy-cover{opacity:0}
+.remy-card-static.is-active .remy-cover{opacity:1}
+.remy-card.is-active{z-index:1}
+.remy-card.is-active .remy-card-visual{--remy-focus:1}
+.remy-card{cursor:pointer}
+.remy-open-marker{position:absolute;right:16px;bottom:16px;width:36px;height:36px;display:grid;place-items:center;font-size:22px;line-height:1;color:var(--remy-cream);background-color:#11111140;opacity:0;transition:opacity .25s;pointer-events:none}
+.remy-card.is-active .remy-open-marker,.remy-card:hover .remy-open-marker,.remy-card:focus-visible .remy-open-marker{opacity:1}
+.remy.is-dragging .remy-strip,.remy.is-dragging .remy-card{cursor:grabbing}
+.remy.is-dragging .remy-card,.remy.is-rebasing .remy-card{transition:none}
+.remy-step{position:absolute;top:calc(50% - var(--remy-caption-reserve)/2);transform:translateY(-50%);z-index:3;font-size:34px;font-weight:300;width:44px;height:56px;display:grid;place-items:center;background:rgb(17 17 17/.65);color:var(--remy-cream)}
+.remy-step:hover{background:#111}
+.remy-step-prev{left:var(--remy-gutter)}
+.remy-step-next{right:var(--remy-gutter)}
+.remy-meta{position:absolute;top:calc(50% + (var(--remy-active-height,0px) - var(--remy-caption-reserve))/2);left:0;right:0;z-index:2;pointer-events:none;display:grid;grid-template-columns:40px minmax(0,1fr) 40px;align-items:start;gap:12px;padding:8px var(--remy-gutter) 0}
+.remy-position{font-size:14px;margin:0;white-space:nowrap}
+.remy-count{color:#8e8c87}
+.remy-work-heading{text-align:center;min-width:0;opacity:var(--remy-heading-opacity,1)}
+.remy-work-heading h1{font-size:20px;line-height:1.25;font-weight:400;margin:0;color:var(--remy-cream);word-break:keep-all;text-wrap:balance}
+.remy-kind{font-size:14px;line-height:1.4;margin:4px 0 0;color:var(--remy-fg);word-break:keep-all}
+.remy-work-list{position:relative;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:minmax(44px,1fr) 20px;gap:0 24px;margin:0 var(--remy-gutter);padding:18px 0 0;align-items:stretch}
+.remy-script-marker{position:absolute;left:var(--remy-selection-x,10%);top:var(--remy-selection-y,0);width:14px;height:18px;color:var(--remy-cream);transform:translateX(-50%);transition:left .45s cubic-bezier(.4,0,.15,1),top .45s cubic-bezier(.4,0,.15,1);pointer-events:none}
+.remy-script-marker svg{display:block;width:100%;height:100%;stroke:currentColor;stroke-width:1}
+.remy-work-select{display:flex;justify-content:center;align-items:center;position:relative;min-width:0;min-height:44px;text-align:center;padding:4px 8px;opacity:.65;transition:opacity .25s}
+.remy-work-select.is-active,.remy-work-select:hover{opacity:1}
+.remy-card-visual>.screenplay-preview{pointer-events:none}
+.remy-inner-stack{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.remy-inner-layer{position:absolute;inset:0;opacity:0;transition:opacity .3s cubic-bezier(.4,0,.15,1);pointer-events:none}
+.remy-inner-layer.is-inner-active{opacity:1;z-index:1}
+.remy-inner-layer>img,.remy-inner-video,.remy-inner-snapshot{display:block;width:100%;height:100%;object-fit:contain}
+.remy-inner-video{position:absolute;inset:0;opacity:0;transition:opacity .3s;pointer-events:none}
+.remy-inner-video.is-ready{opacity:1}
+.remy-inner-snapshot{position:absolute;inset:0;z-index:3;opacity:1;transition:opacity .3s;pointer-events:none}
+.remy-inner-snapshot.is-fading{opacity:0}
+.remy-select-copy{display:grid;gap:6px;min-width:0}
+.remy-select-title{font-size:15px;line-height:1.35;font-weight:400;word-break:keep-all;text-wrap:balance;color:var(--remy-cream)}
+.remy-select-title sup{font-size:11px;font-weight:400;line-height:0;vertical-align:super;margin-left:4px}
+.remy-clip-progress{grid-column:1/-1;display:flex;align-items:center;min-width:0}
+.remy-clip-progress[aria-hidden=true]{visibility:hidden;pointer-events:none}
+[data-remy-duration-wrap][hidden],[data-remy-credit-wrap][hidden]{display:none}
+.remy-clip-progress input{appearance:none;-webkit-appearance:none;width:100%;height:20px;margin:0;background:transparent;cursor:ew-resize;--remy-progress:0%}
+.remy-clip-progress input::-webkit-slider-runnable-track{height:1px;background:linear-gradient(to right,var(--remy-cream) var(--remy-progress),#ffffff40 var(--remy-progress))}
+.remy-clip-progress input::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:3px;height:16px;margin-top:-7.5px;border:0;border-radius:0;background:var(--remy-cream)}
+.remy-clip-progress input::-moz-range-track{height:1px;background:#ffffff40}
+.remy-clip-progress input::-moz-range-progress{height:1px;background:var(--remy-cream)}
+.remy-clip-progress input::-moz-range-thumb{width:3px;height:16px;border:0;border-radius:0;background:var(--remy-cream)}
+.remy-clip-progress input:focus-visible{outline:1px solid var(--remy-cream);outline-offset:4px}
+.remy-clip-progress input:disabled{opacity:.4;cursor:default}
+.remy-footer{display:flex;align-items:center;justify-content:flex-end;margin:0 var(--remy-gutter);color:var(--remy-fg)}
+.remy-footer button{font-size:14px;min-width:44px;min-height:36px;padding:0}
+.remy-footer button[aria-hidden=true]{visibility:hidden;pointer-events:none}
+
+@media(max-width:1100px){.remy-nav{gap:24px}.remy-tagline{margin-left:40px}.remy-meta{grid-template-columns:44px minmax(0,1fr) 44px;gap:12px}.remy-work-list{column-gap:12px}.remy-work-select{padding:4px}.remy-select-title{font-size:14px}.remy-work-heading h1{font-size:18px}}
+@media(max-width:760px){
+ :root{--remy-gutter:20px}
+ .remy{height:100svh;min-height:740px;display:grid;grid-template-rows:94px minmax(330px,1fr)auto 36px;overflow:hidden}
+ .remy-header{margin-top:20px;flex-wrap:wrap;gap:10px 16px}
+ .remy-stage{height:auto;--remy-caption-base:88px}
+ .remy-name{font-size:22px;line-height:1.1}
+ .remy-tagline{margin:0;font-size:13px;line-height:1.15}
+ .remy-nav{gap:16px;font-size:13px;margin-left:auto}
+ .remy-nav a{min-height:44px}
+ .remy-step{width:36px;height:44px;font-size:26px}
+ .remy-step-prev{left:12px}.remy-step-next{right:12px}
+ .remy-meta{display:block;padding:8px 20px 0}.remy-position{position:absolute;left:20px;top:8px}.remy-work-heading{padding-inline:20px}
+ .remy-position{font-size:12px;align-self:start;padding-top:4px}
+ .remy-count{display:none}
+ .remy-work-heading h1{font-size:17px;line-height:1.3;min-height:0}
+ .remy-kind{font-size:14px;line-height:1.4;margin-top:4px;min-height:0}
+ .remy-work-list{grid-template-columns:repeat(6,minmax(0,1fr));gap:0 8px;margin:0 20px;padding:18px 0 0;grid-template-rows:minmax(44px,auto) minmax(44px,auto) 20px}
+ .remy-work-select{grid-column:span 2}
+ .remy-work-select[data-index='3'],.remy-work-select[data-index='4']{grid-column:span 3}
+ .remy-clip-progress{margin-top:0}
+ .remy-work-select{padding:4px 2px;justify-content:center}
+ .remy-select-copy{gap:0;text-align:center}
+ .remy-select-title{font-size:14px;line-height:1.25}
+ .remy-footer{height:36px}
+ .remy-open-marker{right:10px;bottom:10px;width:30px;height:30px;font-size:20px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}.remy-card.is-active .remy-cover{opacity:1}}

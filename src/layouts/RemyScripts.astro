@@ -1,0 +1,95 @@
+---
+import { SCRIPT_INTRODUCTIONS } from '../data/script-introductions';
+import { CONTACT_EMAIL, SITE } from '../data/site';
+import ScreenplayLines from '../components/ScreenplayLines.astro';
+import '../styles/remy-fonts.css';
+import '../styles/remy-scripts.css';
+const count = SCRIPT_INTRODUCTIONS.length;
+type Props = { preview?: boolean };
+const { preview = false } = Astro.props;
+const canonical = new URL('/scripts/', SITE.url).href;
+---
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {preview && <meta name="robots" content="noindex,nofollow" />}
+    <meta name="description" content={SITE.description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="theme-color" content="#111111" />
+    <title>대본 · 김영건</title>
+  </head>
+  <body>
+    <a class="scripts-skip" href="#madeinhongdae">본문으로</a>
+    <main class="scripts-app" aria-label="김영건 대본 소개">
+      <header class="scripts-header">
+        <a class="scripts-name" href="/">김영건</a>
+        <p class="scripts-tagline">AI CREATOR<br />&amp; SCREENWRITER</p>
+        <nav aria-label="주요 메뉴">
+          <a href="/?work=scripts" data-scripts-return aria-label="작품 선택으로 돌아가기">작품</a>
+          <a href={`mailto:${CONTACT_EMAIL}`}>연락</a>
+        </nav>
+      </header>
+      <h1 class="scripts-sr-only">대본 소개</h1>
+
+      <div class="scripts-mobile-tabs" role="tablist" aria-label="대본에서 볼 내용">
+        <button type="button" id="scripts-intro-tab" role="tab" aria-selected="true" data-script-tab="intro">작품 소개</button>
+        <button type="button" id="scripts-scene-tab" role="tab" aria-selected="false" tabindex="-1" data-script-tab="scene">대표 장면</button>
+      </div>
+
+      <section class="scripts-stage" aria-label="작품 소개와 대표 장면">
+        <nav class="scripts-work-list" aria-label="읽을 대본 선택">
+          {SCRIPT_INTRODUCTIONS.map(script => <a class="scripts-work-select" href={`#${script.id}`} data-script-select={script.id}>{script.title}</a>)}
+        </nav>
+        <div class="scripts-collection">
+          {SCRIPT_INTRODUCTIONS.map((script, index) => <article class="script-entry" id={script.id} data-script-entry data-script-index={index} aria-labelledby={`title-${script.id}`} tabindex="-1">
+            <div class="script-spread">
+              <section class="script-page script-intro-page is-mobile-active" id={`intro-${script.id}`} data-script-panel="intro" aria-label="작품 소개">
+                <p class="script-eyebrow">작품 소개</p>
+                <h2 class="script-title" id={`title-${script.id}`}>{script.title}</h2>
+                <p class="script-format">{[script.format, script.genre, script.stage].filter(Boolean).join(' · ')}</p>
+                <p class="script-introduction">{script.introduction}</p>
+                {script.sceneContext && <aside class="script-context" aria-label="장면의 규칙"><p>{script.sceneContext}</p></aside>}
+                <div class="script-page-bottom">
+                  <p class="script-credit">{script.credit}</p>
+                  {script.workHref && <a class="script-film" href={script.workHref}>{script.filmLinkLabel ?? '완성 영상 보기'} <span aria-hidden="true">↗</span></a>}
+                </div>
+              </section>
+
+              <section class="script-page script-scene-page" id={`scene-${script.id}`} data-script-panel="scene" aria-label="대표 장면">
+                <div class="script-excerpt-head"><h3 class="script-eyebrow">대표 장면</h3><p class="script-excerpt-label">{script.excerptLabel}</p></div>
+                <div class="script-body" data-script-preview><ScreenplayLines lines={script.previewExcerpt} /></div>
+                <details class="script-reader" data-script-reader>
+                  <summary class="script-more" data-script-more>대표 장면 더 읽기 <span aria-hidden="true">↗</span></summary>
+                  <div class="script-reader-source script-body" data-script-full>
+                    <ScreenplayLines lines={script.excerpt} />
+                  </div>
+                </details>
+              </section>
+            </div>
+          </article>)}
+        </div>
+        <button class="scripts-arrow scripts-prev" type="button" data-scripts-step="-1" aria-label="이전 대본">←</button>
+        <button class="scripts-arrow scripts-next" type="button" data-scripts-step="1" aria-label="다음 대본">→</button>
+      </section>
+
+      <div class="scripts-meta">
+        <p class="scripts-counter"><span data-script-index-label>01</span><span class="scripts-muted"> / {String(count).padStart(2, '0')}</span></p>
+        <p class="scripts-selected-title" data-script-selected-title aria-live="polite" aria-atomic="true">{SCRIPT_INTRODUCTIONS[0].title}</p>
+        <span aria-hidden="true"></span>
+      </div>
+
+      <footer class="scripts-footer"><a href="/?work=scripts" data-scripts-return>작품 선택으로 <span aria-hidden="true">↗</span></a><span>집필 작품 · {count}</span></footer>
+    </main>
+
+    <dialog class="scripts-dialog" data-script-dialog aria-labelledby="scripts-reader-title">
+      <header class="scripts-dialog-header"><h2 id="scripts-reader-title"></h2><button class="scripts-close" type="button" data-script-close aria-label="대본 읽기 닫기" autofocus>×</button></header>
+      <div class="scripts-dialog-body script-body" data-script-dialog-body></div>
+      <footer class="scripts-dialog-footer">대본 중 일부 발췌</footer>
+    </dialog>
+    <script>
+      import '../scripts/remy-scripts';
+    </script>
+  </body>
+</html>

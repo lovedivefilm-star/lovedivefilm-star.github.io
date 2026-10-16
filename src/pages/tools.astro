@@ -1,45 +1,21 @@
 ---
-/**
- * 툴 방(화면 이름 「테크니컬 작업」 — src/data/site.ts TOOLS_LABEL) — 작품 방과 같은 원칙(메인 지시 10-14): 영상 4개를 2×2 격자(각 16:9, 누르면 그 자리 재생 — lite-youtube · 우리 포스터)
- * + 영상 밖 아래에 제목 · 분류 · 길이 · 「모작」 · 출처(데이터 있을 때만). 한 화면 반 이내. 벽의 툴 타일은 이 방의 그 영상 자리(#slug)로.
- */
-import Base from '../layouts/Base.astro';
-import TopBar from '../components/TopBar.astro';
-import NextWork from '../components/NextWork.astro';
-import Footer from '../components/Footer.astro';
+import RemyRoom from '../layouts/RemyRoom.astro';
+import FilmPlayer from '../components/FilmPlayer.astro';
 import { TOOL_WORKS } from '../data/works';
-import { nextOf, prevOf } from '../data/room';
 import { TOOLS_LABEL } from '../data/site';
-
-const next = nextOf('tools');
-const prev = prevOf('tools');
+import { TECHNICAL_WORKFLOWS } from '../data/technical-workflows';
+import '../styles/technical-workflows.css';
+const posterOf = (slug:string) => '/media/remy-preview/technical/' + (slug==='kinetic'?'poster':slug) + '.jpg';
 ---
-
-<Base page="tools" title={TOOLS_LABEL}>
-  <TopBar variant="room" prev={prev} next={next} />
-  <article class="room" data-work="tools" data-prev-href={prev.href} data-next-href={next.href}>
-    <div class="g"><h1 class="tools-title">{TOOLS_LABEL}</h1></div>
-    <div class="g tools-grid">
-      {
-        TOOL_WORKS.map((t) => (
-          <section class="tool" id={t.slug} data-tool={t.slug} aria-labelledby={`h-${t.slug}`}>
-            <div class="vbox" data-vbox>
-              <div class="vcell" data-video data-ratio="16:9" data-youtube-id={t.youtubeId} data-video-title={t.title} data-poster={t.poster}>
-                <lite-youtube videoid={t.youtubeId} nocookie videotitle={t.title} videoplay="재생" params="rel=0&playsinline=1">
-                  <img slot="image" src={t.poster} alt="" loading="lazy" decoding="async" />
-                </lite-youtube>
-              </div>
-              <div class="tool-cap">
-                <h2 id={`h-${t.slug}`}>{t.title}</h2>
-                <p class="facts2">{[t.category, t.label, t.sourceNote].filter(Boolean).join(' · ')}</p>
-                <button class="play" type="button" data-play aria-pressed="false">{`▶ 재생 · ${t.duration}`}</button>
-              </div>
-            </div>
-          </section>
-        ))
-      }
-    </div>
-    <NextWork href={next.href} title={next.title} />
-    <Footer />
-  </article>
-</Base>
+<RemyRoom title={TOOLS_LABEL} subtitle="모션 그래픽 · 타이틀 · AI 영상" selected="technical" page="tools">
+  <main id="main" class="room-tools room-wrap" data-technical-room>
+    <nav class="room-tool-list" aria-label="테크니컬 작업 선택">{TOOL_WORKS.map((work,index)=><a href={'?work='+work.slug} data-tool-select={work.slug} aria-current={index===0?'true':undefined}><img src={posterOf(work.slug)} alt="" width="160" height="90" /><span>{work.title}<small>{[work.category,work.label].filter(Boolean).join(' · ')}</small></span></a>)}</nav>
+    <div class="room-tool-panels">{TOOL_WORKS.map(work=><section class="room-tool-panel" id={work.slug} data-tool-panel={work.slug} aria-labelledby={'tool-'+work.slug}>
+      <div class="room-section-heading"><h2 id={'tool-'+work.slug}>{work.title}</h2><span>{[work.category,work.label,work.duration].filter(Boolean).join(' · ')}</span></div>
+      <FilmPlayer id={work.youtubeId} title={work.title} poster={posterOf(work.slug)} ratio={work.ratio} duration={work.duration} />
+      <dl class="room-technical-credit"><div><dt>제작</dt><dd>김영건 · 단독</dd></div><div><dt>사용 툴</dt><dd>{TECHNICAL_WORKFLOWS[work.slug].tools.join(' · ')}</dd></div>{work.sourceNote&&<div><dt>출처</dt><dd>{work.sourceNote}</dd></div>}</dl>
+      <section class="room-technical-workflow" aria-labelledby={'flow-'+work.slug}><h3 id={'flow-'+work.slug}>작업 흐름</h3><ol>{TECHNICAL_WORKFLOWS[work.slug].steps.map(step=><li>{step}</li>)}</ol></section>
+    </section>)}</div>
+    <a class="room-next" href="/scripts/"><span>다음 항목</span><strong>대본</strong><span aria-hidden="true">↗</span></a>
+  </main>
+</RemyRoom>

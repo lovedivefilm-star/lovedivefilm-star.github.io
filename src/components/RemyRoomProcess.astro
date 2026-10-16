@@ -1,0 +1,22 @@
+---
+import type { Work } from '../data/works';
+import { CASE_STUDIES } from '../data/case-studies';
+import { PRODUCTION_PIPELINES } from '../data/production-pipelines';
+import { mmss } from '../data/process/types';
+import ProductionPipeline from './ProductionPipeline.astro';
+import CompareSlider from './originkit/CompareSlider.astro';
+const { work } = Astro.props as { work:Work };
+const pipeline=PRODUCTION_PIPELINES[work.slug];
+const study=CASE_STUDIES[work.slug];
+---
+{pipeline && <ProductionPipeline pipeline={pipeline} />}
+<div class="room-wrap">
+  <details class="pipeline-final" id={'pipeline-final-'+work.slug} data-pipeline-final={work.slug} data-evidence-panel={study.id}>
+    <summary>완성 장면 · {mmss(study.scene.start,1)}–{mmss(study.scene.end,1)}</summary>
+    <div class:list={['room-scene-layout',study.scene.h>study.scene.w&&'room-scene-layout-portrait']}>
+      <div class="room-scene-watch"><video data-process-video data-native-cap data-scene-start={study.scene.start} data-scene-end={study.scene.end} controls playsinline preload="none" src={study.scene.clip} poster={study.scene.poster} width={study.scene.w} height={study.scene.h} aria-label={work.title+' '+study.title+' 완성 장면'} /></div>
+      <ol class="room-beats" aria-label="완성 장면의 순서">{study.scene.beats.map(beat=><li><button type="button" data-process-seek={beat.t}><span>{mmss(beat.t)}</span><span>{beat.label}</span></button></li>)}</ol>
+    </div>
+    {work.slug==='oneandonly'&&<details class="room-details"><summary>초기 콘티와 완성 화면 비교</summary><CompareSlider label="초기 콘티와 완성 화면 비교" before={{src:'/media/process/oneandonly/oo_reveal_board.jpg',alt:'초기 옆얼굴 콘티. 의상은 이후 변경됨.',width:576,height:1024,label:'초기 콘티'}} after={{src:'/media/process/oneandonly/oo_reveal_final.jpg',alt:'완성본 2:39.5 옆얼굴',width:720,height:1280,label:'완성 화면'}} /></details>}
+  </details>
+</div>

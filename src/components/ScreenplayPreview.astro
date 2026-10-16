@@ -1,0 +1,36 @@
+---
+import { SCRIPT_INTRODUCTIONS, type ScriptId } from '../data/script-introductions';
+import '../styles/screenplay-preview.css';
+
+type Props = { scriptId?: ScriptId; thumbnail?: boolean };
+const { scriptId = 'madeinhongdae', thumbnail = false } = Astro.props;
+const script = SCRIPT_INTRODUCTIONS.find(item => item.id === scriptId) ?? SCRIPT_INTRODUCTIONS[0];
+// Whole, consecutive source paragraphs after the scene heading. The complete
+// approved preview remains in the script introduction; this is a smaller sample
+// for the carousel's narrowest readable cards, not CSS-clipped text.
+const compactRanges: Record<ScriptId, [number, number]> = {
+  madeinhongdae: [3, 6], boundary: [1, 3], butter: [3, 6],
+  'human-birth': [3, 5], understeer: [2, 4], oneandonly: [1, 4], firstimpression: [1, 4],
+};
+const [start, end] = compactRanges[script.id];
+const compactExcerpt = [script.previewExcerpt[0], ...script.previewExcerpt.slice(start, end)];
+const samples = thumbnail ? [{ name: 'full', lines: script.previewExcerpt }] : [
+  { name: 'full', lines: script.previewExcerpt }, { name: 'compact', lines: compactExcerpt },
+];
+---
+<div class:list={['screenplay-preview', { 'screenplay-preview-thumbnail': thumbnail }]} data-screenplay-id={scriptId} role="img" aria-label={`${script.title} — ${script.excerptLabel}`}>
+  <div class="screenplay-preview-page" aria-hidden="true">
+    <header class="screenplay-preview-heading">
+      <p class="screenplay-preview-title">{script.title}</p>
+      <div class="screenplay-preview-byline"><span>{script.credit}</span><span>발췌</span></div>
+    </header>
+    {samples.map(sample => <section class:list={['screenplay-preview-selected', `screenplay-preview-selected-${sample.name}`]}>
+      {sample.lines.map(line => line.type === 'dialogue'
+        ? <div class:list={['screenplay-preview-dialogue', { 'screenplay-preview-key': line.emphasis, 'screenplay-preview-continued': line.continued }]}>
+            {line.character && <p class="screenplay-preview-character">{line.character}</p>}
+            <p class="screenplay-preview-speech">{line.text}</p>
+          </div>
+        : <p class:list={[line.type === 'scene' ? 'screenplay-preview-scene' : 'screenplay-preview-action']}>{line.text}</p>)}
+    </section>)}
+  </div>
+</div>

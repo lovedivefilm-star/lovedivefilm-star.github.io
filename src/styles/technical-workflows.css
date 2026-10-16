@@ -1,0 +1,11 @@
+/* Compact production information: the existing Remy type, palette and player alignment. */
+.room-tools .room-technical-credit{flex-wrap:wrap;row-gap:12px;width:min(100%,1120px,var(--technical-cap,1280px))}
+.room-technical-credit>div{min-width:0;align-items:baseline;line-height:1.6}
+.room-technical-credit dt{flex-shrink:0}
+.room-technical-credit dd{overflow-wrap:anywhere}
+.room-technical-workflow{width:min(100%,1120px,var(--technical-cap,1280px));margin:24px auto 0;display:grid;grid-template-columns:72px minmax(0,1fr);gap:14px;font-size:14px;line-height:1.6}
+.room-technical-workflow h3{font-size:14px;font-weight:400;color:var(--muted);margin:0;white-space:nowrap}
+.room-technical-workflow ol{display:flex;flex-wrap:wrap;gap:8px 0;list-style:none;margin:0;padding:0}
+.room-technical-workflow li{display:flex;align-items:baseline;gap:16px}
+.room-technical-workflow li:not(:last-child)::after{content:'→';color:var(--muted);padding-right:16px}
+@media(max-width:760px){.room-technical-workflow{grid-template-columns:1fr;gap:8px;margin-top:20px}.room-technical-workflow ol{flex-direction:column;gap:8px}.room-technical-workflow li{gap:10px}.room-technical-workflow li:not(:last-child)::after{content:'↓';font-size:12px;padding:0}.room-technical-credit>div{max-width:100%}}

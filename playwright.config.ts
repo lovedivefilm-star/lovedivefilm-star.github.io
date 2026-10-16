@@ -1,27 +1,22 @@
 import { defineConfig } from '@playwright/test';
 import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /**
- * 백테스트(자동 시험) 설정 — docs/contract.md 4절.
- *
- * - 시험 산출물(test-results · 보고서 · 임시)은 전부 D: (QA_DIR). C: 에는 쓰지 않는다.
- * - 브라우저는 내려받지 않는다. 설치된 Microsoft Edge(channel: 'msedge')를 쓴다.
- * - 리뷰용 스크린샷만 구글 드라이브(`tests/visual.spec.ts` 가 직접 저장).
- *
- * 돌리는 법(Git Bash, 저장소 루트):
- *   npm_config_cache="D:\claude_tmp\npm-cache" ASTRO_TELEMETRY_DISABLED=1 \
- *   PLAYWRIGHT_BROWSERS_PATH="D:\claude_tmp\ms-playwright" \
- *   TEMP="D:\claude_tmp\portfolio\qa\tmp" TMP="D:\claude_tmp\portfolio\qa\tmp" \
- *   npm run test:e2e
+ * 기존 사이트 검수 설정. 자료는 저장소 상위 폴더, 시험 결과는 ../_local/qa/.
+ * QA_DIR로 다른 로컬 경로를 지정할 수 있다. 설치된 Microsoft Edge를 사용한다.
+ * 스크린샷 기본 경로도 로컬이며 QA_SHOTS_DIR로 지정할 수 있다.
  */
 
-const QA_DIR = (process.env.QA_DIR ?? 'D:/claude_tmp/portfolio/qa').replace(/\\/g, '/');
+const PROJECT_DIR = path.dirname(fileURLToPath(import.meta.url));
+const QA_DIR = (process.env.QA_DIR ?? path.resolve(PROJECT_DIR, '../_local/qa')).replace(/\\/g, '/');
 const QA_TMP = `${QA_DIR}/tmp`;
 const QA_DIST = `${QA_DIR}/dist`;
 fs.mkdirSync(QA_TMP, { recursive: true });
 
 // Edge 임시 프로필 · Playwright 변환 캐시가 C:\Users\...\Temp 로 새지 않게 (워커는 이 환경을 물려받는다).
-// 명령줄에서 TEMP/TMP 를 먼저 주면 설정 파일 자체의 변환 캐시까지 D: 로 간다.
+// 명령줄에서 TEMP/TMP 를 먼저 주면 설정 파일 자체의 변환 캐시도 같은 작업 경로에 간다.
 process.env.TEMP = QA_TMP.replace(/\//g, '\\');
 process.env.TMP = process.env.TEMP;
 process.env.PWTEST_CACHE_DIR ??= `${QA_DIR}/cache`;
@@ -93,7 +88,7 @@ export default defineConfig({
   webServer: EXTERNAL_URL
     ? undefined
     : {
-        // --outDir: 시험은 자기 빌드 폴더(D:)에서 — 다른 에이전트가 dist/ 를 다시 빌드하는 중에 시험이 흔들리지 않게.
+        // --outDir: 시험은 별도 빌드 폴더에서 진행해 개발 서버의 dist/와 겹치지 않게 한다.
         // --ignore-lock: 다른 곳(작업 중인 미리보기 서버)이 떠 있어도 시험용 서버를 나란히 띄운다. 그 서버는 건드리지 않는다.
         command: `npm run build -- --outDir "${QA_DIST}" && npm run preview -- --port ${PORT} --ignore-lock --outDir "${QA_DIST}"`,
         url: BASE_URL,

@@ -1,0 +1,36 @@
+{
+  "source": "https://github.com/fluid-player/fluid-player/blob/026a61c8be3a58a5a0d38af5ca2fd4ff65ac1811/src/modules/miniplayer.js",
+  "version": "3.60.0",
+  "license": "MIT",
+  "copyright": "Copyright (c) 2020 Fluid Player and contributors",
+  "licenseFile": "/licenses/fluid-player-MIT.txt",
+  "adaptedFunctions": {
+    "toggleMiniPlayerOn": "149–176",
+    "toggleMiniPlayerOff": "123–138",
+    "extractSizeFromElement": "193–200",
+    "createPlayerPlaceholder": "338–346",
+    "removePlayerPlaceholder": "353–355"
+  },
+  "kept": [
+    "Same playback element and wrapper",
+    "Captured dimensions and placeholder",
+    "Fixed mode and restoration"
+  ],
+  "adapted": [
+    "Astro same-iframe YouTube/native-video DOM and CSS classes",
+    "Responsive placeholder dimensions",
+    "Observe actual stable anchor with IntersectionObserver",
+    "Preserve portrait and1920/804 presentation ratio",
+    "Named native buttons and keyboard focus",
+    "Work-page lifecycle and exclusive playback",
+    "Reserve mobile bottom area and desktop material side area"
+  ],
+  "excluded": [
+    "Advertising/VAST modules",
+    "Forced mobile16/9",
+    "Upstream unrelated display modes",
+    "OS PiP auto request"
+  ],
+  "youtubeApi": "https://developers.google.com/youtube/iframe_api_reference",
+  "playbackNote": "Official YouTube IFrame API controls the same iframe; Fluid Player supplies the adapted wrapper/placeholder behavior. Local full-film QA copies are not published."
+}

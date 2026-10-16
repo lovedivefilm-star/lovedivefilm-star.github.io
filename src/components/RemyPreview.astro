@@ -1,0 +1,80 @@
+---
+import { WORKS } from '../data/works';
+import ScreenplayPreview from './ScreenplayPreview.astro';
+import { SCRIPT_INTRODUCTIONS } from '../data/script-introductions';
+const scripts=SCRIPT_INTRODUCTIONS.map(script=>({id:script.id,title:script.title}));
+const slugs = ['oneandonly', 'firstimpression', 'butter'];
+const films = slugs.map(slug => {
+  const w = WORKS.find(work => work.slug === slug)!;
+  return { slug, kind:'film', href:`/works/${slug}/`, title:w.title, duration:w.duration, format:w.format,
+    credit:w.creditNote, poster:`/media/remy-preview/${slug}/poster.jpg`,
+    cover:slug==='oneandonly'?'/media/remy-preview/oneandonly/cover.jpg':slug==='firstimpression'?'/media/remy-preview/firstimpression/cover.png':`/media/remy-preview/${slug}/poster.jpg`,
+    preview:`/media/remy-preview/${slug}/preview.mp4`, width:slug==='butter'?1920:720, height:slug==='butter'?804:1280 };
+});
+const works = [...films,
+  {slug:'technical',kind:'image',href:'/tools/',title:'테크니컬 작업',format:'모션 그래픽 · 타이틀 · AI 영상',duration:'',credit:'',cover:'/media/remy-preview/technical/poster.jpg',poster:'/media/remy-preview/technical/poster.jpg',preview:'',width:1920,height:1080,rasterCapHeight:720},
+  {slug:'scripts',kind:'script',href:'/scripts/',title:'대본',format:`${scripts.length}개 작품 소개`,duration:'',credit:'',cover:'',poster:'',preview:'',width:720,height:1018},
+];
+const selected = works[0];
+const startTimes:Record<string,number>={kinetic:0,mindhunter:0,curlyshyll:0,musicvideo:0};
+const technical=WORKS.filter(work=>work.group==='tools').map(work=>({id:work.slug,title:work.title,src:`/media/remy-preview/technical/${work.slug}.mp4`,poster:work.slug==='kinetic'?'/media/remy-preview/technical/poster.jpg':`/media/remy-preview/technical/${work.slug}.jpg`,start:startTimes[work.slug],window:4}));
+const count=works.length;
+const stripWorks = Array.from({length:3*count},(_,slot)=>({work:works[slot%count],slot,index:slot%count}));
+---
+<main class="remy" data-remy-root data-has-preview="true" aria-label="김영건 포트폴리오 작품 선택">
+  <header class="remy-header">
+    <a class="remy-name" href="/">김영건</a>
+    <p class="remy-tagline">AI CREATOR<br />&amp; SCREENWRITER</p>
+    <nav class="remy-nav" aria-label="주요 메뉴">
+      <a href="#remy-work-list" aria-current="page">작품</a>
+      <a href="mailto:wheniwasy0ung@naver.com">연락</a>
+    </nav>
+  </header>
+
+  <section class="remy-stage" data-remy-stage aria-label="작품 미리보기" aria-roledescription="캐러셀">
+    <div class="remy-strip" data-remy-strip>
+      {stripWorks.map(({work,slot,index}) => <a class:list={['remy-card', {'is-active':slot===count,'remy-card-script':work.kind==='script','remy-card-static':work.kind!=='film'}]} href={work.href} draggable="false" data-slug={work.slug} data-index={index} data-slot={slot} data-kind={work.kind}
+        data-native-width={work.width} data-native-height={work.height}
+        aria-label={`${work.title} 작품 페이지 열기`} aria-current={slot===count?'true':undefined} aria-hidden={slot<count||slot>=2*count?'true':undefined} tabindex={slot<count||slot>=2*count?-1:0}>
+        <span class="remy-card-visual" style={slot===count?'--remy-focus:1':undefined}>
+        {work.kind==='film'&&<video src={work.preview} poster={work.poster} muted playsinline loop preload="none" width={work.width} height={work.height} aria-hidden="true"></video>}
+        {work.slug==='technical'?<div class="remy-inner-stack" data-remy-inner-group="technical">{technical.map((clip,i)=><div class:list={['remy-inner-layer',{'is-inner-active':i===0}]} data-inner-index={i} aria-hidden="true"><img src={clip.poster} alt="" draggable="false" /></div>)}</div>:work.kind==='script'?<div class="remy-inner-stack" data-remy-inner-group="scripts">{scripts.map((script,i)=><div class:list={['remy-inner-layer',{'is-inner-active':i===0}]} data-inner-index={i} aria-hidden="true"><ScreenplayPreview scriptId={script.id}/></div>)}</div>:<img class="remy-cover" src={work.cover} alt="" width={work.width} height={work.height} draggable="false" aria-hidden="true" />}
+        <span class="remy-open-marker" aria-hidden="true">↗</span>
+        </span>
+      </a>)}
+    </div>
+    <noscript><style is:inline>
+      .remy-strip{visibility:visible}
+      .remy-card{display:none}
+      .remy-card video{display:none}
+      .remy-card.is-active{display:block;width:100%;height:calc(100% - var(--remy-caption-reserve))}
+      .remy-meta{top:auto;bottom:0}
+      .remy-card-visual{opacity:1;filter:none;transform:none}
+    </style></noscript>
+    <button class="remy-step remy-step-prev" type="button" data-remy-prev aria-label="이전 작품">‹</button>
+    <button class="remy-step remy-step-next" type="button" data-remy-next aria-label="다음 작품">›</button>
+  <section class="remy-meta" aria-label="선택한 작품">
+    <p class="remy-position"><span data-remy-index>01</span><span class="remy-count"> / {String(count).padStart(2,'0')}</span></p>
+    <div class="remy-work-heading" aria-live="polite" aria-atomic="true">
+      <h1 data-remy-title>{selected.title}</h1>
+      <p class="remy-kind"><span data-remy-format>{selected.format}</span><span data-remy-duration-wrap><span aria-hidden="true"> · </span><span data-remy-duration>{selected.duration}</span></span><span data-remy-credit-wrap><span aria-hidden="true"> · </span><span data-remy-credit>{selected.credit}</span></span><span data-remy-inner-status hidden></span></p>
+    </div>
+  </section>
+  </section>
+
+  <nav class="remy-work-list" id="remy-work-list" aria-label="작품 바로 선택">
+    <span class="remy-script-marker" aria-hidden="true"><svg viewBox="0 0 16 20" fill="none"><path d="M1 1h9l5 5v13H1Z M10 1v5h5 M4 10h7 M4 13h5" /></svg></span>
+    {works.map((work,i)=><button class:list={['remy-work-select',{'is-active':i===0}]} type="button" data-work-select data-index={i} aria-pressed={i===0}>
+      <span class="remy-select-copy"><span class="remy-select-title">{work.title}{(work.slug==='technical'||work.slug==='scripts')&&<sup aria-label={(work.slug==='technical'?technical.length:scripts.length)+'개 작품'}>{work.slug==='technical'?technical.length:scripts.length}</sup>}</span></span>
+    </button>)}
+    <div class="remy-clip-progress"><input type="range" data-remy-progress min="0" max="1" step="0.01" value="0" aria-label="선택 장면 재생 위치" disabled /></div>
+  </nav>
+
+  <footer class="remy-footer">
+    <button type="button" data-remy-autoplay aria-pressed="true" aria-label="자동 넘김 멈춤" title="자동 넘김 멈춤">자동 넘김 멈춤</button>
+  </footer>
+
+  <script type="application/json" data-remy-data set:html={JSON.stringify(works).replaceAll('<','\\u003c')} />
+  <script type="application/json" data-remy-technical-data set:html={JSON.stringify(technical).replaceAll('<','\\u003c')} />
+  <script type="application/json" data-remy-script-data set:html={JSON.stringify(scripts).replaceAll('<','\\u003c')} />
+</main>

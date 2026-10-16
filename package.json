@@ -10,7 +10,9 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test --config=playwright.site.config.ts",
+    "test:site": "playwright test --config=playwright.site.config.ts",
+    "test:rebuild": "playwright test --config=playwright.rebuild.config.ts"
   },
   "dependencies": {
     "@justinribeiro/lite-youtube": "^1.9.0",

@@ -54,6 +54,8 @@ export type Work = {
   group: Group;
   ratio: Ratio;
   youtubeId: string;
+  /** Verified final-film web copy when the external host cannot play. */
+  localSrc?: string;
   /** 규약 2절 크레딧 칸 원문 */
   creditNote: string;
   duration: string;
@@ -289,6 +291,7 @@ export const WORKS: Work[] = [
     group: 'tools',
     ratio: '16:9',
     youtubeId: 'Oj4sifOxMmc',
+    localSrc: '/media/full_kinetic.mp4',
     creditNote: '단독 · 출처 칸(비움)',
     duration: '0:38',
     poster: '/media/poster_kinetic.jpg',

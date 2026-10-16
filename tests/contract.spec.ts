@@ -1,6 +1,6 @@
 /**
  * 규약 시험 — docs/contract.md 4절. v5 1단계(메인 10-14): 홈 = 같은 규격 세로 카드 5장 · 상단 바 연락(mailto + 복사) — docs/review-gate.md 5-1 합격선 중 홈 몫.
- * 작품 방(영상 먼저 히어로 · 한 컷이 만들어진 순서 · 툴 2×2 · 이전/다음 · 작가 지시 편집)은 v4 시험 그대로(2단계에서 바꾼다).
+ * 작품 방 공통 규약은 세 편 모두 검사한다. 기존 CutStage 기하는 첫 인상·버터, 복원한 CutStage5의 상세 기하는 cut5.spec.ts에서 검사한다.
  * 실패하면 사이트를 고친다. 시험을 느슨하게 고치지 않는다.
  * 태그: @once = 화면 크기와 무관(1440 에서만). 없음 = 1440 · 1280 둘 다.
  */
@@ -533,7 +533,7 @@ test.describe('v4 규약(contract.md 4절)', () => {
       return { job: job?.textContent?.trim() ?? '', jobFs: job ? parseFloat(getComputedStyle(job).fontSize) : 0, jobVis: !!job?.checkVisibility({ checkOpacity: true } as CheckVisibilityOptions), name: document.querySelector('[data-bar-name]')?.textContent?.trim(), min };
     }, SEL.job);
     if (t.name !== '김영건') problems.push(`상단 바 이름 「${t.name}」`);
-    if (t.job !== 'AI CREATOR & 드라마 대본 작가' || !t.jobVis) problems.push(`상단 바 직무 한 줄 「${t.job}」(보임 ${t.jobVis})`);
+    if (t.job !== 'AI CREATOR & SCREENWRITER' || !t.jobVis) problems.push(`상단 바 직무 한 줄 「${t.job}」(보임 ${t.jobVis})`);
     if (t.jobFs < RESTRAINT.jobFont) problems.push(`직무 한 줄 ${t.jobFs}px < 16`);
     if (t.min < RESTRAINT.minFont) problems.push(`12px 미만 글자 (${t.min}px)`);
     // 제목 줄 글 — 제목 · 종류 · 길이 · 눌림 단서
@@ -681,7 +681,7 @@ test.describe('v4 규약(contract.md 4절)', () => {
       };
     });
     if (!s.nameVis || s.nameFs < 78) problems.push(`인트로 이름이 크지 않거나 안 보임 (${s.nameFs}px)`);
-    if (!s.jobVis || s.job !== 'AI CREATOR & 드라마 대본 작가' || s.jobFs < 16) problems.push(`인트로 직무 한 줄 (${s.job} · ${s.jobFs}px · 보임 ${s.jobVis})`);
+    if (!s.jobVis || s.job !== 'AI CREATOR & SCREENWRITER' || s.jobFs < 16) problems.push(`인트로 직무 한 줄 (${s.job} · ${s.jobFs}px · 보임 ${s.jobVis})`);
     if (!s.hint) problems.push('「스크롤하여 입장」 이 안 보임');
     if (s.pieces) problems.push(`인트로인데 조각 ${s.pieces}개가 보임`);
     if (!s.contact) problems.push('인트로 동안 상단 바 연락이 안 보임');
@@ -751,9 +751,16 @@ test.describe('v4 규약(contract.md 4절)', () => {
       if (!(await page.locator(`${SEL.intro} [data-src]`).count())) problems.push(`${p}: 소개에 원문 표시가 없음`);
       if (!(await page.locator(`${SEL.process} [data-src]`).count())) problems.push(`${p}: 과정 대본 문장에 원문 표시가 없음`);
       for (const i of items) {
+        let source = md;
+        if (i.src.startsWith('_분석/대본/')) {
+          const sourcePath = path.join(ANALYSIS_ROOT, i.src);
+          if (!fs.existsSync(sourcePath)) { problems.push(`${p}: 원문 파일 ${i.src} 없음`); continue; }
+          source = norm(fs.readFileSync(sourcePath, 'utf8'));
+          for (const e of AUTHOR_EDITS.filter((x) => x.slug === w.slug)) source = source.split(e.from).join(e.to);
+        }
         const t = norm(i.t);
         if (!t) problems.push(`${p}: 빈 원문 표시(data-src="${i.src}")`);
-        else if (!md.includes(t)) problems.push(`${p}: 「${t.slice(0, 40)}…」 (data-src="${i.src}") 가 ${w.slug}.md 에 그대로 없음`);
+        else if (!source.includes(t)) problems.push(`${p}: 「${t.slice(0, 40)}…」 (data-src="${i.src}") 가 ${w.slug}.md 에 그대로 없음`);
       }
       const all = (await page.evaluate(pageTexts)).join(' ');
       for (const e of AUTHOR_EDITS.filter((x) => x.slug === w.slug)) if (all.includes(e.from)) problems.push(`${p}: 작가 지시로 바꾼 낱말 「${e.from}」 이 남아 있음`);
@@ -780,9 +787,11 @@ test.describe('v4 규약(contract.md 4절)', () => {
     assertNoProblems('작가 원문 대조', problems);
   });
 
-  test('V-17. 한 컷이 만들어진 순서 — 걸음 4개(대본 · 시트 · 연출 · 완성) · 걸음마다 차례로 활성 · 연결선 양 끝이 낱말 · 상자 안 · 와이프 끝에 완성 100% · ④ 누르면 그 시각부터 재생', async ({ page }, testInfo) => {
+  test('V-17. 기존 과정 무대(첫 인상·버터) — 한 컷이 만들어진 순서 — 걸음 4개(대본 · 시트 · 연출 · 완성) · 걸음마다 차례로 활성 · 연결선 양 끝이 낱말 · 상자 안 · 와이프 끝에 완성 100% · ④ 누르면 그 시각부터 재생', async ({ page }, testInfo) => {
     const problems: string[] = [];
-    for (const w of MAIN_WORKS) {
+    // 오직 당신의 것의 새 2시트/4콘티/24프레임 기하는 cut5.spec.ts로 이관했다.
+    testInfo.annotations.push({ type: '과정 구조', description: '기존 CutStage: 첫 인상·버터 / CutStage5 오직 당신의 것: cut5.spec.ts' });
+    for (const w of MAIN_WORKS.filter((work) => work.slug !== 'oneandonly')) {
       const p = `/works/${w.slug}/`;
       await visit(page, p);
       await settle(page, 1200);
@@ -875,22 +884,49 @@ test.describe('v4 규약(contract.md 4절)', () => {
       await settle(page, 500);
       const s = await page.evaluate((t) => {
         const el = document.querySelector(t) as HTMLElement | null;
-        const stages = [...document.querySelectorAll<HTMLElement>('[data-process] [data-stage]')];
-        const lines = (st: HTMLElement | undefined, n: string) => (st ? Number(getComputedStyle(st.querySelector(`[data-line="${n}"]`)!).opacity) : 0);
+        const c5 = !!document.querySelector('[data-cut5]');
+        const stages = c5
+          ? [...document.querySelectorAll<HTMLElement>('.c5[data-static]')]
+          : [...document.querySelectorAll<HTMLElement>('[data-process] [data-stage]')];
+        const line = (stage: HTMLElement | undefined, selector: string) => {
+          const found = stage?.querySelector(selector);
+          return found ? Number(getComputedStyle(found).opacity) : 0;
+        };
         return {
+          c5,
           o: el ? getComputedStyle(el).opacity : '?',
           cp: getComputedStyle(document.querySelector('.hero [data-video]')!).clipPath,
-          states: stages.map((x) => x.dataset.state).join(','),
+          states: stages.map((x) => c5 ? x.dataset.step : x.dataset.state).join(','),
           spacer: !!document.querySelector('.pin-spacer'),
-          l1: lines(stages[1], '1'),
-          l2: lines(stages[2], '2'),
+          pinned: c5 && stages.some((stage) => ['fixed', 'sticky'].includes(getComputedStyle(stage).position)),
+          l1: line(stages[1], c5 ? '[data-l="1b"]' : '[data-line="1"]'),
+          l2: line(stages[2], c5 ? '[data-l="2"]' : '[data-line="2"]'),
+          backLine: c5 ? line(stages[1], '[data-l="1a"]') : 1,
+          captions: stages.length === 4 && stages.every((stage, index) => {
+            const cap = stage.querySelector(`[data-cap="${c5 ? index + 1 : index}"]`);
+            return cap && Number(getComputedStyle(cap).opacity) > .9 && getComputedStyle(cap).visibility !== 'hidden';
+          }),
+          navigation: !c5 || stages.every((stage, index) => {
+            const buttons = [...stage.querySelectorAll<HTMLElement>('[data-go]')];
+            return buttons.length === 4 && buttons.every((button) => button.checkVisibility())
+              && buttons.findIndex((button) => button.getAttribute('aria-current') === 'step') === index
+              && !!stage.querySelector<HTMLElement>('[data-skip]')?.checkVisibility();
+          }),
         };
       }, SEL.title);
       if (s.o !== '1') problems.push(`${r.path}: 제목이 바로 안 보임 (${s.o})`);
       if (s.cp !== 'none' && !/inset\(0(px|%)?\)/.test(s.cp)) problems.push(`${r.path}: 영상 칸이 잘려 있음 (${s.cp})`);
       if (s.states !== '1,2,3,4') problems.push(`${r.path}: 과정 장면이 4장 세로가 아님 (${s.states})`);
-      if (s.spacer) problems.push(`${r.path}: 움직임 줄이기인데 핀이 걸림`);
-      if (s.l1 < 0.9 || s.l2 < 0.9) problems.push(`${r.path}: 연결선이 그려진 상태가 아님 (${s.l1}, ${s.l2})`);
+      if (s.spacer || s.pinned) problems.push(`${r.path}: 움직임 줄이기인데 핀이 걸림`);
+      if (s.l1 < .9 || s.l2 < .9 || s.backLine < .9) problems.push(`${r.path}: 연결선이 그려진 상태가 아님 (${s.l1}, ${s.l2}, ${s.backLine})`);
+      if (!s.captions) problems.push(`${r.path}: 움직임 줄이기에서 단계 설명이 보이지 않음`);
+      if (!s.navigation) problems.push(`${r.path}: 움직임 줄이기에서 단계 바로 가기·현재 표시·건너뛰기가 없음`);
+      const first = s.c5 ? '.c5[data-static="1"] [data-go="4"]' : '[data-stage][data-state="1"] [data-step-go="3"]';
+      const last = s.c5 ? '.c5[data-static="4"]' : '[data-stage][data-state="4"]';
+      await page.locator(first).click();
+      const finalTop = await page.locator(last).evaluate(el => el.getBoundingClientRect().top);
+      const header = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bar-h')));
+      if (Math.abs(finalTop - header) > 2) problems.push(`${r.path}: 움직임 줄이기의 단계 바로 가기가 작동하지 않음`);
       const m = await page.evaluate(motionProbe);
       if (m.css.length || m.gsap > 0) problems.push(`${r.path}: 움직임 ${m.css.length + Math.max(0, m.gsap)}`);
     }

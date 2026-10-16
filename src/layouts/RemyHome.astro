@@ -1,0 +1,26 @@
+---
+import RemyPreview from '../components/RemyPreview.astro';
+import { SITE } from '../data/site';
+import '../styles/remy-fonts.css';
+import '../styles/remy-preview.css';
+type Props = { preview?: boolean };
+const { preview = false } = Astro.props;
+const canonical = new URL('/', SITE.url).href;
+---
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#111111" />
+    {preview && <meta name="robots" content="noindex,nofollow" />}
+    <title>{SITE.title}</title>
+    <meta name="description" content={SITE.description} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={SITE.title} />
+    <meta property="og:description" content={SITE.description} />
+    <meta property="og:url" content={canonical} />
+  </head>
+  <body><RemyPreview /><script>import '../scripts/remy-preview';</script></body>
+</html>

@@ -1,143 +1,28 @@
 ---
-/**
- * 작품 방(주력 3편) — v4(메인 지시 10-14 반영: 「영상 먼저 · 첫 화면에 필요한 건 다 · 3화면 이내」).
- *  · 9:16(두 숏드라마): 왼쪽 영상 칸(≈82vh 세로) | 오른쪽 큰 제목 → 대본 첫 줄 한 번 타이핑 → 메타 표 → 소개(첫 문단 + 「더 읽기」)
- *  · 16:9(버터): 위 제목 + 대본 첫 줄 → 영상 칸(폭 min(100%, 72svh × 16/9) — 첫 화면 작업물 ≥ 50%) → [메타 표 | 소개]
- *  → 한 컷이 만들어진 순서(고정 무대 4걸음, CutStage) → 다음 작품 큰 제목 → 연락 큰 링크.
- * 크레딧 표는 없앴다(메타 표의 「역할」 이 크레딧). 판(벽 프레임 복제) 없음 — 벽 타일 그림은 영상 칸으로 이어진다(view-transition-name: lead).
- * 상단 바 오른쪽 「← 이전 · 다음 →」 + 키보드 ← →. 데이터 없는 칸은 그리지 않는다. 움직임은 src/scripts/site.ts initRoom · initCut.
- */
-import Base from '../../layouts/Base.astro';
-import TopBar from '../../components/TopBar.astro';
-import VideoCell from '../../components/VideoCell.astro';
-import CutStage from '../../components/CutStage.astro';
-import NextWork from '../../components/NextWork.astro';
-import Footer from '../../components/Footer.astro';
+import RemyRoom from '../../layouts/RemyRoom.astro';
+import StoryHook from '../../components/StoryHook.astro';
+import FilmPlayer from '../../components/FilmPlayer.astro';
+import RemyRoomProcess from '../../components/RemyRoomProcess.astro';
 import { MAIN_WORKS, type Work } from '../../data/works';
 import { roomOf } from '../../data/process';
-import { CUTS } from '../../data/cut';
-import { heroLine, metaRows, nextOf, prevOf, titleLines, titleSize } from '../../data/room';
-
-export function getStaticPaths() {
-  return MAIN_WORKS.map((w) => ({ params: { slug: w.slug }, props: { work: w } }));
-}
-
-type Props = { work: Work };
-const { work } = Astro.props;
-const room = roomOf(work.slug);
-const rows = metaRows(work);
-const line = heroLine(work.slug);
-const intro = room?.overview.intro ?? [];
-const cut = CUTS[work.slug];
+import { metaRows, nextOf } from '../../data/room';
+export function getStaticPaths(){return MAIN_WORKS.map(work=>({params:{slug:work.slug},props:{work}}));}
+const { work } = Astro.props as { work: Work };
+const intro = roomOf(work.slug)?.overview.intro ?? [];
+const facts = metaRows(work).filter(row=>row.key==='tools'||row.key==='period');
 const next = nextOf(work.slug);
-const prev = prevOf(work.slug);
-const vertical = work.ratio === '9:16';
-const video = {
-  id: work.youtubeId,
-  title: work.title,
-  ratio: work.ratio,
-  poster: work.hook?.poster ?? work.poster,
-  duration: work.duration,
-  hook: work.hook ? { clip: work.hook.clip, poster: work.hook.poster } : undefined,
-};
+const poster = work.slug==='butter' ? '/media/remy-preview/butter/poster.jpg' : '/media/remy-preview/'+work.slug+'/cover.'+(work.slug==='firstimpression'?'png':'jpg');
 ---
-
-<Base page="work" title={work.title}>
-  <TopBar variant="room" prev={prev} next={next} />
-  <article class:list={['room', 'pre', vertical ? 'is-v' : 'is-h']} data-work={work.slug} data-prev-href={prev.href} data-next-href={next.href}>
-    {
-      vertical ? (
-        <section class="hero hero--v" aria-label="작품">
-          <div class="lead">
-            <VideoCell {...video} vt="lead" />
-          </div>
-          <div class="side">
-            <h1 class="title title--v" data-title>
-              {titleLines(work.title).map((t) => (
-                <span class="tl">{t}</span>
-              ))}
-            </h1>
-            {line && (
-              <p class="line ko" data-line>
-                <span class="ghost" aria-hidden="true">{line.s}</span>
-                <span class="typed">{line.s}</span>
-              </p>
-            )}
-            <table class="tbl meta" data-meta>
-              <tbody>
-                {rows.map((r) => (
-                  <tr data-meta-row={r.key}>
-                    <th scope="row">{r.k}</th>
-                    <td class="ko">{r.v}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {intro.length > 0 && (
-              <div class="story about" data-intro-text>
-                <p data-src={intro[0].src}>{intro[0].t}</p>
-                {intro.length > 1 && (
-                  <details class="more">
-                    <summary>더 읽기</summary>
-                    {intro.slice(1).map((v) => (
-                      <p data-src={v.src}>{v.t}</p>
-                    ))}
-                  </details>
-                )}
-              </div>
-            )}
-          </div>
-        </section>
-      ) : (
-        <section class="hero hero--h" aria-label="작품">
-          <div class="g head">
-            <h1 class="title" data-title style={`font-size:${titleSize(work.title, 'clamp(56px, 8.4vw, 120px)')}`}>
-              {work.title}
-            </h1>
-            {line && (
-              <p class="line ko" data-line>
-                <span class="ghost" aria-hidden="true">{line.s}</span>
-                <span class="typed">{line.s}</span>
-              </p>
-            )}
-          </div>
-          <div class="lead">
-            <VideoCell {...video} vt="lead" />
-          </div>
-          <div class="g body2">
-            <div class="side">
-              <table class="tbl meta" data-meta>
-                <tbody>
-                  {rows.map((r) => (
-                    <tr data-meta-row={r.key}>
-                      <th scope="row">{r.k}</th>
-                      <td class="ko">{r.v}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {intro.length > 0 && (
-              <div class="story about" data-intro-text>
-                <p data-src={intro[0].src}>{intro[0].t}</p>
-                {intro.length > 1 && (
-                  <details class="more">
-                    <summary>더 읽기</summary>
-                    {intro.slice(1).map((v) => (
-                      <p data-src={v.src}>{v.t}</p>
-                    ))}
-                  </details>
-                )}
-              </div>
-            )}
-          </div>
-        </section>
-      )
-    }
-
-    {cut && <CutStage cut={cut} slug={work.slug} />}
-
-    <NextWork href={next.href} title={next.title} />
-    <Footer />
-  </article>
-</Base>
+<RemyRoom title={work.title} subtitle={work.creditNote} selected={work.slug}>
+  <main id="main" class="room-work" data-work={work.slug}>
+    <StoryHook work={work} />
+    <section class="room-film room-wrap" id="full-film" data-full-film aria-labelledby="room-film-title">
+      <div class="room-section-heading"><h2 id="room-film-title">풀영상</h2><span>{work.format} · {work.duration}</span></div>
+      <FilmPlayer id={work.youtubeId} title={work.title} poster={poster} ratio={work.ratio} duration={work.duration} follow />
+      {intro.length>0&&<div class="room-intro"><p>{intro[0].t}</p>{intro.length>1&&<details class="room-details"><summary>작품 소개 더 읽기</summary>{intro.slice(1).map(line=><p>{line.t}</p>)}</details>}</div>}
+    </section>
+    <RemyRoomProcess work={work} />
+    {facts.length>0&&<details class="room-details room-facts room-wrap"><summary>제작 정보</summary><dl>{facts.map(row=><div><dt>{row.k}</dt><dd>{row.v}</dd></div>)}</dl></details>}
+    <a class="room-next room-wrap" href={next.href}><span>다음 작품</span><strong>{next.title}</strong><span aria-hidden="true">↗</span></a>
+  </main>
+</RemyRoom>

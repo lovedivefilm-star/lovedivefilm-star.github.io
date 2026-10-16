@@ -1,0 +1,27 @@
+[
+  {
+    "name": "pretendard.woff2",
+    "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2/PretendardVariable.woff2",
+    "bytes": 2057688
+  },
+  {
+    "name": "Pretendard-OFL.txt",
+    "url": "https://raw.githubusercontent.com/orioncactus/pretendard/main/LICENSE",
+    "bytes": 4816
+  },
+  {
+    "name": "Hahmlet-OFL.txt",
+    "url": "https://raw.githubusercontent.com/google/fonts/main/ofl/hahmlet/OFL.txt",
+    "bytes": 4477
+  },
+  {
+    "name": "hahmlet-0.ttf",
+    "url": "https://fonts.gstatic.com/s/hahmlet/v21/BngXUXpCQ3nKpIo0TfPyfCdXfaeU4RhKONjo.ttf",
+    "bytes": 1482728
+  },
+  {
+    "name": "hahmlet-1.ttf",
+    "url": "https://fonts.gstatic.com/s/hahmlet/v21/BngXUXpCQ3nKpIo0TfPyfCdXfaeU4RitP9jo.ttf",
+    "bytes": 1484448
+  }
+]

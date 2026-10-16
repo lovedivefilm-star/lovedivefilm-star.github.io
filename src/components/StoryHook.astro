@@ -1,0 +1,104 @@
+---
+/** A short screenplay-to-image introduction. The full film and process never wait for this animation. */
+import type { Work } from '../data/works';
+import ScriptLine from './ScriptLine.astro';
+import type { PageLine } from '../data/pages';
+import { heroLine } from '../data/room';
+import { PAGES } from '../data/pages';
+import { SCRIPTS } from '../data/scripts';
+import { applyEdits } from '../data/edits';
+
+type Props = { work: Work };
+const { work } = Astro.props;
+// FI's clip begins in the bank corridor. Its hook/page line indices share the source order.
+const clipPage = work.slug === 'firstimpression' ? PAGES[work.slug] : undefined;
+const clipLineIndex = clipPage ? work.hook?.lines.find((entry) => {
+  const candidate = clipPage.lines[entry.i];
+  return !entry.ghost && !entry.pre && (candidate?.t === 'act' || candidate?.t === 'dia');
+})?.i : undefined;
+const line = clipPage && clipLineIndex !== undefined ? clipPage.lines[clipLineIndex] : heroLine(work.slug);
+const text = line ? applyEdits(work.slug, line.s) : '';
+const source = PAGES[work.slug]?.src;
+const ratio = work.hook?.aspect ?? (work.ratio === '9:16' ? '9 / 16' : '16 / 9');
+const scene = clipPage && clipLineIndex !== undefined
+  ? clipPage.lines.slice(0, clipLineIndex + 1).reverse().find((item) => item.t === 'scene')
+  : SCRIPTS[work.slug]?.find((item) => item.t === 'scene');
+const sourceLabel = clipPage ? work.hook?.label : work.scriptLabel;
+const firstNumber = sourceLabel?.match(/S#\d+/)?.[0];
+const label = firstNumber ? '대본 · ' + firstNumber : (sourceLabel ?? '대본').replace(/\s*\[1차\]/g, '');
+const speaker = line?.t === 'dia' ? line.who?.split('(')[0].trim() ?? '' : '';
+const cue = speaker && line?.who ? line.who.slice(speaker.length) : '';
+const sourceLines = clipPage?.lines ?? SCRIPTS[work.slug] ?? [];
+const selectedIndex = clipLineIndex ?? (line ? sourceLines.indexOf(line) : -1);
+const precedingSceneIndex = sourceLines.slice(0, selectedIndex + 1).findLastIndex((item) => item.t === 'scene');
+const nextSceneIndex = sourceLines.findIndex((item, index) => index > precedingSceneIndex && item.t === 'scene');
+const sceneRows = sourceLines
+  .slice(precedingSceneIndex + 1, nextSceneIndex < 0 ? undefined : nextSceneIndex)
+  .map((item, index) => ({ line: item, index: precedingSceneIndex + 1 + index }));
+const selectedBodyIndex = sceneRows.findIndex((row) => row.index === selectedIndex);
+const contextStart = Math.max(0, Math.min(selectedBodyIndex - 2, sceneRows.length - 5));
+const contextRows = sceneRows.slice(contextStart, contextStart + 5);
+const completeLine = (item: typeof sourceLines[number]): PageLine => ({
+  ...item,
+  // SCRIPTS separates the cue; PAGES already stores the entire authored paragraph.
+  s: applyEdits(work.slug, item.t === 'dia' && item.who && !item.s.startsWith(item.who) ? item.who + item.s : item.s),
+});
+
+---
+<section class="story-hook wrap" data-story-hook data-story-portrait={work.ratio==='9:16'?'true':undefined} aria-label="대본에서 장면으로">
+  <div class="story-copy">
+    <div class="script-document story-document" data-script-document>
+      <div class="script-paper">
+        <p class="script-document-label">{label}</p>
+        {scene && <p class="script-line script-line--scene" data-script-scene data-src={source}>{scene.s}</p>}
+        <div class="script-context story-context" data-story-context>
+          {contextRows.map((row) => row.index === selectedIndex ? (
+            <div class:list={['story-document-line', 'story-document-line--focused', !!speaker && 'story-document-line--dialogue']} data-script-focus="">
+              {speaker && <span class="script-speaker" data-script-speaker>{speaker}</span>}
+              <div class="story-document-content">
+                {cue && <span class="story-cue">{cue}</span>}
+                {text && (
+                  <blockquote class="story-script" data-story-line>
+                    <span class="story-accessible" data-src={source}>{text}</span>
+                    <span class="story-reserve" aria-hidden="true">{text}</span>
+                    <span class="story-typed" data-story-typed aria-hidden="true">{text}</span>
+                  </blockquote>
+                )}
+              </div>
+            </div>
+          ) : <ScriptLine line={completeLine(row.line)} src={source!} />)}
+        </div>
+      </div>
+    </div>
+  </div>
+    <div class="story-reading-actions">
+      {sceneRows.length > contextRows.length && (
+        <details class="story-more">
+          <summary>이 씬 대본 모두 읽기</summary>
+          <div class="script-document story-expanded-document" data-script-document>
+            <div class="script-paper">
+              <div class="script-context" data-story-reader tabindex="0" aria-label={label + ' 전체'}>
+                <p class="script-document-label">{label}</p>
+                {scene && <ScriptLine line={completeLine(scene)} src={source!} />}
+                {sceneRows.map((row) => <ScriptLine line={completeLine(row.line)} src={source!} focused={row.index === selectedIndex} />)}
+              </div>
+            </div>
+          </div>
+        </details>
+      )}
+      <a class="story-full-link" href="#full-film">풀영상 보기</a>
+    </div>
+  <span class="story-connector" aria-hidden="true"></span>
+  <div class="story-media">
+    <div class:list={['story-frame', work.ratio === '9:16' && 'story-frame--vertical']} style={'--story-ratio:' + ratio} data-story-frame>
+      {work.hook ? (
+        <video data-story-video src={work.hook.clip} poster={work.hook.poster} muted loop playsinline preload="metadata" aria-hidden="true" />
+      ) : <img src={work.poster} alt="" loading="eager" decoding="async" />}
+    </div>
+  </div>
+  {work.hook && <button class="story-toggle" type="button" data-story-toggle hidden>클립 재생</button>}
+</section>
+
+<script>
+  import '../scripts/story-hook';
+</script>

@@ -75,14 +75,14 @@ export const SEL = {
   verbatim: '[data-work] [data-src]',
   tool: (slug: string) => `[data-tool="${slug}"]`,
 };
-/** 한 컷이 만들어진 순서 — 걸음 4개(대본 · 시트 · 연출 · 완성)와 스냅 위치(src/scripts/site.ts SNAP) */
+/** 한 컷이 만들어진 순서 — 걸음 4개와 기존 CutStage의 단계 위치(스냅 없음). */
 export const CUT_STEPS = ['대본', '시트', '연출', '완성'] as const;
 export const CUT_SNAP = [0, 1 / 3, 2 / 3, 1];
 
 /** 작가 원문 대조 문서 폴더 — `<slug>.md`(V-16) */
-export const PROCESS_DOC_DIR = process.env.QA_PROCESS_DOC_DIR ?? 'G:/내 드라이브/포폴 웹사이트 만들기/_분석/작품과정';
+export const PROCESS_DOC_DIR = process.env.QA_PROCESS_DOC_DIR ?? path.resolve(PROJECT_ROOT, '../_분석/작품과정');
 /** 작가 원문 폴더의 뿌리 — data-src 가 `_분석/…` 꼴이면 이 아래 파일과 대조(홈 대본 맛보기 = `_분석/대본/*.txt`) */
-export const ANALYSIS_ROOT = process.env.QA_ANALYSIS_ROOT ?? 'G:/내 드라이브/포폴 웹사이트 만들기';
+export const ANALYSIS_ROOT = process.env.QA_ANALYSIS_ROOT ?? path.resolve(PROJECT_ROOT, '..');
 
 /** 홈 카드 순서(작가 10-14 v5 구체화 ① — 오직 당신의 것 첫 카드 · 대본 카드 맨 뒤) */
 export const HOME_CARDS = ['oneandonly', 'firstimpression', 'butter', 'tools', 'script'] as const;
@@ -443,17 +443,35 @@ export function contactEmail(): string {
 /** 작가 확인 전 뮤직비디오 얼굴 프레임(review-gate 2절) — 어느 방에도 나오면 안 된다 */
 export const WALL_HOLD_FILES = /\/media\/wall\/musicvideo_(1|2|3|5)_/;
 
-/** 과정 고정 무대의 걸음 k(1~4) 끝 위치로 스크롤(스냅 위치 그대로) — 핀 구간은 [data-process] 의 data-pin-start/end */
+/** 과정의 걸음 k(1~4) 위치로 이동한다. C5는 native sticky 트랙, 기존 무대는 pin-start/end를 읽는다. */
 export async function toCutStep(page: Page, k: number, wait = 1400): Promise<boolean> {
   const ok = await page.evaluate(
-    ({ k, snap }) => {
-      const s = document.querySelector<HTMLElement>('[data-process]');
-      const a = Number(s?.dataset.pinStart), b = Number(s?.dataset.pinEnd);
-      if (!s || !Number.isFinite(a) || !Number.isFinite(b) || b <= a) return false;
-      window.scrollTo(0, k === 1 ? a : Math.floor(a + (b - a) * snap[k - 1]) - 1); // 방향 스냅이 이 걸음에 멈추도록 바로 앞에서
+    ({ k, positions }) => {
+      if (k < 1 || k > 4) return false;
+      const c5 = document.querySelector<HTMLElement>('[data-cut5]');
+      const track = document.querySelector<HTMLElement>('[data-c5-track]');
+      if (c5 && track) {
+        const bar = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bar-h')) || 58;
+        if (track.classList.contains('c5-track--static')) {
+          const panel = track.querySelector<HTMLElement>(`.c5[data-static="${k}"]`);
+          if (!panel) return false;
+          window.scrollTo(0, panel.getBoundingClientRect().top + scrollY - bar);
+          return true;
+        }
+        const top = track.getBoundingClientRect().top + scrollY - bar;
+        const dist = track.offsetHeight - c5.offsetHeight;
+        if (dist <= 0) return false;
+        const progress = [0, 0.28, 0.72, 1][k - 1];
+        window.scrollTo(0, Math.round(top + dist * progress) + (k === 1 ? 0 : 1));
+        return true;
+      }
+      const section = document.querySelector<HTMLElement>('[data-process]');
+      const start = Number(section?.dataset.pinStart), end = Number(section?.dataset.pinEnd);
+      if (!section || !Number.isFinite(start) || !Number.isFinite(end) || end <= start) return false;
+      window.scrollTo(0, k === 1 ? start : Math.floor(start + (end - start) * positions[k - 1]) - 1);
       return true;
     },
-    { k, snap: CUT_SNAP },
+    { k, positions: CUT_SNAP },
   );
   await page.waitForTimeout(wait);
   return ok;
@@ -482,9 +500,30 @@ export function screenStats(): ScreenStat {
   const vw = innerWidth, vh = innerHeight;
   const shown = (e: Element) => {
     if (!(e as HTMLElement).checkVisibility?.(vis)) return false;
-    for (let a: Element | null = e; a; a = a.parentElement) if (parseFloat(getComputedStyle(a).opacity) < 0.05) return false;
     const r = e.getBoundingClientRect();
-    return r.width > 0.5 && r.height > 0.5 && r.bottom > 0 && r.top < vh && r.right > 0 && r.left < vw;
+    if (r.width <= 0.5 || r.height <= 0.5) return false;
+    let left = Math.max(0, r.left), right = Math.min(vw, r.right);
+    let top = Math.max(0, r.top), bottom = Math.min(vh, r.bottom);
+    if (right - left <= 0.5 || bottom - top <= 0.5) return false;
+    // A child's rectangle can still be in the viewport after its scroll container has clipped it.
+    // Intersect each clipping axis with every ancestor's actual scrollport (inside the border).
+    const clips = /^(hidden|clip|scroll|auto)$/;
+    for (let a: Element | null = e; a; a = a.parentElement) {
+      const cs = getComputedStyle(a);
+      if (parseFloat(cs.opacity) < 0.05) return false;
+      if (a === e || !(a instanceof HTMLElement) || cs.display === 'inline' || cs.display === 'contents') continue;
+      const clipX = clips.test(cs.overflowX), clipY = clips.test(cs.overflowY);
+      if (!clipX && !clipY) continue;
+      const bounds = a.getBoundingClientRect();
+      const scaleX = a.offsetWidth ? bounds.width / a.offsetWidth : 1;
+      const scaleY = a.offsetHeight ? bounds.height / a.offsetHeight : 1;
+      const x = bounds.left + a.clientLeft * scaleX;
+      const y = bounds.top + a.clientTop * scaleY;
+      if (clipX) { left = Math.max(left, x); right = Math.min(right, x + a.clientWidth * scaleX); }
+      if (clipY) { top = Math.max(top, y); bottom = Math.min(bottom, y + a.clientHeight * scaleY); }
+      if (right - left <= 0.5 || bottom - top <= 0.5) return false;
+    }
+    return true;
   };
   const name = (e: Element) => `<${e.tagName.toLowerCase()}${typeof (e as HTMLElement).className === 'string' && (e as HTMLElement).className ? '.' + (e as HTMLElement).className.trim().split(/\s+/)[0] : ''}>`;
   const sizes = new Set<number>(), families = new Set<string>(), eases = new Set<string>(), durations = new Set<string>();

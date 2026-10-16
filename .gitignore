@@ -29,3 +29,7 @@ playwright-report/
 blob-report/
 playwright/.cache/
 /qa/
+
+# Full films stream from YouTube; keep local QA copies off GitHub.
+/public/media/full/
+/public/media/full_kinetic.mp4

@@ -1,0 +1,77 @@
+---
+import type { ProductionPipelineData } from '../data/production-pipelines';
+import { mmss } from '../data/process/types';
+import ScriptLine from './ScriptLine.astro';
+import '../styles/production-pipeline.css';
+const { pipeline } = Astro.props as { pipeline: ProductionPipelineData };
+const prefix = 'pipeline-' + pipeline.slug;
+const width = 1120, labelWidth = 150, chartWidth = width-labelWidth-20;
+---
+<section class="production-pipeline room-wrap" id="process" data-production-pipeline data-pipeline-slug={pipeline.slug} aria-labelledby={prefix+'-title'}>
+  <header class="pipeline-heading">
+    <p class="room-label">제작 과정</p>
+    <h2 id={prefix+'-title'}>{pipeline.title}</h2>
+    <p class="pipeline-role" data-study-role>{pipeline.role}</p>
+  </header>
+  <div class="pipeline-workspace" data-pipeline-workspace>
+  <ol class="pipeline-steps" data-pipeline-tabs aria-label="장면 제작 순서">
+    {pipeline.steps.map((step,index)=><li>
+      <a class="pipeline-step" id={prefix+'-tab-'+step.key} href={'#'+prefix+'-'+step.key} data-pipeline-tab={step.key}>
+        <span class="pipeline-thumbnail" aria-hidden="true">
+          {step.thumbnail && <img src={step.thumbnail.src} width={step.thumbnail.w} height={step.thumbnail.h} alt="" loading="lazy" decoding="async" />}
+          {!step.thumbnail && step.script && <span class="pipeline-paper-mini"><strong>{step.script.label}</strong>{step.script.lines.slice(0,6).map(line=><span>{line.s}</span>)}</span>}
+          {!step.thumbnail && step.timeline && <svg viewBox="0 0 250 140" focusable="false"><g fill="currentColor">{step.timeline.tracks.map((track,i)=>track.items.map(item=><rect x={Math.max(0,(item.start-step.timeline!.start)/(step.timeline!.end-step.timeline!.start)*250)} y={8+i*12} width={Math.max(1,(Math.min(item.end,step.timeline!.end)-Math.max(item.start,step.timeline!.start))/(step.timeline!.end-step.timeline!.start)*250)} height="8" opacity={track.layer==='마스터'?.75:.4} />))}</g></svg>}
+        {step.generated && <span class="pipeline-play-glyph">▶</span>}
+        </span>
+        <span class="pipeline-step-label"><span class="pipeline-step-no">{String(index+1).padStart(2,'0')}</span><span class="pipeline-step-name">{step.label}</span></span>
+      </a>
+    </li>)}
+  </ol>
+  <div class="pipeline-detail-column">
+  <div class="pipeline-viewer" data-pipeline-viewer>
+    {pipeline.steps.map(step=><section class="pipeline-panel" id={prefix+'-'+step.key} data-pipeline-panel={step.key} aria-labelledby={prefix+'-tab-'+step.key}>
+      <header class="pipeline-panel-heading"><h3>{step.label}</h3><p>{step.decision}</p></header>
+      <div class:list={['pipeline-surface', 'pipeline-surface-'+step.key]}>
+        {step.script && <div class="pipeline-script script-document"><div class="script-paper"><p class="script-document-label">{step.script.label}</p><div class="script-context">{step.script.lines.map((line,index)=><ScriptLine line={line} src="원문 대본" focused={step.script!.focus.includes(index)} />)}</div></div></div>}
+        {step.sequence && <section class:list={['pipeline-sequence','pipeline-sequence-'+step.sequence.items.length]} aria-label={step.sequence.title}>
+          <h4 class="pipeline-sequence-heading">{step.sequence.title}</h4>
+          <ol class="pipeline-sequence-list">{step.sequence.items.map((item,index)=><li class:list={[index===step.sequence!.focus&&'is-linked']}><span class="pipeline-sequence-no">{String(index+1).padStart(2,'0')}</span><h4>{item.label}</h4><p>{item.detail}</p>{index===step.sequence!.focus&&<span class="pipeline-sequence-linked">다음 생성 자료와 연결</span>}</li>)}</ol>
+          {step.sequence.connection && <p class="pipeline-sequence-connection">{step.sequence.connection}</p>}
+        </section>}
+        {step.segments && <div class="pipeline-segment-list">
+          {step.segmentUnit==='구간'&&<ol class="pipeline-beat-overview" aria-label="15초의 공간 전환 계획 전체">{step.segments.map(segment=><li><span class="pipeline-beat-no">{segment.cut}</span><span><small>{segment.size}</small><strong>{segment.action}</strong></span></li>)}</ol>}
+          <details class:list={['pipeline-segment-table',step.segmentUnit==='구간'&&'pipeline-segment-table-beats']} open={false}><summary>{step.segmentUnit==='구간'?'시간별 공간 전환 자세히 보기':'카메라 구도와 길이 보기'}</summary><table><caption>{step.segmentLabel}</caption><thead><tr><th scope="col">{step.segmentUnit??'컷'}</th><th scope="col">화면</th><th scope="col">구성</th></tr></thead><tbody>{step.segments.map(segment=><tr><th scope="row">{segment.cut}</th><td>{segment.size}</td><td>{segment.action}</td></tr>)}</tbody></table></details>
+        </div>}
+          {step.images && <div class:list={['pipeline-images',step.images.length===1&&'pipeline-images-single',step.images.length===3&&'pipeline-images-three',step.images.length===4&&'pipeline-images-four']}>{step.images.map(image=><figure><button type="button" class="pipeline-image-button" data-enlarge-src={image.src} data-enlarge-alt={image.alt} aria-label={image.caption+' 크게 보기'}><img src={image.src} alt={image.alt} width={image.w} height={image.h} data-native-cap loading="lazy" decoding="async" /></button><figcaption>{image.caption}</figcaption></figure>)}</div>}
+        {step.guide && <details class="pipeline-guide"><summary>{step.guide.label} 보기</summary><video controls playsinline preload="none" width={step.guide.w} height={step.guide.h} poster={step.guide.poster} src={step.guide.src} data-pipeline-video data-native-cap aria-label={step.guide.label} /></details>}
+        {step.generated && <figure class="pipeline-generated"><video controls playsinline preload="none" width={step.generated.w} height={step.generated.h} poster={step.generated.poster} src={step.generated.src} data-pipeline-video data-native-cap aria-label={step.generated.label} /><figcaption>{step.generated.label}{step.generated.note && <span>{step.generated.note}</span>}</figcaption></figure>}
+        {step.timeline && <figure class="pipeline-timeline">
+          <figcaption>{step.timeline.label}</figcaption>
+          <svg class="pipeline-timeline-overview" viewBox={`0 0 350 ${step.timeline.tracks.length*28+48}`} role="img" aria-label={`${mmss(step.timeline.start,1)}부터 ${mmss(step.timeline.end,1)}까지 모든 편집 트랙의 전체 구간`}>
+            {Array.from({length:3},(_,i)=>{const x=90+250*i/2;return <g><line x1={x} x2={x} y1="27" y2={step.timeline!.tracks.length*28+38} class="pipeline-timeline-grid"/><text x={x} y="17" text-anchor={i===2?'end':'start'}>{mmss(step.timeline!.start+(step.timeline!.end-step.timeline!.start)*i/2,1)}</text></g>;})}
+            {step.timeline.tracks.map((track,i)=><g transform={`translate(0,${i*28+32})`}><text x="0" y="16">{track.layer+'·'+track.label.replace(' ','')}</text>{track.items.map(item=><rect x={90+Math.max(0,(item.start-step.timeline!.start)/(step.timeline!.end-step.timeline!.start))*250} y="2" width={Math.max(.5,(Math.min(item.end,step.timeline!.end)-Math.max(item.start,step.timeline!.start))/(step.timeline!.end-step.timeline!.start)*250)} height="19" rx=".5" class:list={['pipeline-timeline-clip',track.label.startsWith('오디오')&&'pipeline-timeline-audio']}><title>{track.layer} {track.label} · {item.label} · {mmss(item.start,1)}–{mmss(item.end,1)}</title></rect>)}</g>)}
+          </svg>
+          <details class="pipeline-timeline-zoom" open={true} data-pipeline-compact-details="timeline"><summary>트랙 확대</summary>
+          <div class="pipeline-timeline-scroll" tabindex="0" aria-label="편집 타임라인. 좌우로 스크롤하여 전체 트랙 확인">
+            <svg viewBox={`0 0 ${width} ${step.timeline.tracks.length*34+68}`} width={width} height={step.timeline.tracks.length*34+68} role="img" aria-label={`${mmss(step.timeline.start,1)}부터 ${mmss(step.timeline.end,1)}까지 저장된 ${step.timeline.tracks.length}개 영상·오디오 트랙`}>
+              {Array.from({length:7},(_,i)=>{const x=labelWidth+chartWidth*i/6;return <g><line x1={x} x2={x} y1="31" y2={step.timeline!.tracks.length*34+40} class="pipeline-timeline-grid" /><text x={x} y="20" text-anchor={i===6?'end':'start'}>{mmss(step.timeline!.start+(step.timeline!.end-step.timeline!.start)*i/6,1)}</text></g>;})}
+              {step.timeline.tracks.map((track,i)=><g transform={`translate(0,${i*34+42})`}><text x="0" y="19">{track.layer} · {track.label}</text><line x1={labelWidth} x2={width-20} y1="28" y2="28" class="pipeline-timeline-track" />{track.items.map(item=><rect x={labelWidth+Math.max(0,(item.start-step.timeline!.start)/(step.timeline!.end-step.timeline!.start))*chartWidth} y="2" width={Math.max(1,(Math.min(item.end,step.timeline!.end)-Math.max(item.start,step.timeline!.start))/(step.timeline!.end-step.timeline!.start)*chartWidth)} height="23" rx="1" class:list={['pipeline-timeline-clip',track.label.startsWith('오디오')&&'pipeline-timeline-audio']}><title>{track.layer} {track.label} · {item.label} · {mmss(item.start,1)}–{mmss(item.end,1)}</title></rect>)}</g>)}
+            </svg>
+          </div>
+          </details>
+          {step.timeline.note && <p class="pipeline-timeline-note">{step.timeline.note}</p>}
+          <details class="pipeline-timeline-data"><summary>트랙별 배치 시각</summary><ul>{step.timeline.tracks.map(track=><li><strong>{track.layer} · {track.label}</strong><span>{track.items.map(item=>`${mmss(item.start,1)}–${mmss(item.end,1)}`).join(' / ')}</span></li>)}</ul></details>
+        </figure>}
+        {step.note && <p class="pipeline-panel-note">{step.note}</p>}
+      </div>
+    </section>)}
+  </div>
+  <nav class="pipeline-navigation" aria-label="제작 단계 이동">
+    <button type="button" class="pipeline-control" data-pipeline-prev disabled>← 이전 단계</button>
+    <p class="pipeline-position" data-pipeline-status aria-live="polite" aria-atomic="true">01 / 05</p>
+    <button type="button" class="pipeline-control pipeline-control-next" data-pipeline-next>인물·의상 →</button>
+  </nav>
+  </div>
+  </div>
+</section>
+<script>import '../scripts/production-pipeline';</script>

@@ -1,0 +1,30 @@
+/* Scene/action at left; character cue above narrower dialogue.
+   The carousel uses its own short excerpt so text stays readable at 231px. */
+.screenplay-preview{width:100%;height:100%;aspect-ratio:720/1018;position:relative;overflow:hidden;container-type:inline-size;background:#fcfbf8;color:#20201e;isolation:isolate;color-scheme:light}
+.screenplay-preview,.screenplay-preview *{box-sizing:border-box}
+.screenplay-preview-page{width:100%;height:100%;padding:4.8cqw 6cqw 4.8cqw 8cqw;font-family:'Hahmlet','Batang',serif;font-size:clamp(12px,3.333cqw,24px);line-height:1.35;font-weight:400;letter-spacing:-.025em;text-align:left;word-break:keep-all;overflow-wrap:anywhere}
+.screenplay-preview p{margin:0}
+.screenplay-preview-heading{margin-bottom:3cqw}
+.screenplay-preview-title{font-size:clamp(13px,4.3cqw,31px);line-height:1.3;font-weight:700;letter-spacing:-.04em}
+.screenplay-preview-byline{display:flex;justify-content:space-between;gap:2cqw;margin-top:1.3cqw;font-size:clamp(9px,2.1cqw,15px);line-height:1.4;font-weight:400;letter-spacing:0}
+.screenplay-preview-scene{font-weight:700;font-size:1em;line-height:1.4;margin-bottom:2.5cqw!important;letter-spacing:-.035em}
+.screenplay-preview-action{margin-bottom:1.7cqw!important}
+.screenplay-preview-dialogue{width:88%;margin:0 auto 1.5cqw}
+.screenplay-preview-character{font-weight:600;text-align:center;margin-bottom:.3cqw!important;line-height:1.3}
+.screenplay-preview-speech{white-space:pre-line}
+.screenplay-preview-continued{margin-top:-.7cqw}
+.screenplay-preview-key{font-weight:700}
+.screenplay-preview-key .screenplay-preview-character{font-weight:700}
+.screenplay-preview-selected>:last-child{margin-bottom:0!important}
+/* Small navigation thumbnails are pictograms of the same typeset page. */
+@container(max-width:160px){
+ .screenplay-preview-thumbnail .screenplay-preview-page{font-size:3.333cqw}
+ .screenplay-preview-thumbnail .screenplay-preview-title{font-size:4.3cqw}
+ .screenplay-preview-thumbnail .screenplay-preview-byline{font-size:2.1cqw}
+}
+
+.screenplay-preview-selected-compact{display:none}
+@container(max-width:230px){
+ .screenplay-preview-selected-full{display:none}
+ .screenplay-preview-selected-compact,.screenplay-preview-thumbnail .screenplay-preview-selected-full{display:block}
+}

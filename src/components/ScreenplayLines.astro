@@ -1,0 +1,9 @@
+---
+import type { IntroductionLine } from '../data/script-introductions';
+type Props = { lines: IntroductionLine[] };
+const { lines } = Astro.props;
+---
+{lines.map(line => <div class:list={['script-line', `script-line-${line.type}`, { 'script-line-continued': line.continued, 'script-line-emphasis': line.emphasis }]}>
+  {line.type === 'dialogue' && line.character && <p class="script-character">{line.character}</p>}
+  <p class="script-text">{line.text}</p>
+</div>)}

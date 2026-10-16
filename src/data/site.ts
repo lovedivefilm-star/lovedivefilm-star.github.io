@@ -2,11 +2,11 @@
 
 export const SITE = {
   name: '김영건',
-  /** 직무 한 줄 — 홈 이름 아래(작가 10-14 v5 구체화 ⑥ 원문 그대로). */
-  job: 'AI CREATOR & 드라마 대본 작가',
+  /** 직무 한 줄 — 2026-10-14 결정로그의 최종 확정 영어 직함. */
+  job: 'AI CREATOR & SCREENWRITER',
   /** 브라우저 탭 · 검색 설명 */
-  title: '김영건 — AI CREATOR & 드라마 대본 작가',
-  description: '김영건 포트폴리오 — AI CREATOR & 드라마 대본 작가. AI 숏드라마 · AI 트레일러 · 대본. 오직 당신의 것 · 첫 인상은 백점, 첫 마디는 엎드려 · 버터! · 테크니컬 작업',
+  title: '김영건 — AI CREATOR & SCREENWRITER',
+  description: '김영건 포트폴리오 — AI CREATOR & SCREENWRITER. AI 숏드라마 · AI 트레일러 · 대본. 오직 당신의 것 · 첫 인상은 백점, 첫 마디는 엎드려 · 버터! · 테크니컬 작업',
   url: 'https://lovedivefilm-star.github.io',
 };
 
@@ -35,7 +35,7 @@ export const SCRIPT_CARD_LABEL = '대본 맛보기';
 export type SerifKey = 'hahmlet' | 'noto';
 export const SERIF: SerifKey = 'hahmlet';
 export const SERIF_FONTS: Record<SerifKey, { family: string; css: string }> = {
-  hahmlet: { family: "'Hahmlet'", css: 'https://fonts.googleapis.com/css2?family=Hahmlet:wght@400&display=swap' },
+  hahmlet: { family: "'Hahmlet'", css: 'https://fonts.googleapis.com/css2?family=Hahmlet:wght@400;700&display=swap' },
   noto: { family: "'Noto Serif KR'", css: 'https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400&display=swap' },
 };
 export const SANS_CSS = 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css';

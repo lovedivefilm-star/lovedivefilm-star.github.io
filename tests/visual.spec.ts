@@ -5,9 +5,9 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { SEL, settle, test, visit } from './helpers';
+import { PROJECT_ROOT, SEL, settle, test, visit } from './helpers';
 
-const ROOT = process.env.QA_SHOTS_DIR ?? 'G:\\내 드라이브\\포폴 웹사이트 만들기\\_분석\\qa\\2026-10-14_v5\\1단계c';
+const ROOT = process.env.QA_SHOTS_DIR ?? path.resolve(PROJECT_ROOT, '../_local/qa/screenshots');
 
 const dirFor = (project: string) => {
   const d = path.join(ROOT, project.replace(/^\D+-/, ''));
