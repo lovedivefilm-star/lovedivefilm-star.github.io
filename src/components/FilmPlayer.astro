@@ -2,23 +2,38 @@
 type Props = { id: string; title: string; poster: string; ratio: '16:9' | '9:16'; duration: string; start?: number; src?: string; follow?: boolean };
 const { id, title, poster, ratio, duration, start = 0, src, follow = false } = Astro.props;
 const youtubeUrl = `https://www.youtube.com/watch?v=${id}`;
+const windowOptionsId = `film-window-${id}`;
 ---
 <div class="film-player" data-film-root data-youtube-id={id} data-video-title={title} data-ratio={ratio} data-start={start} data-local-src={src} data-film-follow={follow?"true":undefined}>
   <div class="film-anchor" data-film-anchor><div class="film-surface" data-film-surface>
-  <div class="film-mini-bar" data-film-mini-bar role="group" aria-label="풀영상 작은 플레이어 조작" hidden>
-    <button type="button" data-film-mini-toggle aria-label="풀영상 일시정지">멈춤</button>
-    <button type="button" data-film-mini-return aria-label="풀영상 원위치로 돌아가기">원위치</button>
-    <button type="button" data-film-mini-close aria-label="작은 플레이어 닫기">닫기 ×</button>
-  </div>
-  <div class="film-frame" data-film-frame>
-    <button class="film-poster" type="button" data-film-play aria-label={`${title} 풀영상 재생`}>
-      <img src={poster} alt={`${title} 영상 포스터`} loading="lazy" decoding="async" />
-    </button>
-  </div>
+    <div class="film-mini-bar" data-film-mini-bar role="group" aria-label="따라오는 영상 조작" hidden>
+      <button type="button" class="film-drag" data-film-drag aria-label="플레이어 이동. 드래그하거나 방향키를 사용하세요" aria-controls={windowOptionsId} aria-expanded="false">⠿ 이동</button>
+      <button type="button" data-film-mini-toggle aria-label="풀영상 일시정지">멈춤</button>
+      <button type="button" data-film-mini-return aria-label="풀영상 원위치로 돌아가기">원위치</button>
+      <button type="button" data-film-mini-close aria-label="작은 플레이어 닫기">닫기 ×</button>
+    </div>
+    <div class="film-frame" data-film-frame>
+      <button class="film-poster" type="button" data-film-play aria-label={`${title} 풀영상 재생`}>
+        <img src={poster} alt={`${title} 영상 포스터`} loading="lazy" decoding="async" />
+      </button>
+    </div>
+    <div class="film-mini-footer" data-film-mini-footer hidden>
+      <button type="button" data-film-resize aria-label="플레이어 크기 조절. 드래그하거나 방향키를 사용하세요" aria-controls={windowOptionsId} aria-expanded="false">크기 조절 <span aria-hidden="true">↘</span></button>
+    </div>
+    <div class="film-window-options" id={windowOptionsId} data-film-window-options aria-label="플레이어 위치와 크기" hidden>
+      <p>위치</p><div class="film-window-positions">
+        <button type="button" data-film-position="top-left">왼쪽 위</button><button type="button" data-film-position="top-right">오른쪽 위</button>
+        <button type="button" data-film-position="bottom-left">왼쪽 아래</button><button type="button" data-film-position="bottom-right">오른쪽 아래</button>
+      </div>
+      <p>크기</p><div class="film-window-sizes">
+        <button type="button" data-film-size="-1" aria-label="플레이어 작게">−</button><button type="button" data-film-size="1" aria-label="플레이어 크게">＋</button>
+        <button type="button" data-film-window-reset>기본 위치·크기</button>
+      </div>
+    </div>
   </div></div>
   <div class="film-controls">
     <button type="button" class="text-action" data-film-play>{`풀영상 재생 · ${duration}`}</button>
-    <button type="button" class="text-action" data-film-large aria-haspopup="dialog" aria-label={`${title} 영상 크게 보기`}>크게 보기</button>
+    <button type="button" class="text-action" data-film-large aria-expanded="false" aria-label={`${title} 영상 크게 보기`}>크게 보기</button>
   </div>
   <p class="film-error" data-film-error hidden role="status"><a href={youtubeUrl} target="_blank" rel="noopener noreferrer">YouTube에서 영상 보기 ↗</a></p>
   <noscript><p><a href={src ?? youtubeUrl}>{src ? "영상 파일 보기" : "YouTube에서 영상 보기"}</a></p></noscript>

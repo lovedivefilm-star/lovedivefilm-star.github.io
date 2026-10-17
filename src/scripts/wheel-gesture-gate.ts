@@ -27,6 +27,12 @@ export class WheelGestureGate {
     this.minMagnitude = minMagnitude;
   }
 
+  /** An explicit click/key/drag selection ends the previous wheel interaction. */
+  reset(): void {
+    this.lastInputAt = null;
+    this.fired = false;
+  }
+
   /** Returns -1 or +1 only on the first valid event of a quiet-delimited stream. */
   consume(delta: number, timestamp: number): -1 | 0 | 1 {
     if (!Number.isFinite(delta) || !Number.isFinite(timestamp) ||

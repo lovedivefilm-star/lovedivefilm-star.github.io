@@ -1,0 +1,44 @@
+{
+  "checkedAt": "2026-10-17 Asia/Seoul",
+  "dependency": {
+    "name": "interactjs",
+    "version": "1.10.28",
+    "license": "MIT",
+    "licenseFile": "/licenses/interactjs-MIT.txt",
+    "repository": "https://github.com/taye/interact.js",
+    "upstreamCommit": "4188a91c2cad621bb04da23eed1e7a7f2537342a",
+    "tarballSha1": "17f91e61214e4947d16953ba7987f9495b0874d2"
+  },
+  "implementation": "src/scripts/film-window.ts imports the pinned dependency. Its draggable, resizable, restrictRect, restrictSize and manual Interaction.start APIs move and size the existing media wrapper. No copied iframe, changed src or playback restart is used for window movement, resize or inline expansion.",
+  "officialApiReferences": [
+    "https://interactjs.io/docs/draggable/",
+    "https://interactjs.io/docs/resizable/",
+    "https://interactjs.io/docs/restriction/",
+    "https://interactjs.io/docs/action-options/",
+    "https://interactjs.io/docs/auto-start/"
+  ],
+  "professionalReference": {
+    "url": "https://support.google.com/youtube/answer/9162927?hl=en",
+    "used": "Move/resize, pause, close and return controls. This site's custom same-iframe portrait player is separate from YouTube's own Shorts miniplayer availability."
+  },
+  "originKit": {
+    "searches": ["draggable", "resizable", "video player", "expand"],
+    "reviewedSource": "https://www.originkit.dev/components/compare-slider",
+    "patterns": ["Handle pointer capture and cancellation", "Bounded values", "Arrow-key increments"],
+    "scope": "Interaction patterns reviewed from the returned free component. Its React/image comparison component and visuals are not embedded or redistributed; it is not claimed to be MIT. Matching draggable sticker/grid/gallery source was unavailable in the connected plan and was not bypassed. Actual drag/resize implementation uses the MIT interactjs dependency."
+  },
+  "adaptation": [
+    "Larger initial window; dedicated move and resize handles keep normal media controls usable.",
+    "Free window dimensions with uncropped contained video. Media viewport remains at least 200x200; toolbar/footer and entire window stay within available viewport.",
+    "Click/tap corner presets and size buttons supplement dragging; keyboard arrows and reduced motion are supported.",
+    "Default dock reserves reading space. A manually positioned window floats freely without squeezing the material column.",
+    "Portrait play expands inline. The same iframe survives expansion, collapse, move and resize.",
+    "Material scrolling chains into the document at its boundaries; only an outward boundary wheel is forwarded when native Chromium latching would otherwise retain it.",
+    "Explicit home selection resets the previous wheel lock. A continuous wheel burst still advances exactly once."
+  ],
+  "accessibilityReferences": [
+    "https://www.w3.org/WAI/WCAG22/Understanding/dragging-movements.html",
+    "https://developer.mozilla.org/en-US/docs/Web/API/Element/setPointerCapture"
+  ],
+  "verificationScope": "Automated YouTube API contract tests use a mock. Actual anonymous browser playback and real pointer/touch event sequences are checked separately. Touch browser emulation is not a physical iOS/Android device claim."
+}

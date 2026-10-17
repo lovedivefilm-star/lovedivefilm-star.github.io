@@ -69,6 +69,32 @@ document.querySelectorAll<HTMLElement>('[data-production-pipeline]').forEach(roo
     const final = document.querySelector<HTMLDetailsElement>(`[data-pipeline-final="${root.dataset.pipelineSlug}"]`);
     if (final) { final.open = true; final.scrollIntoView({ block: 'start', behavior: reduce.matches ? 'instant' : 'smooth' }); final.querySelector<HTMLElement>('summary')?.focus({ preventScroll: true }); }
   });
+  // Keep native scrolling inside long material. At its exact boundary, forward
+  // only the outward vertical wheel to the page: Chromium may otherwise latch
+  // the gesture on a video control or a rounded final pixel of this scrollport.
+  panels.forEach(panel => {
+    const surface = panel.querySelector<HTMLElement>('.pipeline-surface');
+    surface?.addEventListener('wheel', event => {
+      if (event.defaultPrevented || !event.cancelable || event.ctrlKey || event.metaKey || document.fullscreenElement ||
+          Math.abs(event.deltaX) > Math.abs(event.deltaY) || event.deltaY === 0) return;
+      const target = event.target instanceof Element ? event.target : null;
+      if (target?.closest('input,textarea,select,[contenteditable=true]')) return;
+      const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? surface.clientHeight : 1);
+      if (!Number.isFinite(delta)) return;
+      // A nested reader keeps its own scroll before the outer material/page.
+      let nested = target instanceof HTMLElement ? target : target?.parentElement;
+      while (nested && nested !== surface) {
+        const style = getComputedStyle(nested);
+        if (/auto|scroll/.test(style.overflowY) && nested.scrollHeight > nested.clientHeight + 1 &&
+            (delta < 0 ? nested.scrollTop > 1 : nested.scrollHeight - nested.clientHeight - nested.scrollTop > 1)) return;
+        nested = nested.parentElement;
+      }
+      const remaining = delta < 0 ? surface.scrollTop : surface.scrollHeight - surface.clientHeight - surface.scrollTop;
+      if (remaining > 1) return;
+      event.preventDefault();
+      window.scrollBy({ top: delta, behavior: 'instant' });
+    }, { passive: false });
+  });
   const cap = () => {
     const density = Math.max(1, devicePixelRatio || 1);
     root.querySelectorAll<HTMLImageElement | HTMLVideoElement>('[data-native-cap]').forEach(media => {

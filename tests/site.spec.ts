@@ -12,7 +12,7 @@ const tools = [
   ['kinetic', '키네틱 타이포'], ['mindhunter', '마인드헌터'],
   ['curlyshyll', 'Curly shyll AI CF'], ['musicvideo', '뮤직비디오'],
 ] as const;
-const activeCard = (page: Page) => page.getByRole('link', { name: /작품 페이지 열기$/, current: true });
+const activeCard = (page: Page) => page.locator('[data-remy-root] .remy-card.is-active');
 
 async function noHorizontalOverflow(page: Page) {
   const excess = await page.evaluate(() => Math.max(document.documentElement.scrollWidth,
@@ -244,6 +244,7 @@ test('테크니컬 네 작품은 기존 YouTube ID의 API 계약으로 연결되
   }
   await page.getByRole('link', { name: '작품 선택', exact: true }).click();
   await expect(page).toHaveURL(/\?work=technical&item=musicvideo$/);
+  await expect(page.locator('[data-remy-root] .remy-card.is-active')).toHaveAttribute('data-slug', 'technical');
   await expect(activeCard(page)).toHaveAttribute('href', '/tools/?work=musicvideo');
 });
 
@@ -274,10 +275,14 @@ test('주력 세 작품은 YouTube API로 연결되고 다섯 제작 단계가 �
       const surface = pipeline.locator('[data-pipeline-panel]:not([hidden]) .pipeline-surface');
       await surface.evaluate(node => { node.scrollTop = node.scrollHeight; });
       const surfaceBox = await surface.boundingBox();
+      const beforePageScroll = await page.evaluate(() => ({ y: window.scrollY, max: document.documentElement.scrollHeight - innerHeight }));
       await page.mouse.move(surfaceBox!.x + surfaceBox!.width / 2, surfaceBox!.y + surfaceBox!.height / 2);
       await page.mouse.wheel(0, 240);
-      await expect(tabs.nth(i)).toBeInViewport();
-      await expect(controls).toBeInViewport();
+      if (beforePageScroll.y < beforePageScroll.max - 1) {
+        await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(beforePageScroll.y);
+      }
+      await expect(tabs.nth(i)).toHaveAttribute('aria-selected', 'true');
+      await expect(pipeline.getByRole('tabpanel')).toHaveCount(1);
 
       await noHorizontalOverflow(page);
     }
@@ -296,6 +301,77 @@ test('주력 세 작품은 YouTube API로 연결되고 다섯 제작 단계가 �
     await expect(page.locator('[data-pipeline-final] > summary')).toBeFocused();
 
   }
+});
+
+test('FI 3단계 자료는 안쪽 끝에서 페이지 휠을 막지 않고 선택과 자료 크기를 보존한다', async ({ page }) => {
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 800 }, { width: 390, height: 844 }, { width: 320, height: 740 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/works/firstimpression/');
+    const pipeline = page.locator('[data-production-pipeline]');
+    const tab = pipeline.locator('[data-pipeline-tab="segment"]');
+    await tab.click();
+    await expect(tab).toHaveAttribute('aria-selected', 'true');
+    const surface = pipeline.locator('[data-pipeline-panel="segment"] .pipeline-surface');
+    await expect(surface).toBeVisible();
+    const surfaceMax = await surface.evaluate(node => node.scrollHeight - node.clientHeight);
+    const point = await surface.evaluate(node => {
+      const rect = node.getBoundingClientRect();
+      return { x: Math.min(innerWidth - 2, Math.max(2, rect.left + rect.width / 2)), y: Math.min(innerHeight - 2, Math.max(2, rect.top + rect.height / 2)) };
+    });
+    await page.mouse.move(point.x, point.y);
+    if (surfaceMax > 1) {
+      await surface.evaluate(node => { node.scrollTop = Math.floor((node.scrollHeight - node.clientHeight) / 2); });
+      const middle = await surface.evaluate(node => node.scrollTop);
+      const pageY = await page.evaluate(() => window.scrollY);
+      await page.mouse.wheel(0, 12);
+      await expect.poll(() => surface.evaluate(node => node.scrollTop)).toBeGreaterThan(middle);
+      expect(await page.evaluate(() => window.scrollY)).toBe(pageY);
+    }
+    await surface.evaluate(node => { node.scrollTop = node.scrollHeight; });
+    const before = await page.evaluate(() => ({ y: window.scrollY, max: document.documentElement.scrollHeight - innerHeight, box: (() => {
+      const rect = document.querySelector('[data-pipeline-panel="segment"] .pipeline-surface')!.getBoundingClientRect();
+      return { top: rect.top + scrollY, width: rect.width, height: rect.height };
+    })() }));
+    await page.mouse.wheel(0, 480);
+    if (before.y < before.max - 1) await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(before.y);
+    await expect(tab).toHaveAttribute('aria-selected', 'true');
+    const after = await page.evaluate(() => {
+      const rect = document.querySelector('[data-pipeline-panel="segment"] .pipeline-surface')!.getBoundingClientRect();
+      return { top: rect.top + scrollY, width: rect.width, height: rect.height };
+    });
+    expect(after.top).toBeCloseTo(before.box.top, 0);
+    expect(after.width).toBeCloseTo(before.box.width, 0);
+    expect(after.height).toBeCloseTo(before.box.height, 0);
+    await surface.evaluate(node => { node.scrollTop = 0; });
+    const beforeReverse = await page.evaluate(() => window.scrollY);
+    await page.mouse.wheel(0, -480);
+    if (beforeReverse > 1) await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(beforeReverse);
+    await expect(tab).toHaveAttribute('aria-selected', 'true');
+    await noHorizontalOverflow(page);
+  }
+});
+
+test('technical 선택 뒤 240ms 안에 직접 선택하면 새 휠 제스처를 다시 받을 수 있다', async ({ page }) => {
+  await page.goto('/?work=technical');
+  const root = page.locator('[data-remy-root]');
+  const stage = page.locator('[data-remy-stage]');
+  const choices = page.locator('[data-work-select]');
+  await expect(root).toHaveAttribute('data-work', 'technical');
+  await page.evaluate(() => {
+    (window as any).__manualWheelSelections = [];
+    document.querySelector('[data-remy-root]')!.addEventListener('remy:select', (event: any) => (window as any).__manualWheelSelections.push(event.detail.slug));
+  });
+  const box = await stage.boundingBox();
+  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+  await page.mouse.wheel(0, 480);
+  await expect(root).toHaveAttribute('data-work', 'scripts');
+  await page.waitForTimeout(240);
+  await choices.nth(3).click();
+  await expect(root).toHaveAttribute('data-work', 'technical');
+  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+  await page.mouse.wheel(0, 480);
+  await expect(root).toHaveAttribute('data-work', 'scripts');
+  expect(await page.evaluate(() => (window as any).__manualWheelSelections)).toEqual(['scripts', 'technical', 'scripts']);
 });
 
 test('정식 URL·이전 시안 별칭의 검색 메타와 404 복귀를 유지한다', async ({ page }) => {
@@ -546,6 +622,8 @@ test('YouTube API 상태와 같은 iframe이 작은 창에서 유지되고 과�
     const nextPlayerIndex = await page.evaluate(() => (window as any).__ytTest.players.length - 1);
     await page.locator('.pipeline-step').nth(3).click();
     const clip = page.locator('.pipeline-panel:not([hidden]) [data-pipeline-video]').first();
+    await expect(page.locator('.pipeline-step').nth(3)).toHaveAttribute('aria-selected', 'true');
+    await expect(clip).toBeAttached();
     await clip.evaluate((video: HTMLVideoElement) => video.play());
     await expect(clip).toHaveJSProperty('paused', false);
     await expect(root.locator('.film-frame > iframe')).toHaveCount(0);
@@ -553,6 +631,130 @@ test('YouTube API 상태와 같은 iframe이 작은 창에서 유지되고 과�
     await expect(root).not.toHaveAttribute('data-youtube-state', /.+/);
     expect(await page.evaluate(index => (window as any).__ytTest.players[index].commands as string[], nextPlayerIndex)).toContain('destroy');
     await noHorizontalOverflow(page);
+  }
+});
+
+test('세로 풀영상은 같은 YouTube iframe을 키우고 핸들·키보드·코너·크기 조작으로 화면 안에서 이동한다', async ({ page }, testInfo) => {
+  await installYouTubeApiMock(page);
+  testInfo.annotations.push({ type: '검수 한계', description: '공식 IFrame API 호환 mock으로 production player adapter의 같은 iframe identity와 PLAYING 상태를 확인합니다. Playwright pointer input으로 제품 핸들을 조작하며 실제 YouTube 재생은 주장하지 않습니다.' });
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 800 }, { width: 390, height: 844 }, { width: 320, height: 740 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/works/firstimpression/');
+    const root = page.locator('[data-film-follow]');
+    const workspace = page.locator('.pipeline-workspace');
+    const frame = root.locator('.film-frame > iframe[data-youtube-player]');
+    await root.locator('.film-poster').click();
+    await expect(frame).toHaveAttribute('data-youtube-state', 'playing');
+    await expect(root).toHaveClass(/is-film-expanded/);
+    const large = root.locator('[data-film-large]');
+    await expect(large).toHaveAttribute('aria-expanded', 'true');
+    expect(await frame.evaluate(node => node === (window as any).__ytTest.players.at(-1).getIframe())).toBe(true);
+    await frame.evaluate(node => { (window as any).__portraitFrame = node; });
+    const expanded = await root.locator('[data-film-anchor]').boundingBox();
+    await large.click();
+    await expect(root).not.toHaveClass(/is-film-expanded/);
+    await expect(large).toHaveAttribute('aria-expanded', 'false');
+    await expect(frame).toHaveAttribute('data-youtube-state', 'playing');
+    expect(await frame.evaluate(node => node === (window as any).__portraitFrame)).toBe(true);
+    const collapsed = await root.locator('[data-film-anchor]').boundingBox();
+    expect(expanded!.height).toBeGreaterThan(collapsed!.height + 10);
+    await large.click();
+    await expect(root).toHaveClass(/is-film-expanded/);
+    expect(await frame.evaluate(node => node === (window as any).__portraitFrame)).toBe(true);
+
+    await workspace.evaluate(node => node.scrollIntoView({ block: 'start' }));
+    await expect(root).toHaveClass(/is-film-floating/);
+    await expect(root.locator('[data-film-mini-bar]')).toBeVisible();
+    await expect(root.locator('[data-film-mini-footer]')).toBeVisible();
+    const surface = root.locator('[data-film-surface]');
+    const drag = root.locator('[data-film-drag]');
+    const resize = root.locator('[data-film-resize]');
+    const options = root.locator('[data-film-window-options]');
+    const box = async () => surface.evaluate(node => { const r=node.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom}; });
+    const withinViewport = async () => {
+      const r = await box();
+      expect(r.x).toBeGreaterThanOrEqual(11);
+      expect(r.y).toBeGreaterThanOrEqual(11);
+      expect(r.right).toBeLessThanOrEqual(viewport.width - 10);
+      expect(r.bottom).toBeLessThanOrEqual(viewport.height - 10);
+      const media = await frame.boundingBox();
+      expect(media!.width).toBeGreaterThanOrEqual(200);
+      expect(media!.height).toBeGreaterThanOrEqual(200);
+    };
+    await withinViewport();
+    const defaultBox = await box();
+    const playerOverlap = await page.evaluate(() => {
+      const player=document.querySelector('[data-film-surface]')!.getBoundingClientRect();
+      return [...document.querySelectorAll<HTMLElement>('.pipeline-step[aria-selected="true"],.pipeline-navigation,.pipeline-panel:not([hidden]) .pipeline-panel-heading')]
+        .filter(node=>node.checkVisibility()).some(node=>{const b=node.getBoundingClientRect();return Math.min(b.right,player.right)>Math.max(b.left,player.left)+1&&Math.min(b.bottom,player.bottom)>Math.max(b.top,player.top)+1;});
+    });
+    expect(playerOverlap, 'The default floating window should leave current process controls and heading unobstructed').toBe(false);
+
+    await drag.click();
+    await expect(options).toBeVisible();
+    await expect(drag).toHaveAttribute('aria-expanded', 'true');
+    for (const corner of ['top-left', 'top-right', 'bottom-left', 'bottom-right']) {
+      await options.locator(`[data-film-position="${corner}"]`).click();
+      await withinViewport();
+      const position = await box();
+      if (corner.endsWith('left')) expect(position.x).toBeLessThanOrEqual(13);
+      else expect(position.right).toBeGreaterThanOrEqual(viewport.width - 13);
+      if (corner.startsWith('top')) expect(position.y).toBeLessThanOrEqual(13);
+      else expect(position.bottom).toBeGreaterThanOrEqual(viewport.height - 13);
+      await expect(frame).toHaveAttribute('data-youtube-state', 'playing');
+      expect(await frame.evaluate(node => node === (window as any).__portraitFrame)).toBe(true);
+      if (corner !== 'bottom-right') {
+        await drag.click();
+        await expect(options).toBeVisible();
+      }
+    }
+
+    const beforeDrag = await box();
+    const dragHit = await drag.boundingBox();
+    await page.mouse.move(dragHit!.x + dragHit!.width / 2, dragHit!.y + dragHit!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(dragHit!.x + dragHit!.width / 2 - 48, dragHit!.y + dragHit!.height / 2 - 40, { steps: 6 });
+    await page.mouse.up();
+    await expect.poll(async () => (await box()).x).toBeLessThan(beforeDrag.x - 10);
+    await withinViewport();
+    const beforeKey = await box();
+    await drag.focus();
+    await drag.press('ArrowRight');
+    await drag.press('ArrowDown');
+    await expect.poll(async () => (await box()).x).toBeGreaterThan(beforeKey.x);
+    await expect.poll(async () => (await box()).y).toBeGreaterThan(beforeKey.y);
+    await withinViewport();
+
+    const beforeResize = await box();
+    const resizeHit = await resize.boundingBox();
+    await page.mouse.move(resizeHit!.x + resizeHit!.width / 2, resizeHit!.y + resizeHit!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(resizeHit!.x + resizeHit!.width / 2 + 48, resizeHit!.y + resizeHit!.height / 2 + 48, { steps: 6 });
+    await page.mouse.up();
+    await expect.poll(async () => (await box()).width).toBeGreaterThan(beforeResize.width + 10);
+    await withinViewport();
+    const beforeSizeKey = await box();
+    await resize.focus();
+    await resize.press('ArrowRight');
+    await expect.poll(async () => (await box()).width).toBeGreaterThan(beforeSizeKey.width);
+    await withinViewport();
+
+    await resize.click();
+    await expect(options).toBeVisible();
+    const beforePlus = await box();
+    await options.locator('[data-film-size="1"]').click();
+    await expect.poll(async () => (await box()).width).toBeGreaterThan(beforePlus.width);
+    await withinViewport();
+    await options.locator('[data-film-window-reset]').click();
+    await expect(root).not.toHaveAttribute('data-film-window-free', /.+/);
+    await withinViewport();
+    const resetBox = await box();
+    expect(Math.abs(resetBox.x - defaultBox.x)).toBeLessThanOrEqual(1);
+    expect(Math.abs(resetBox.y - defaultBox.y)).toBeLessThanOrEqual(1);
+    expect(Math.abs(resetBox.width - defaultBox.width)).toBeLessThanOrEqual(1);
+    expect(Math.abs(resetBox.height - defaultBox.height)).toBeLessThanOrEqual(1);
+    await expect(frame).toHaveAttribute('data-youtube-state', 'playing');
+    expect(await frame.evaluate(node => node === (window as any).__portraitFrame)).toBe(true);
   }
 });
 

@@ -1,58 +1,44 @@
-/* The original anchor stays in document flow while this same playback surface docks. */
+/* Inline viewing grows in the page. Floating mode keeps that same media node. */
 .film-anchor{position:relative;width:100%;aspect-ratio:16/9;max-height:72svh}
-.film-surface{width:100%}
+.film-surface{width:100%;transform-origin:top center}
 .film-player[data-ratio='9:16'] .film-anchor{aspect-ratio:9/16;max-height:66svh}
-.room-work[data-work='butter'] .room-film .film-anchor{aspect-ratio:1920/804}
-.film-mini-bar[hidden]{display:none!important}
-.film-player.is-film-floating .film-surface{position:fixed;right:var(--gutter,40px);bottom:24px;width:320px;z-index:20;background:var(--bg,#111);border:1px solid #ffffff40;box-shadow:0 8px 24px #0006}
-.film-player[data-ratio='9:16'].is-film-floating .film-surface{width:160px}
-.film-mini-bar{display:flex;align-items:center;justify-content:space-between;gap:2px;padding:0 4px;border-bottom:1px solid var(--rule,#ffffff26)}
-.film-mini-bar button{min-width:44px;min-height:44px;padding:0 2px;font-size:12px;line-height:1.25;white-space:nowrap}
-.film-mini-bar button:hover{text-decoration:underline;text-underline-offset:4px}
-.film-player.is-film-floating .film-frame{max-height:none}
-.remy-room.has-floating-film .production-pipeline[data-enhanced] .pipeline-workspace{padding-inline-end:var(--film-aside-reserve,0px)}
-@media(max-width:900px){
- .film-player.is-film-floating .film-surface,.film-player[data-ratio='9:16'].is-film-floating .film-surface{inset:auto 0 0;width:100%;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:12px;padding:12px 20px calc(12px + env(safe-area-inset-bottom));border-width:1px 0 0;box-shadow:0 -4px 18px #0005}
- .film-player.is-film-floating .film-frame{grid-column:1;grid-row:1;width:min(100%,200px);justify-self:center;align-self:center}
- .film-player[data-ratio='9:16'].is-film-floating .film-frame{width:calc(min(20svh,168px) * 9 / 16)}
- .film-player.is-film-floating .film-mini-bar{grid-column:2;grid-row:1;display:grid;grid-template-columns:1fr;gap:0;padding:0;border:0;justify-self:center;width:min(100%,160px)}
- .film-mini-bar button{font-size:14px}
- .remy-room.has-floating-film{padding-bottom:var(--film-dock-height,0px);scroll-padding-bottom:var(--film-dock-height,0px)}
- .remy-room.has-floating-film .production-pipeline{--pipeline-frame:min(820px,calc(100svh - 24px - var(--film-dock-height,0px)))}
- .remy-room.has-floating-film .production-pipeline[data-enhanced] .pipeline-workspace{padding-inline-end:0}
-}
-@media(max-width:900px){
- /* Keep step controls above the dock even when the reader stops partway through
-    a document scroll, rather than only at the ideal workspace scroll position. */
- .remy-room.has-floating-film .production-pipeline[data-enhanced] .pipeline-navigation{position:sticky;bottom:var(--film-dock-height,0px);z-index:6;background:var(--bg,#111)}
- .remy-room.has-floating-film .production-pipeline[data-enhanced] .pipeline-surface{padding-bottom:52px;scroll-padding-bottom:64px}
-}
-@media(max-width:900px){
- .remy-room.has-floating-film .production-pipeline[data-enhanced] .pipeline-navigation::after{content:'';position:absolute;inset:100% 0 auto;height:12px;background:var(--bg,#111);pointer-events:none}
-}
-
-/* YouTube requires an embedded viewport of at least 200 × 200px. The same
-   iframe stays mounted; on small screens its square viewport contains the
-   authored video rather than cropping or stretching portrait frames. */
-.film-player:not([data-local-src]).is-film-floating .film-surface{width:358px}
-.film-player:not([data-local-src])[data-ratio='9:16'].is-film-floating .film-surface{width:202px}
-.film-player:not([data-local-src]).is-film-floating .film-frame{min-width:200px;min-height:200px}
-@media(max-width:900px){
- .film-player:not([data-local-src]).is-film-floating .film-surface,.film-player:not([data-local-src])[data-ratio='9:16'].is-film-floating .film-surface{width:100%;grid-template-columns:200px minmax(0,1fr)}
- .film-player:not([data-local-src]).is-film-floating .film-frame,.film-player:not([data-local-src])[data-ratio='9:16'].is-film-floating .film-frame{width:200px;height:200px;aspect-ratio:1}
- .film-player:not([data-local-src]).is-film-floating .film-mini-bar{min-width:0}
-}
-@media(max-width:360px){
- .film-player:not([data-local-src]).is-film-floating .film-surface{padding-inline:12px}
-}
-.film-error[hidden]{display:none!important}
+.film-player.is-film-expanded[data-ratio='9:16']{--film-inline-width:max(200px,min(calc(100vw - 24px),calc((100svh - 112px)*9/16)));width:var(--film-inline-width);max-width:none;margin-inline:calc((100% - var(--film-inline-width))/2)}
+.film-player.is-film-expanded[data-ratio='16:9']{width:min(100%,calc((100svh - 112px)*16/9));max-width:calc((100svh - 112px)*16/9)}
+.film-player.is-film-expanded .film-anchor,.film-player.is-film-expanded .film-frame{max-height:none}
+/* A playing YouTube viewport stays usable even in a short landscape window. */
+.film-player:has(iframe)[data-ratio='9:16']{min-width:200px}.film-player:has(iframe):not(.is-film-floating) .film-anchor,.film-player:has(iframe):not(.is-film-floating) .film-frame{min-height:200px}
+/* The full YouTube viewport includes its native controls and encoded letterbox. */
+.room-work[data-work='butter'] .room-film .film-player .film-anchor,
+.room-work[data-work='butter'] .room-film .film-player .film-frame{aspect-ratio:16/9}
+[data-film-mini-bar][hidden],[data-film-mini-footer][hidden],[data-film-window-options][hidden],.film-error[hidden]{display:none!important}
+.film-player.is-film-floating .film-surface{position:fixed;inset:0 auto auto 0;transform:translate3d(var(--film-window-x,12px),var(--film-window-y,12px),0);width:var(--film-window-width,306px);height:var(--film-window-height,612px);display:grid;grid-template-rows:auto minmax(200px,1fr) auto;z-index:20;border:1px solid #ffffff45;background:var(--bg,#111);box-shadow:0 8px 28px #0007;isolation:isolate}
+.film-player.is-film-floating .film-frame{width:100%;height:100%;min-width:200px;min-height:200px;max-height:none;aspect-ratio:auto!important;overflow:hidden}
+.film-player.is-film-floating .film-frame>video{object-fit:contain!important}
+.film-mini-bar{display:flex;align-items:center;gap:2px;padding:0 4px;border-bottom:1px solid var(--rule,#ffffff26)}
+.film-mini-bar button{min-width:44px;min-height:44px;padding:0 2px;font-size:12px;line-height:1.25;white-space:nowrap;flex:1}
+.film-mini-bar button:hover,.film-window-options button:hover{text-decoration:underline;text-underline-offset:4px}
+.film-drag{cursor:grab;touch-action:none;user-select:none}
+.film-mini-footer{border-top:1px solid var(--rule,#ffffff26)}
+.film-mini-footer button{display:flex;justify-content:space-between;align-items:center;width:100%;height:24px;min-height:24px;padding:0 8px;font-size:11px;line-height:1;color:var(--muted,#aaa);cursor:nwse-resize;touch-action:none;user-select:none}
+.film-mini-footer button:hover{color:var(--fg,#f6f2e9)}
+.film-surface.is-manipulating{user-select:none}.film-surface.is-manipulating .film-drag{cursor:grabbing}
+.film-surface.is-manipulating iframe{pointer-events:none}
+.film-window-options{position:absolute;z-index:4;background:var(--bg,#111);border:1px solid #ffffff45;padding:12px;box-shadow:0 8px 24px #0008}
+.film-window-options p{font-size:12px;line-height:1.5;margin:0 0 6px;color:var(--muted,#aaa)}
+.film-window-positions{display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-bottom:12px}
+.film-window-options button{min-height:44px;padding:6px;font-size:12px;text-align:center;border:1px solid var(--rule,#ffffff26)}
+.film-window-sizes{display:grid;grid-template-columns:44px 44px 1fr;gap:4px}
+.film-player :is([data-film-drag],[data-film-resize],.film-window-options button):focus-visible{outline:2px solid var(--fg,#f6f2e9);outline-offset:-3px}
 .film-error{font-size:14px;line-height:1.7;padding-top:12px}.film-error a{text-decoration:underline;text-underline-offset:4px}
-/* YouTube owns its encoded letterbox and controls. Use its 16:9 viewport for
-   the full film so those controls remain accessible; home excerpts stay cropped. */
-.room-work[data-work='butter'] .room-film .film-player:not([data-local-src]) .film-anchor,
-.room-work[data-work='butter'] .room-film .film-player:not([data-local-src]) .film-frame{aspect-ratio:16/9}
+/* Only the untouched default position reserves a reading lane. A user-placed
+   window floats over the page, so dragging never squeezes the material column. */
+.remy-room.has-floating-film{padding-bottom:var(--film-scroll-space,0px);scroll-padding-bottom:var(--film-dock-height,0px)}
+.remy-room.has-floating-film:not(.has-free-floating-film) .production-pipeline[data-enhanced] .pipeline-workspace{padding-inline-end:var(--film-aside-reserve,0px)}
 @media(max-width:900px){
- .room-work[data-work='butter'] .room-film .film-player:not([data-local-src]).is-film-floating .film-frame{aspect-ratio:1}
+ /* Keep the full material reader; a large movable player must not compress it. */
+ .remy-room.has-floating-film .production-pipeline[data-enhanced] .pipeline-workspace{padding-inline-end:0}
+ .remy-room.has-floating-film .production-pipeline[data-enhanced] .pipeline-navigation{position:sticky;bottom:var(--film-dock-height,0px);z-index:6;background:var(--bg,#111)}
+ .remy-room.has-floating-film .production-pipeline[data-enhanced] .pipeline-surface{padding-bottom:calc(var(--film-dock-height,0px) + 64px);scroll-padding-bottom:64px}
+ .remy-room.has-floating-film:not(.has-free-floating-film) .production-pipeline[data-enhanced] .pipeline-navigation::after{content:'';position:absolute;inset:100% 0 auto;height:12px;background:var(--bg,#111);pointer-events:none}
 }
-
-.film-controls>a.text-action{display:inline-flex;align-items:center;min-height:44px}
+@media(prefers-reduced-motion:reduce){.film-surface{animation:none!important}}

@@ -35,9 +35,23 @@ function makeFrame(root: HTMLElement, start = 0) {
   if (!/^[A-Za-z0-9_-]{11}$/.test(id)) return null;
   return createYouTubeFrame({ id, title: `${root.dataset.videoTitle || '작품'} 풀영상`, start });
 }
+function expandFilmInline(root:HTMLElement,expanded:boolean,align=true){
+  const surface=root.querySelector<HTMLElement>('[data-film-surface]')!;
+  const before=surface.getBoundingClientRect();const changed=root.classList.contains('is-film-expanded')!==expanded;
+  root.classList.toggle('is-film-expanded',expanded);
+  const control=root.querySelector<HTMLButtonElement>('[data-film-large]');
+  if(control){control.textContent=expanded?'작게 보기':'크게 보기';control.setAttribute('aria-expanded',String(expanded));control.setAttribute('aria-label',`${root.dataset.videoTitle||'작품'} 영상 ${expanded?'작게':'크게'} 보기`);}
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(changed&&!reduced&&!root.classList.contains('is-film-floating')){
+    const after=surface.getBoundingClientRect();surface.getAnimations().forEach(animation=>animation.cancel());
+    surface.animate([{transform:`scale(${before.width/after.width},${before.height/after.height})`},{transform:'none'}],{duration:280,easing:'cubic-bezier(.2,.7,.2,1)'});
+  }
+  if(align&&changed)requestAnimationFrame(()=>root.scrollIntoView({block:'center',behavior:reduced?'instant':'smooth'}));
+}
 function playFilm(root: HTMLElement, start = Number(root.dataset.start || 0)) {
   filmRoots().forEach(resetFilm);
   announceFilm();
+  if(root.dataset.ratio==='9:16')expandFilmInline(root,true);
   const frame = makeFrame(root,start);
   if (!frame) return;
   const poster = root.querySelector<HTMLButtonElement>('.film-poster');
@@ -96,7 +110,7 @@ document.addEventListener('click', async event => {
   const jump = target.closest<HTMLElement>('[data-film-start]');
   if(jump){const root=document.querySelector<HTMLElement>('[data-full-film] [data-film-root]');if(root){playFilm(root,Number(jump.dataset.filmStart||0));root.scrollIntoView({block:'center',behavior:'auto'});}return;}
   const large = target.closest<HTMLElement>('[data-film-large]');
-  if(large){const root=large.closest<HTMLElement>('[data-film-root]');if(root&&openModal(root.dataset.videoTitle||'영상',large)){filmRoots().forEach(resetFilm);announceFilm();stage!.dataset.ratio=root.dataset.ratio||'16:9';const frame=makeFrame(root);if(frame){stage!.append(frame);connectFilmMedia(frame,root).play();}}return;}
+  if(large){const root=large.closest<HTMLElement>('[data-film-root]');if(root)expandFilmInline(root,!root.classList.contains('is-film-expanded'));return;}
   const image = target.closest<HTMLElement>('[data-enlarge-src]');
   if(image){filmRoots().forEach(resetFilm);announceFilm();if(openModal(image.dataset.enlargeAlt||'제작 자료',image)){const img=document.createElement('img');img.src=image.dataset.enlargeSrc!;img.alt=image.dataset.enlargeAlt||'제작 자료';stage!.append(img);}return;}
   const copy=target.closest<HTMLElement>('[data-copy]');

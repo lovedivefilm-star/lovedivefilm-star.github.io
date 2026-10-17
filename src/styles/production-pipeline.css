@@ -50,10 +50,10 @@
 .pipeline-sequence-3 .pipeline-sequence-list{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media(min-width:901px){.pipeline-surface-segment:has(.pipeline-images-single){grid-template-columns:minmax(0,1fr) minmax(140px,.8fr);gap:20px 28px}.pipeline-surface-segment:has(.pipeline-images-single) .pipeline-sequence{grid-column:1;grid-row:1}.pipeline-surface-segment:has(.pipeline-images-single) .pipeline-sequence-list{grid-template-columns:1fr}.pipeline-surface-segment:has(.pipeline-images-single) .pipeline-images-single{grid-column:2;grid-row:1}.pipeline-surface-segment:has(.pipeline-images-single) .pipeline-segment-list{grid-column:1/-1;grid-row:2}}
 
-/* Keep the reference's persistent navigation while reading, without taking
-   over document scrolling outside the material surface. */
+/* Keep persistent controls while reading. At either material boundary, native
+   scrolling continues into the page instead of trapping the wheel/touch gesture. */
 .production-pipeline[data-enhanced] .pipeline-steps{position:sticky;top:24px;z-index:3;background:var(--bg,#111)}
-.production-pipeline[data-enhanced] .pipeline-surface{overscroll-behavior-y:contain}
+.production-pipeline[data-enhanced] .pipeline-surface{overscroll-behavior-y:auto}
 @media(max-width:900px){
  .production-pipeline[data-enhanced] .pipeline-workspace{display:block}
  .production-pipeline[data-enhanced] .pipeline-steps{height:92px;top:12px}

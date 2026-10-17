@@ -20,6 +20,7 @@ if(root){
  const strip=root.querySelector<HTMLElement>('[data-remy-strip]')!;
  const auto=root.querySelector<HTMLButtonElement>('[data-remy-autoplay]')!;
  const progress=root.querySelector<HTMLInputElement>('[data-remy-progress]')!;
+ const wheelGate=new WheelGestureGate(600);
  const reduce=window.matchMedia('(prefers-reduced-motion: reduce)');
  const initialSlug=new URL(window.location.href).searchParams.get('work');
  const initialIndex=Math.max(0,works.findIndex(work=>work.slug===initialSlug));
@@ -228,22 +229,24 @@ if(root){
   if(visualCenter!==selected+count)rebaseTimer=setTimeout(()=>{rebase();updatePlayback();},reduce.matches?0:650);
   root.dispatchEvent(new CustomEvent('remy:select',{detail:{index:selected,slug:work.slug}}));
  }
+ // A direct control is a separate user action; it must not inherit a prior
+ // wheel burst's lock. Wheel-driven select() deliberately does not reset it.
+ function selectFromControl(index:number){wheelGate.reset();select(index);}
  strip.addEventListener('click',event=>{if(suppressClick){event.preventDefault();event.stopPropagation();suppressClick=false;}},true);
  strip.addEventListener('dragstart',event=>event.preventDefault());
- cards.forEach(card=>card.addEventListener('click',event=>{if(!event.defaultPrevented){select(Number(card.dataset.index));const slot=Number(card.dataset.slot);if(slot<count||slot>=2*count)choices[selected].focus({preventScroll:true});}}));
- choices.forEach((choice,i)=>choice.addEventListener('click',()=>select(i)));
+ cards.forEach(card=>card.addEventListener('click',event=>{if(!event.defaultPrevented){selectFromControl(Number(card.dataset.index));const slot=Number(card.dataset.slot);if(slot<count||slot>=2*count)choices[selected].focus({preventScroll:true});}}));
+ choices.forEach((choice,i)=>choice.addEventListener('click',()=>selectFromControl(i)));
  progress.addEventListener('input',()=>{pauseAuto();const video=videos[visualCenter];if(video&&Number.isFinite(video.duration)){video.currentTime=Math.min(video.duration,Math.max(0,Number(progress.value)));updateProgress();}});
- root.querySelector('[data-remy-prev]')?.addEventListener('click',()=>select(selected-1));
- root.querySelector('[data-remy-next]')?.addEventListener('click',()=>select(selected+1));
+ root.querySelector('[data-remy-prev]')?.addEventListener('click',()=>selectFromControl(selected-1));
+ root.querySelector('[data-remy-next]')?.addEventListener('click',()=>selectFromControl(selected+1));
  auto.addEventListener('click',()=>{if(works[selected].kind!=='film'){innerPaused=!innerPaused;}else{autoEnabled=!autoEnabled;if(autoEnabled){hovered=false;focused=false;}}renderAuto();updatePlayback();});
- root.addEventListener('keydown',event=>{if(!(event.target instanceof HTMLElement)||event.target.closest('input,textarea,select'))return;if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();select(selected+(event.key==='ArrowRight'?1:-1));choices[selected].focus();}});
+ root.addEventListener('keydown',event=>{if(!(event.target instanceof HTMLElement)||event.target.closest('input,textarea,select'))return;if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();selectFromControl(selected+(event.key==='ArrowRight'?1:-1));choices[selected].focus({preventScroll:true});}});
  strip.addEventListener('pointerdown',event=>{if(event.button!==0)return;pauseAuto();rebase(true);drag={id:event.pointerId,x:event.clientX,y:event.clientY,dx:0,offset:activeOffset(),horizontal:false,start:performance.now()};});
  strip.addEventListener('pointermove',event=>{if(!drag||event.pointerId!==drag.id)return;const dx=event.clientX-drag.x,dy=event.clientY-drag.y;if(!drag.horizontal&&Math.abs(dx)>8&&Math.abs(dx)>Math.abs(dy)*1.2){drag.horizontal=true;strip.setPointerCapture(event.pointerId);root.classList.add('is-dragging');}if(drag.horizontal){drag.dx=dx;sizeCards(dx+drag.offset);}});
- function release(event:PointerEvent){if(!drag||event.pointerId!==drag.id)return;const current=drag;drag=null;root.classList.remove('is-dragging');if(current.horizontal){suppressClick=true;const width=cards[visualCenter].getBoundingClientRect().width;const threshold=Math.max(24,Math.min(width*.1,72));if(Math.abs(current.dx)>threshold)select(selected+(current.dx<0?1:-1));else sizeCards();setTimeout(()=>suppressClick=false,0);}}
+ function release(event:PointerEvent){if(!drag||event.pointerId!==drag.id)return;const current=drag;drag=null;root.classList.remove('is-dragging');if(current.horizontal){suppressClick=true;const width=cards[visualCenter].getBoundingClientRect().width;const threshold=Math.max(24,Math.min(width*.1,72));if(Math.abs(current.dx)>threshold)selectFromControl(selected+(current.dx<0?1:-1));else sizeCards();setTimeout(()=>suppressClick=false,0);}}
  strip.addEventListener('pointerup',release);strip.addEventListener('pointercancel',release);
  // Wheel events have no gesture ID: rearm only after 600ms of no valid input.
  // Large deltas, inertia and a reversal within a burst never add extra steps.
- const wheelGate=new WheelGestureGate(600);
  root.addEventListener('wheel',event=>{
   const target=event.target instanceof Element?event.target:null;
   if(event.ctrlKey||event.metaKey||!inView||target?.closest('input,textarea,select,[contenteditable=true]'))return;
