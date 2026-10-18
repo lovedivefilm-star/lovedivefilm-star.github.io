@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Current public routes. The preserved ALT suite remains under test:rebuild.
+// Current public routes.
 const projectDir = path.dirname(fileURLToPath(import.meta.url));
 const qaDir = path.resolve(process.env.QA_DIR ?? path.join(projectDir, '../_local/qa-site'));
 const qaTmp = path.join(qaDir, 'tmp');

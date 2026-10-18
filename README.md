@@ -25,7 +25,7 @@ npm run build
 npm run test:site
 ```
 
-개발 기본 주소는 http://127.0.0.1:4321/ . `QA_DIR`, `QA_PORT`, `QA_BASE_URL`로 검수 결과와 확인 서버를 지정한다. `test:site`는 현재 페이지와 PC·모바일 상호작용을 검수한다. `test:rebuild`의 과거 시안은 이전 이력이다.
+개발 기본 주소는 http://127.0.0.1:4321/ . `QA_DIR`, `QA_PORT`, `QA_BASE_URL`로 검수 결과와 확인 서버를 지정한다. `test:site`는 현재 페이지와 PC·모바일 상호작용을 검수한다.
 
 ## 배포
 

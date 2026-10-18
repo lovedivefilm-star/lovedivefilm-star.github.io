@@ -11,13 +11,10 @@
     "preview": "astro preview",
     "astro": "astro",
     "test:e2e": "playwright test --config=playwright.site.config.ts",
-    "test:site": "playwright test --config=playwright.site.config.ts",
-    "test:rebuild": "playwright test --config=playwright.rebuild.config.ts"
+    "test:site": "playwright test --config=playwright.site.config.ts"
   },
   "dependencies": {
-    "@justinribeiro/lite-youtube": "^1.9.0",
     "astro": "^7.3.8",
-    "gsap": "^3.15.0",
     "interactjs": "1.10.28"
   },
   "devDependencies": {
