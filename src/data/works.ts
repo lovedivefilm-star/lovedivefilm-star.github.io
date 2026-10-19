@@ -181,8 +181,9 @@ export const WORKS: Work[] = [
     hook: {
       clip: '/media/hook_butter_car.mp4',
       poster: '/media/hook_butter_car.jpg',
-      aspect: '1920 / 804',
-      source: '트레일러_버터!_김영건.mp4 42.250–53.708초(차 안 → 추락 → 룰렛) · 레터박스 138px 잘라 냄 · 960×402 · 24fps · 무음 · 포스터 42.6초',
+      aspect: '16 / 9',
+      // 자막이 아래 레터박스 띠(980–1026px) 안에 있어 원본 16:9를 자르지 않는다(작가 2026-10-19).
+      source: '트레일러_버터!_김영건.mp4 42.250–53.708초(차 안 → 추락 → 룰렛) · 원본 16:9 그대로(자막 포함) · 1280×720 · 24fps · 무음 · 포스터 42.6초',
     },
     record: {
       summary: '프롬프트 round1_test 205개',

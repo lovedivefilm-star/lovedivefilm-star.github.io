@@ -2,7 +2,9 @@
  *  Same grammar as the approved hero v1 (시안/히어로_v1): the paper opens with the typing cursor,
  *  a straight 1px line runs from the end of the first line to the screen, a slit is drawn across
  *  the screen at that height and the clip opens from it. Layout never moves while typing: untyped
- *  text keeps its place (transparent), so the paired portrait frame keeps its final height. */
+ *  text keeps its place (transparent), so the paired frame keeps its final height.
+ *  Paper and screen always share one height: a portrait clip takes the paper's height, a
+ *  landscape clip spreads across the page and the paper's line spacing gives way to it. */
 const CPS = 95;          // typed characters per second
 const LINK_DELAY = 180;  // hero v1: '+=0.18'
 const LINK_MS = 500;     // power2.inOut
@@ -10,6 +12,8 @@ const SLIT_MS = 320;     // power2.out, starts 40ms before the line lands
 const OPEN_MS = 950;     // expo.inOut
 const SLIT_FADE_AT = 250;
 const SLIT_FADE_MS = 300;
+const WIDE_GAP = 28;     // the column the line crosses between paper and screen
+const WIDE_MAX = 520;    // tallest shared height for a landscape pair
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const power2InOut = (t: number) => t < .5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
@@ -42,6 +46,27 @@ function initStoryHooks() {
       document.fonts.ready.then(fitPair); fitPair();
     }
 
+    // A landscape pair spans the page: the 16:9 screen takes the width left beside the paper and
+    // the paper's line spacing gives way so both share the screen's height (never below the text).
+    if (!portrait) {
+      const fitWide = () => {
+        if (getComputedStyle(paper).display !== 'flex') {
+          section.style.removeProperty('--story-unit-h');
+          section.style.removeProperty('--story-frame-w');
+          return;
+        }
+        section.style.setProperty('--story-unit-h', '0px');
+        const last = paper.lastElementChild as HTMLElement | null;
+        const least = Math.ceil((last ? last.getBoundingClientRect().bottom : paper.getBoundingClientRect().bottom) - paper.getBoundingClientRect().top + parseFloat(getComputedStyle(paper).paddingBottom));
+        const room = section.clientWidth - paper.offsetWidth - WIDE_GAP;
+        const height = Math.max(least, Math.floor(Math.min(WIDE_MAX, innerHeight - 180, room * 9 / 16)));
+        section.style.setProperty('--story-unit-h', height + 'px');
+        section.style.setProperty('--story-frame-w', Math.floor(Math.min(room, height * 16 / 9)) + 'px');
+      };
+      window.addEventListener('resize', fitWide);
+      document.fonts.ready.then(fitWide); fitWide();
+    }
+
     // ── geometry: the line leaves the end of the first line's text and lands on the screen ──
     let linkP = 1, slitP = 1, slitFade = 1, opened = 1;
     let slit = .5; // fraction of the frame height the screen opens from
@@ -64,16 +89,8 @@ function initStoryHooks() {
     const place = () => {
       const host = section.getBoundingClientRect();
       const p = paper.getBoundingClientRect();
-      const side = innerWidth > 760 && frame.getBoundingClientRect().left >= p.right - 1;
-      // A landscape screen sits beside the paper so that the first line meets it at ~40% height.
-      if (media && !portrait) {
-        if (side && anchor) {
-          const lineY = lastTextRect(anchor).top - p.top;
-          const lift = Math.max(0, Math.round(lineY - frame.offsetHeight * .4));
-          section.style.setProperty('--story-media-offset', lift + 'px');
-        } else section.style.removeProperty('--story-media-offset');
-      }
       const f = frame.getBoundingClientRect();
+      const side = innerWidth > 760 && f.left >= p.right - 1;
       if (side && anchor) {
         const r = lastTextRect(anchor);
         const y = Math.min(Math.max(r.top + r.height * .58, f.top + 2), f.bottom - 2);
@@ -84,7 +101,10 @@ function initStoryHooks() {
           link.style.width = Math.max(0, f.left - x0 - 1) + 'px';
         }
         slit = f.height ? (y - f.top) / f.height : .5;
-      } else slit = 1; // narrow: the screen rises from its lower edge (hero v1 mobile)
+      } else {
+        if (link) link.style.width = '0';
+        slit = 1; // stacked: the screen rises from its lower edge (hero v1 mobile)
+      }
       if (slitLine) {
         slitLine.style.left = (f.left - host.left) + 'px';
         slitLine.style.top = (f.top + f.height * slit - host.top - (slit >= 1 ? 1 : 0)) + 'px';
