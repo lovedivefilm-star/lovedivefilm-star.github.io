@@ -1,64 +1,201 @@
-/** The only automatic motion on a work page: one short screenplay-to-screen introduction. */
+/** The only automatic motion on a work page: one short screenplay-to-screen introduction.
+ *  Same grammar as the approved hero v1 (시안/히어로_v1): the paper opens with the typing cursor,
+ *  a straight 1px line runs from the end of the first line to the screen, a slit is drawn across
+ *  the screen at that height and the clip opens from it. Layout never moves while typing: untyped
+ *  text keeps its place (transparent), so the paired portrait frame keeps its final height. */
+const CPS = 95;          // typed characters per second
+const LINK_DELAY = 180;  // hero v1: '+=0.18'
+const LINK_MS = 500;     // power2.inOut
+const SLIT_MS = 320;     // power2.out, starts 40ms before the line lands
+const OPEN_MS = 950;     // expo.inOut
+const SLIT_FADE_AT = 250;
+const SLIT_FADE_MS = 300;
+
+const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+const power2InOut = (t: number) => t < .5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+const power2Out = (t: number) => 1 - (1 - t) ** 2;
+const expoInOut = (t: number) => t <= 0 ? 0 : t >= 1 ? 1 : t < .5 ? 2 ** (20 * t - 10) / 2 : (2 - 2 ** (-20 * t + 10)) / 2;
+
 function initStoryHooks() {
   document.querySelectorAll<HTMLElement>('[data-story-hook]').forEach((section) => {
-    const typed = section.querySelector<HTMLElement>('[data-story-typed]');
+    const paper = section.querySelector<HTMLElement>('[data-story-paper]');
     const frame = section.querySelector<HTMLElement>('[data-story-frame]');
     const video = section.querySelector<HTMLVideoElement>('[data-story-video]');
     const button = section.querySelector<HTMLButtonElement>('[data-story-toggle]');
-    if (!typed || !frame) return;
-    const paper=section.querySelector<HTMLElement>('.story-document > .script-paper');
-    const media=section.querySelector<HTMLElement>('.story-media');
-    if(paper&&media&&section.dataset.storyPortrait){
-      const fitPair=()=>{
-        if(innerWidth<=760){section.style.removeProperty('--story-pair-limit');section.style.removeProperty('--story-pair-height');return;}
-        const cap=(video?.videoHeight||1280)/Math.max(1,devicePixelRatio||1);
-        const limit=Math.min(cap,Math.max(240,innerHeight-220),media.clientWidth*16/9);
-        section.style.setProperty('--story-pair-limit',limit+'px');
-        section.style.setProperty('--story-pair-height',paper.getBoundingClientRect().height+'px');
+    const link = section.querySelector<HTMLElement>('[data-story-link]');
+    const slitLine = section.querySelector<HTMLElement>('[data-story-slit]');
+    const anchor = section.querySelector<HTMLElement>('[data-story-anchor]');
+    const media = section.querySelector<HTMLElement>('.story-media');
+    if (!paper || !frame) return;
+    const portrait = !!section.dataset.storyPortrait;
+
+    if (media && portrait) {
+      const fitPair = () => {
+        if (innerWidth <= 760) { section.style.removeProperty('--story-pair-limit'); section.style.removeProperty('--story-pair-height'); return; }
+        const cap = (video?.videoHeight || 1280) / Math.max(1, devicePixelRatio || 1);
+        const limit = Math.min(cap, Math.max(240, innerHeight - 220), media.clientWidth * 16 / 9);
+        section.style.setProperty('--story-pair-limit', limit + 'px');
+        section.style.setProperty('--story-pair-height', paper.getBoundingClientRect().height + 'px');
       };
       new ResizeObserver(fitPair).observe(paper);
-      window.addEventListener('resize',fitPair);video?.addEventListener('loadedmetadata',fitPair);
-      document.fonts.ready.then(fitPair);fitPair();
+      window.addEventListener('resize', fitPair); video?.addEventListener('loadedmetadata', fitPair);
+      document.fonts.ready.then(fitPair); fitPair();
     }
-    const text = typed.textContent ?? '';
-    const letters = Array.from(text);
+
+    // ── geometry: the line leaves the end of the first line's text and lands on the screen ──
+    let linkP = 1, slitP = 1, slitFade = 1, opened = 1;
+    let slit = .5; // fraction of the frame height the screen opens from
+    const paint = () => {
+      if (link) link.style.transform = 'scaleX(' + linkP + ')';
+      if (slitLine) {
+        slitLine.style.transform = 'scaleX(' + slitP + ')';
+        slitLine.style.opacity = String(slitP > 0 ? 1 - slitFade : 0);
+      }
+      const top = (100 * slit * (1 - opened)).toFixed(2);
+      const bottom = (100 * (1 - slit) * (1 - opened)).toFixed(2);
+      frame.style.clipPath = opened >= 1 ? '' : 'inset(' + top + '% 0 ' + bottom + '% 0)';
+    };
+    const lastTextRect = (element: HTMLElement) => {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      const rects = Array.from(range.getClientRects()).filter((rect) => rect.width > 0);
+      return rects[rects.length - 1] ?? element.getBoundingClientRect();
+    };
+    const place = () => {
+      const host = section.getBoundingClientRect();
+      const p = paper.getBoundingClientRect();
+      const side = innerWidth > 760 && frame.getBoundingClientRect().left >= p.right - 1;
+      // A landscape screen sits beside the paper so that the first line meets it at ~40% height.
+      if (media && !portrait) {
+        if (side && anchor) {
+          const lineY = lastTextRect(anchor).top - p.top;
+          const lift = Math.max(0, Math.round(lineY - frame.offsetHeight * .4));
+          section.style.setProperty('--story-media-offset', lift + 'px');
+        } else section.style.removeProperty('--story-media-offset');
+      }
+      const f = frame.getBoundingClientRect();
+      if (side && anchor) {
+        const r = lastTextRect(anchor);
+        const y = Math.min(Math.max(r.top + r.height * .58, f.top + 2), f.bottom - 2);
+        const x0 = r.right + 8;
+        if (link) {
+          link.style.left = (x0 - host.left) + 'px';
+          link.style.top = (y - host.top) + 'px';
+          link.style.width = Math.max(0, f.left - x0 - 1) + 'px';
+        }
+        slit = f.height ? (y - f.top) / f.height : .5;
+      } else slit = 1; // narrow: the screen rises from its lower edge (hero v1 mobile)
+      if (slitLine) {
+        slitLine.style.left = (f.left - host.left) + 'px';
+        slitLine.style.top = (f.top + f.height * slit - host.top - (slit >= 1 ? 1 : 0)) + 'px';
+        slitLine.style.width = f.width + 'px';
+      }
+      paint();
+    };
+    new ResizeObserver(place).observe(section);
+    window.addEventListener('resize', place);
+    paper.addEventListener('scroll', place, { passive: true });
+    video?.addEventListener('loadedmetadata', place);
+    document.fonts.ready.then(place);
+
     const motion = matchMedia('(prefers-reduced-motion: reduce)');
     let raf = 0;
-    let animationDone = motion.matches;
+    let animationDone = true;
+    let restore = () => {};
     const finish = () => {
       if (raf) cancelAnimationFrame(raf);
       raf = 0;
       animationDone = true;
-      typed.textContent = text;
-      frame.style.clipPath = 'none';
-      section.style.setProperty('--story-join', '1');
+      restore();
+      restore = () => {};
+      paper.style.clipPath = '';
+      paper.classList.remove('is-typing');
+      linkP = 1; slitP = 1; slitFade = 1; opened = 1;
+      place();
     };
+
     if (!motion.matches) {
+      animationDone = false;
+      // Split every text node into [typed][rest]; rest keeps the layout but is transparent.
+      const walker = document.createTreeWalker(paper, NodeFilter.SHOW_TEXT, { acceptNode: (node) => node.nodeValue?.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT });
+      const nodes: Text[] = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode as Text);
+      let offset = 0;
+      let anchorEnd = 0;
+      const pieces = nodes.map((node) => {
+        const chars = Array.from(node.data);
+        const typed = document.createElement('span');
+        const rest = document.createElement('span');
+        rest.className = 'story-rest';
+        rest.textContent = node.data;
+        node.replaceWith(typed, rest);
+        const piece = { node, chars, typed, rest, start: offset, shown: 0, block: (typed.closest('p') ?? typed.parentElement) as HTMLElement };
+        offset += chars.length;
+        if (anchor?.contains(typed)) anchorEnd = offset;
+        return piece;
+      });
+      restore = () => pieces.forEach((piece) => { piece.typed.replaceWith(piece.node); piece.rest.remove(); });
+      const total = offset;
+      const typingEnd = total / CPS * 1000;
+      const linkStart = (anchorEnd || total) / CPS * 1000 + LINK_DELAY;
+      const slitStart = linkStart + LINK_MS - 40;
+      const openStart = slitStart + SLIT_MS;
+      const end = Math.max(typingEnd, openStart + OPEN_MS);
+      let revealed = 0; // px of paper shown; eases toward the typing caret every frame
+      let lastFrame = 0;
+      let rewound = false;
+      paper.classList.add('is-typing');
+      paper.style.clipPath = 'inset(0 0 100% 0)';
+      linkP = 0; slitP = 0; slitFade = 0; opened = 0;
+      place();
+      document.documentElement.classList.remove('story-pre');
       const begin = performance.now();
-      typed.textContent = '';
-      frame.style.clipPath = 'inset(50% 0 50% 0)';
-      section.style.setProperty('--story-join', '0');
       const draw = (now: number) => {
         const elapsed = now - begin;
-        const typing = Math.min(1, Math.max(0, elapsed / 950));
-        const joining = Math.min(1, Math.max(0, (elapsed - 550) / 250));
-        const opening = Math.min(1, Math.max(0, (elapsed - 750) / 600));
-        typed.textContent = letters.slice(0, Math.ceil(letters.length * typing)).join('');
-        section.style.setProperty('--story-join', String(joining));
-        const inset = (50 * (1 - opening)).toFixed(2);
-        frame.style.clipPath = 'inset(' + inset + '% 0 ' + inset + '% 0)';
-        if (elapsed < 1350) raf = requestAnimationFrame(draw);
+        const step = lastFrame ? Math.min(64, now - lastFrame) : 16;
+        lastFrame = now;
+        const count = Math.min(total, Math.ceil(elapsed / 1000 * CPS));
+        let current = pieces[0];
+        for (const piece of pieces) {
+          const shown = Math.max(0, Math.min(piece.chars.length, count - piece.start));
+          if (shown !== piece.shown) {
+            piece.shown = shown;
+            piece.typed.textContent = piece.chars.slice(0, shown).join('');
+            piece.rest.textContent = piece.chars.slice(shown).join('');
+          }
+          if (count > piece.start) current = piece;
+        }
+        // The paper unrolls under the caret: its lower edge eases toward the line being written,
+        // so a wrap or a new paragraph slides open instead of jumping a whole block at once.
+        const box = paper.getBoundingClientRect();
+        let target = box.height;
+        if (count < total && current) {
+          const typedRects = current.typed.getClientRects();
+          const caret = typedRects.length ? typedRects[typedRects.length - 1] : current.rest.getClientRects()[0] ?? current.block.getBoundingClientRect();
+          target = Math.min(box.height, caret.bottom - box.top + 28);
+        }
+        revealed = Math.max(revealed, revealed + (target - revealed) * (1 - Math.exp(-step / 70)));
+        paper.style.clipPath = 'inset(0 0 ' + Math.max(0, box.height - revealed).toFixed(1) + 'px 0)';
+        linkP = power2InOut(clamp01((elapsed - linkStart) / LINK_MS));
+        slitP = power2Out(clamp01((elapsed - slitStart) / SLIT_MS));
+        slitFade = clamp01((elapsed - openStart - SLIT_FADE_AT) / SLIT_FADE_MS);
+        const open = clamp01((elapsed - openStart) / OPEN_MS);
+        if (open > 0 && !rewound && video) { rewound = true; video.currentTime = 0; }
+        opened = expoInOut(open);
+        paint();
+        if (elapsed < end || box.height - revealed > .5) raf = requestAnimationFrame(draw);
         else finish();
       };
       raf = requestAnimationFrame(draw);
-    }
+    } else place();
+
     if (!video || !button) return;
     let want = !motion.matches;
     const bounds = frame.getBoundingClientRect();
     let seen = bounds.bottom > 0 && bounds.top < innerHeight;
     let sequence = 0;
     const canPlay = () => video.isConnected && want && seen && !document.hidden;
-    const paint = () => {
+    const paintButton = () => {
       const playing = !video.paused && !video.ended;
       button.textContent = playing ? '클립 멈춤' : '클립 재생';
       button.setAttribute('aria-label', playing ? '후킹 클립 멈춤' : '후킹 클립 재생');
@@ -68,15 +205,15 @@ function initStoryHooks() {
       const current = ++sequence;
       if (!canPlay()) {
         video.pause();
-        paint();
+        paintButton();
         return;
       }
       void video.play().then(() => {
         if (!canPlay()) video.pause();
-        paint();
+        paintButton();
       }).catch(() => {
         if (current === sequence) want = false;
-        paint();
+        paintButton();
       });
     };
     const observer = new IntersectionObserver((entries) => {
@@ -101,9 +238,9 @@ function initStoryHooks() {
     };
     button.hidden = false;
     button.addEventListener('click', click);
-    video.addEventListener('play', paint);
-    video.addEventListener('pause', paint);
-    video.addEventListener('error', () => { want = false; paint(); });
+    video.addEventListener('play', paintButton);
+    video.addEventListener('pause', paintButton);
+    video.addEventListener('error', () => { want = false; paintButton(); });
     document.addEventListener('visibilitychange', sync);
     document.addEventListener('portfolio:film-play', filmPlay);
     motion.addEventListener('change', motionChange);

@@ -3,46 +3,20 @@
  * 글: 대본 줄은 src/data/scripts.ts(원문 줄 그대로) 의 번호로만 가리킨다 — 여기서 문장을 쓰지 않는다.
  * 미디어: public/media/ (출처는 src/data/media-sources.json).
  */
-import { SCRIPTS, type ScriptLine } from './scripts';
-
 export type Ratio = '9:16' | '16:9';
 export type Group = 'main' | 'tools';
 
 /** 크레딧 한 줄 — 값이 null 이면 [작가 확인 자리] 로 보인다. */
 export type Credit = { k: string; v: string | null; ph?: string };
 
-/** 후킹 구역의 대본 한 줄 — 시각은 후킹 클립 안의 초. */
-export type HookLine = {
-  /** SCRIPTS[slug] 의 줄 번호 */
-  i: number;
-  /** 화면이 열리기 전에 미리 치는 줄(씬 헤더 등) */
-  pre?: boolean;
-  /** 클립 시각에 맞춘 타이핑: [초, 이 글자까지] — '' 는 0글자 */
-  kf?: [number, string][];
-  /** 이 줄이 화면에 나오는 구간(밝게) */
-  now?: [number, number][];
-  /** 치지 않고 흐리게 이어지는 줄 */
-  ghost?: boolean;
-};
-
+/** 작품방 첫 화면의 후킹 클립 — 대본 발췌는 src/data/hook-excerpts.ts */
 export type Hook = {
   clip: string;
   poster: string;
-  strip: string;
-  /** 클립 길이(초) */
-  dur: number;
-  /** 완성본에서 이 클립이 시작하는 시각(초) — 타임코드 표시용 */
-  offset: number;
-  fps: number;
   /** 화면 비율(클립 그대로) — CSS aspect-ratio */
   aspect: string;
-  /** 머리줄: 「대본 · S#1」 등 */
-  label: string;
-  /** 타임라인 머리의 사양 한 줄(ffprobe 로 확인한 값) */
-  spec: string;
-  /** 컷 지점(클립 안의 초) */
-  cuts: number[];
-  lines: HookLine[];
+  /** 완성본에서 잘라 낸 구간과 변환(ffprobe 로 확인한 값) */
+  source: string;
 };
 
 /** 작업대 한 칸 — path 는 작가 제작 폴더 안의 실제 파일 · 폴더(작품 폴더 이름은 빼고 그 아래부터) */
@@ -75,8 +49,6 @@ export type Work = {
   /** 03 생성 · 04 편집의 버전 줄 — 작가가 가진 실제 파일 버전만(_분석/제작자료_목록.md). from 이 없으면 마지막 판 하나만 */
   versions?: Version[];
   editVersions?: Version[];
-  /** 02 대본 단계 머리 — 어느 대본의 어느 씬인가 */
-  scriptLabel?: string;
   sheets?: { src: string; caption: string }[];
   /* 툴 */
   label?: string;
@@ -99,7 +71,6 @@ export const WORKS: Work[] = [
     poster: '/media/poster_oneandonly.jpg',
     door: '오직 당신의 것',
     no: '01',
-    scriptLabel: '대본 · S#1 INT. 옥타곤 링 / N (현재)',
     edit: ['편집 프로젝트 — 프리미어 백업 v0.4 → v1.0'],
     versions: [
       { label: 'S4-A 프롬프트', from: 'v1', to: 'v16', path: '03_프롬프트/S4-A/' },
@@ -115,27 +86,10 @@ export const WORKS: Work[] = [
       { k: '도구', v: null, ph: TOOL_PH },
     ],
     hook: {
-      clip: '/media/hook_oneandonly.mp4',
-      poster: '/media/hook_oneandonly.jpg',
-      strip: '/media/strip_oneandonly.jpg',
-      dur: 287 / 24,
-      offset: 2 / 24,
-      fps: 24,
+      clip: '/media/hook_oneandonly_s6.mp4',
+      poster: '/media/hook_oneandonly_s6.jpg',
       aspect: '9 / 16',
-      label: '대본 · S#1',
-      spec: '720×1280 · 24fps · 완성본 00:00–00:12',
-      cuts: [7.4583, 10.125],
-      // 시각: 시안/히어로_v1 의 번인 자막 실측(장면후보.md §3, ±0.25초)
-      lines: [
-        { i: 0, pre: true },
-        { i: 1, pre: true, now: [[0, 7.4583]] },
-        { i: 2, kf: [[0.05, ''], [1.1, '슬로우모션처럼.']], now: [[0, 7.4583]] },
-        { i: 3, kf: [[1.1667, ''], [2.2, '느리다.'], [3.92, '느리다.'], [4.27, '특히,'], [5.17, '특히,'], [5.8, '내게는 더.']], now: [[1.1667, 6.5167]] },
-        { i: 4, kf: [[7.5, ''], [9.5, '같은데-']], now: [[7.4583, 11.958]] },
-        { i: 5, kf: [[9.6667, ''], [10.2, '그러니까 -']], now: [[9.6667, 11.958]] },
-        { i: 6, ghost: true },
-        { i: 7, ghost: true },
-      ],
+      source: '오직 당신의 것_EP.01_v1.1.mp4 155.917–177.083초(S#6 「일제히 엎드려」 와이드 → 「저 자는 내 것이다」 컷 끝) · 720×1280 · 24fps · 무음',
     },
     record: {
       summary: '프롬프트 S4-A v1 → v16',
@@ -162,7 +116,6 @@ export const WORKS: Work[] = [
     poster: '/media/poster_firstimpression.jpg',
     door: '첫 인상은 백점, 첫 마디는 엎드려',
     no: '02',
-    scriptLabel: '대본 · S#2 리무진 안 → S#3 은행 통로',
     edit: ['편집 프로젝트 — 프리미어 프로젝트 파일 10개'],
     versions: [
       { label: 'S2-A 원테이크 프롬프트', to: 'v8', path: '04_영상/2026-09-06_S2-A_주차장_통로_원테이크_10s_2.5_v8.txt' },
@@ -181,26 +134,8 @@ export const WORKS: Work[] = [
     hook: {
       clip: '/media/hook_firstimpression.mp4',
       poster: '/media/hook_firstimpression.jpg',
-      strip: '/media/strip_firstimpression.jpg',
-      dur: 17,
-      offset: 16,
-      fps: 24,
       aspect: '9 / 16',
-      label: '대본 · S#3',
-      spec: '720×1280 · 24fps · 완성본 00:16–00:33',
-      // 컷: ffmpeg 장면 전환 감지(scene > 0.25)
-      cuts: [7.917, 9.125, 10.625, 11.833, 15.042],
-      // 번인 자막이 없어 시각은 「대략」 — 줄이 바뀌는 리듬만 맞춘다(장면후보.md F1)
-      lines: [
-        { i: 7, ghost: true },
-        { i: 8, pre: true },
-        { i: 9, kf: [[0.1, ''], [1.3, '셋.']], now: [[0, 3]] },
-        { i: 10, kf: [[3, ''], [6, '거고...']], now: [[3, 6.6]] },
-        { i: 11, kf: [[6.6, ''], [8.8, '폐쇄되고 -']], now: [[6.6, 9.1]] },
-        { i: 12, kf: [[9.1, ''], [9.9, '아니었어?']], now: [[9.1, 10.6]] },
-        { i: 13, kf: [[9.9, ''], [12.6, '키스하고 -']], now: [[9.1, 15]] },
-        { i: 14, kf: [[13.2, ''], [14.0, '짜증 나서.']], now: [[13.2, 15]] },
-      ],
+      source: '첫 인상은 백점, 첫 마디는 엎드려.mp4 0:16–0:33(S#3 은행 통로) · 480×854 · 24fps · 무음',
     },
     record: {
       summary: 'S2-A 원테이크 프롬프트 v8',
@@ -229,7 +164,6 @@ export const WORKS: Work[] = [
     poster: '/media/poster_butter.jpg',
     door: '버터!',
     no: '03',
-    scriptLabel: '예고편 대본 [1차] · 섬',
     edit: ['편집 프로젝트 — 1분30초 프로젝트.prproj (2026-08-31)'],
     versions: [
       { label: 'S1-D 프롬프트', to: 'v8', path: '99_보관/프롬프트/round1_test/기타시퀀스/S1-D_v8_4컷_1080p.txt' },
@@ -245,31 +179,10 @@ export const WORKS: Work[] = [
       { k: '도구', v: 'Midjourney V8.2 · Seedream 5.0 Pro · GPT Image 2 · Seedance 2.0 → 2.5 (Higgsfield) · Premiere Pro · After Effects · ElevenLabs Music v2 · Seed Audio 1.0' },
     ],
     hook: {
-      clip: '/media/hook_butter.mp4',
-      poster: '/media/hook_butter.jpg',
-      strip: '/media/strip_butter.jpg',
-      dur: 16,
-      offset: 0,
-      fps: 24,
+      clip: '/media/hook_butter_car.mp4',
+      poster: '/media/hook_butter_car.jpg',
       aspect: '1920 / 804',
-      label: '예고편 대본 [1차] · 섬',
-      spec: '1920×1080 · 24fps · 완성본 00:00–00:16 · 레터박스 잘라 냄',
-      cuts: [0.875, 1.458, 2.375, 3.333, 6.417, 7.917, 9.417, 11.042, 12.875, 14.125, 15.25],
-      // 앞 1:13 까지만 번인 자막이 있고 이 구간엔 대사가 없다 — 화면 기준 「대략」(장면후보.md B1)
-      lines: [
-        { i: 0, pre: true },
-        { i: 1, pre: true },
-        { i: 2, kf: [[0.05, ''], [1.6, '있다.']], now: [[0, 6.417]] },
-        { i: 3, kf: [[3.3, ''], [4.2, '보인다.']] },
-        { i: 4, kf: [[6.417, ''], [7.0, '있다.']], now: [[6.417, 7.917]] },
-        { i: 5, kf: [[7.0, ''], [7.9, '돌아오고.']], now: [[6.417, 7.917]] },
-        { i: 6, kf: [[7.917, ''], [8.4, '얼굴.']], now: [[11.042, 12.875]] },
-        { i: 7, kf: [[9.417, ''], [10.4, "전달됩니다'"]], now: [[9.417, 11.042]] },
-        { i: 8, kf: [[10.4, ''], [11.0, 'NO.']], now: [[7.917, 9.417]] },
-        { i: 9, kf: [[12.875, ''], [13.4, '키스.']], now: [[12.875, 15.25]] },
-        { i: 10, kf: [[14.125, ''], [14.6, '드러나고.']], now: [[14.125, 15.25]] },
-        { i: 11, kf: [[15.25, ''], [15.5, '줌아웃 —']], now: [[15.25, 16]] },
-      ],
+      source: '트레일러_버터!_김영건.mp4 42.250–53.708초(차 안 → 추락 → 룰렛) · 레터박스 138px 잘라 냄 · 960×402 · 24fps · 무음 · 포스터 42.6초',
     },
     record: {
       summary: '프롬프트 round1_test 205개',
@@ -345,20 +258,3 @@ export const MAIN_WORKS = WORKS.filter((w) => w.group === 'main');
 export const TOOL_WORKS = WORKS.filter((w) => w.group === 'tools');
 
 export const workBySlug = (slug: string) => WORKS.find((w) => w.slug === slug);
-
-/** 후킹 줄의 실제 글(원문 줄) */
-export const hookText = (slug: string, i: number): ScriptLine => {
-  const line = SCRIPTS[slug]?.[i];
-  if (!line) throw new Error(`대본 줄 없음: ${slug}[${i}]`);
-  return line;
-};
-
-/** kf 의 「이 글자까지」 가 원문 줄에 있는지 빌드 때 검사(없으면 빌드 실패) */
-for (const w of MAIN_WORKS) {
-  for (const l of w.hook?.lines ?? []) {
-    const line = hookText(w.slug, l.i);
-    for (const [, upto] of l.kf ?? []) {
-      if (upto && !line.s.includes(upto)) throw new Error(`후킹 kf 표식이 원문에 없음: ${w.slug}[${l.i}] 「${upto}」`);
-    }
-  }
-}

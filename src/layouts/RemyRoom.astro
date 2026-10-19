@@ -15,6 +15,14 @@ const canonical = new URL(canonicalPath ?? (page === 'tools' ? '/tools/' : `/wor
     {noindex && <meta name="robots" content="noindex,nofollow" />}<meta name="theme-color" content="#111111" />
     <meta name="description" content={SITE.description} /><link rel="canonical" href={canonical} />
     <title>{title} · {SITE.name}</title>
+    <script is:inline>
+      // Hero v1 pre-roll: keep the story paper and screen closed until the hook script takes over,
+      // so the first paint does not flash the finished state. Without JS nothing is hidden.
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.documentElement.classList.add('story-pre');
+        setTimeout(() => document.documentElement.classList.remove('story-pre'), 4000);
+      }
+    </script>
   </head>
   <body class="remy-room" data-page={page}>
     <a class="room-skip" href="#main">본문으로</a>

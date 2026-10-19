@@ -5,7 +5,6 @@
 import { MAIN_WORKS, TOOL_WORKS, WORKS, type Work } from './works';
 import { roomOf } from './process';
 import { STAGES, type Pic, type ScriptLine as ExLine, type StageKey, mmss } from './process/types';
-import { SCRIPTS, type ScriptLine } from './scripts';
 import { TOOLS_LABEL } from './site';
 
 export type MetaRow = { k: string; v: string; key: string };
@@ -23,23 +22,6 @@ export function metaRows(w: Work): MetaRow[] {
     period ? { k: '제작 기간', v: period, key: 'period' } : { k: '연도', v: w.year ?? '', key: 'year' },
   ];
   return rows.filter((r) => r.v);
-}
-
-/** 히어로 대본 한 줄 — 대본의 첫 대사(첫 씬 안에 대사가 없으면 첫 지문). 원문 줄 통째. */
-export function heroLine(slug: string): ScriptLine | null {
-  const lines = SCRIPTS[slug] ?? [];
-  let sceneCount = 0;
-  let firstAct: ScriptLine | null = null;
-  for (const l of lines) {
-    if (l.t === 'scene') {
-      sceneCount++;
-      if (sceneCount > 1) break;
-      continue;
-    }
-    if (l.t === 'dia') return l;
-    if (l.t === 'act' && !firstAct && !/^INS\b/.test(l.s)) firstAct = l;
-  }
-  return firstAct;
 }
 
 /** 큰 제목 글자 크기 — Kavieng 글자 수 단계(2-4) ∩ 한 줄에 들어가는 크기 ∩ 첫 화면 상한(제목 · 역할 · 영상 칸이 첫 화면에). */

@@ -571,6 +571,8 @@ test('YouTube API 상태와 같은 iframe이 작은 창에서 유지되고 과�
     const calls = () => page.evaluate((index) => (window as any).__ytTest.players[index].commands as string[], playerIndex);
     const initialHeight = (await root.locator('[data-film-anchor]').boundingBox())!.height;
     await expect.poll(calls).toContain('playVideo');
+    // A portrait play expands and re-centres the film on the next frame; scroll on after it.
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 
     await workspace.evaluate(node => node.scrollIntoView({ block: 'start' }));
     await expect(root).toHaveClass(/is-film-floating/);
@@ -661,6 +663,8 @@ test('세로 풀영상은 같은 YouTube iframe을 키우고 핸들·키보드·
     await large.click();
     await expect(root).toHaveClass(/is-film-expanded/);
     expect(await frame.evaluate(node => node === (window as any).__portraitFrame)).toBe(true);
+    // Expanding re-centres the film on the next frame; a reader scrolls on after that, not within it.
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 
     await workspace.evaluate(node => node.scrollIntoView({ block: 'start' }));
     await expect(root).toHaveClass(/is-film-floating/);
