@@ -1,0 +1,83 @@
+---
+/**
+ * 「연락」 — a mailto link alone does nothing on a PC with no mail app, so the menu opens a small
+ * panel: the address itself, 「주소 복사」 and 「메일 앱으로 쓰기」 (mailto). Used in every top bar.
+ * Renders nothing when CONTACT_EMAIL is empty (no placeholder).
+ */
+import { CONTACT_EMAIL } from '../data/site';
+---
+{CONTACT_EMAIL && <div class="contact-menu" data-contact>
+  <button type="button" class="contact-toggle" aria-expanded="false" aria-controls="contact-panel" data-contact-toggle>연락</button>
+  <div class="contact-panel" id="contact-panel" role="group" aria-label="연락처" data-contact-panel hidden>
+    <p class="contact-kind">메일</p>
+    <p class="contact-address" data-contact-address>{CONTACT_EMAIL}</p>
+    <div class="contact-actions">
+      <button type="button" class="contact-copy" data-contact-copy>주소 복사</button>
+      <a class="contact-mail" href={'mailto:' + CONTACT_EMAIL}>메일 앱으로 쓰기</a>
+    </div>
+    <p class="contact-status" role="status" aria-live="polite" data-contact-status></p>
+  </div>
+</div>}
+
+<style>
+  .contact-menu{position:relative;display:flex}
+  .contact-toggle{min-height:44px;display:flex;align-items:flex-start;padding:0;border:0;background:none;font:inherit;letter-spacing:inherit;line-height:inherit;color:inherit;cursor:pointer}
+  .contact-toggle:hover,.contact-toggle[aria-expanded=true]{color:#fcf8ef}
+  .contact-toggle:focus-visible,.contact-panel :focus-visible{outline:2px solid #fcf8ef;outline-offset:4px}
+  .contact-panel{position:absolute;top:100%;right:0;z-index:60;width:max-content;min-width:260px;max-width:calc(100vw - 40px);padding:16px 18px 12px;background:#161616;border:1px solid #ffffff26;box-shadow:0 14px 36px #000a;color:#fcf8ef;font-size:15px;line-height:1.5;letter-spacing:0;text-align:left}
+  .contact-panel[hidden]{display:none}
+  .contact-kind{margin:0;font-size:12px;color:#cbc7c2}
+  /* Monospace so the 0 in the address never reads as a capital O. */
+  .contact-address{margin:4px 0 0;font-family:ui-monospace,'Cascadia Mono',Consolas,'D2Coding',monospace;font-size:16px;word-break:break-all;user-select:all;-webkit-user-select:all}
+  .contact-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;margin-top:12px}
+  .contact-copy{min-height:44px;padding:0 18px;border:1px solid #ffffff59;border-radius:22px;background:none;font:inherit;font-size:14px;color:#fcf8ef;cursor:pointer}
+  .contact-copy:hover{background:#ffffff1a}
+  .contact-mail{display:inline-flex;align-items:center;min-height:44px;font-size:14px;color:#cbc7c2;text-decoration:underline;text-underline-offset:4px}
+  .contact-mail:hover{color:#fcf8ef}
+  .contact-status{margin:2px 0 0;min-height:1.5em;font-size:13px;color:#cbc7c2}
+  :global(.remy-nav) .contact-toggle,:global(.scripts-header nav) .contact-toggle{padding-top:1px}
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-contact]').forEach(root => {
+    const toggle = root.querySelector<HTMLButtonElement>('[data-contact-toggle]')!;
+    const panel = root.querySelector<HTMLElement>('[data-contact-panel]')!;
+    const copy = root.querySelector<HTMLButtonElement>('[data-contact-copy]')!;
+    const status = root.querySelector<HTMLElement>('[data-contact-status]')!;
+    const address = root.querySelector<HTMLElement>('[data-contact-address]')!;
+    let reset = 0;
+    function setOpen(open: boolean, returnFocus = false) {
+      panel.hidden = !open;
+      toggle.setAttribute('aria-expanded', String(open));
+      if (!open) { status.textContent = ''; copy.textContent = '주소 복사'; if (returnFocus) toggle.focus(); }
+    }
+    toggle.addEventListener('click', () => setOpen(panel.hidden));
+    document.addEventListener('click', event => {
+      if (!panel.hidden && event.target instanceof Node && !root.contains(event.target)) setOpen(false);
+    });
+    root.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && !panel.hidden) { event.stopPropagation(); setOpen(false, true); }
+    });
+    root.addEventListener('focusout', event => {
+      if (!panel.hidden && event.relatedTarget instanceof Node && !root.contains(event.relatedTarget)) setOpen(false);
+    });
+    copy.addEventListener('click', async () => {
+      const text = address.textContent?.trim() ?? '';
+      let copied = false;
+      try { await navigator.clipboard.writeText(text); copied = true; } catch { /* fall back below */ }
+      if (!copied) {
+        const range = document.createRange();
+        range.selectNodeContents(address);
+        const selection = getSelection();
+        selection?.removeAllRanges(); selection?.addRange(range);
+        try { copied = document.execCommand('copy'); } catch { copied = false; }
+      }
+      status.textContent = copied ? '메일 주소를 복사했어요.' : '주소를 선택해 두었어요. Ctrl+C로(휴대폰은 길게 눌러) 복사해 주세요.';
+      if (copied) {
+        copy.textContent = '복사됨';
+        window.clearTimeout(reset);
+        reset = window.setTimeout(() => { copy.textContent = '주소 복사'; }, 2000);
+      }
+    });
+  });
+</script>

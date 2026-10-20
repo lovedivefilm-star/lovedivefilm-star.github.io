@@ -14,8 +14,22 @@ document.querySelectorAll<HTMLElement>('[data-production-pipeline]').forEach(roo
 
   function syncCompact() {
     root.querySelector('[data-pipeline-tabs]')?.setAttribute('aria-orientation', compact.matches ? 'horizontal' : 'vertical');
-    root.querySelectorAll<HTMLDetailsElement>('[data-pipeline-compact-details="timeline"]').forEach(details => { details.open = !compact.matches; });
   }
+  // Tool screens: without script every screen stays listed; with it, one shows at a time and
+  // toggle buttons (not nested tabs) pick which one.
+  root.querySelectorAll<HTMLElement>('[data-pipeline-screens]').forEach(group => {
+    const choices = Array.from(group.querySelectorAll<HTMLButtonElement>('[data-screen-choice]'));
+    const screens = Array.from(group.querySelectorAll<HTMLElement>('[data-screen]'));
+    const bar = group.querySelector<HTMLElement>('[data-screen-switch]');
+    if (!bar || choices.length !== screens.length || choices.length < 2) return;
+    const show = (index: number) => {
+      screens.forEach((screen, i) => { screen.hidden = i !== index; });
+      choices.forEach((choice, i) => choice.setAttribute('aria-pressed', String(i === index)));
+    };
+    choices.forEach((choice, index) => choice.addEventListener('click', () => show(index)));
+    bar.hidden = false;
+    show(0);
+  });
   root.querySelector('[data-pipeline-tabs]')?.setAttribute('role', 'tablist');
   tabs.forEach((tab, index) => {
     tab.setAttribute('role', 'tab'); tab.setAttribute('aria-controls', panels[index].id);

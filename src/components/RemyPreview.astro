@@ -1,6 +1,7 @@
 ---
 import { WORKS } from '../data/works';
 import ScreenplayPreview from './ScreenplayPreview.astro';
+import ContactMenu from './ContactMenu.astro';
 import { SCRIPT_INTRODUCTIONS } from '../data/script-introductions';
 const scripts=SCRIPT_INTRODUCTIONS.map(script=>({id:script.id,title:script.title}));
 const slugs = ['oneandonly', 'firstimpression', 'butter'];
@@ -27,7 +28,7 @@ const stripWorks = Array.from({length:3*count},(_,slot)=>({work:works[slot%count
     <p class="remy-tagline">AI CREATOR<br />&amp; SCREENWRITER</p>
     <nav class="remy-nav" aria-label="주요 메뉴">
       <a href="#remy-work-list" aria-current="page">작품</a>
-      <a href="mailto:wheniwasy0ung@naver.com">연락</a>
+      <ContactMenu />
     </nav>
   </header>
 

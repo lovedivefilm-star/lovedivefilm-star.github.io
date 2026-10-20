@@ -303,6 +303,72 @@ test('주력 세 작품은 YouTube API로 연결되고 다섯 제작 단계가 �
   }
 });
 
+test('05 후반 작업은 실제 툴 화면을 하나씩 바꿔 보여 주고, 누르면 원래 크기로 연다', async ({ page }) => {
+  const expected: Record<string, string[]> = {
+    oneandonly: ['전체 · 영상 편집', '전체 · 자막과 소리', '이 장면'],
+    firstimpression: ['전체', '이 장면'],
+    butter: ['전체', '이 장면', '애프터 이펙트'],
+  };
+  for (const [slug, labels] of Object.entries(expected)) {
+    await page.goto(`/works/${slug}/`);
+    const pipeline = page.locator('[data-production-pipeline]');
+    await pipeline.locator('[data-pipeline-tab="edit"]').click();
+    const panel = pipeline.locator('[data-pipeline-panel="edit"]');
+    // The reconstructed bar chart and its two disclosures are gone.
+    await expect(panel.locator('svg')).toHaveCount(0);
+    await expect(panel.getByText('트랙 확대')).toHaveCount(0);
+    const choices = panel.locator('[data-screen-choice]');
+    await expect(choices).toHaveText(labels);
+    await expect(pipeline.getByRole('tabpanel')).toHaveCount(1);
+    for (let i = 0; i < labels.length; i++) {
+      await choices.nth(i).click();
+      await expect(choices.nth(i)).toHaveAttribute('aria-pressed', 'true');
+      const shown = panel.locator('[data-screen]:not([hidden])');
+      await expect(shown).toHaveCount(1);
+      await expect(shown.locator('figcaption strong')).not.toBeEmpty();
+      await expect.poll(() => shown.locator('img').evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+      await noHorizontalOverflow(page);
+    }
+    await panel.locator('[data-screen]:not([hidden]) .pipeline-screen-button').click();
+    const dialog = page.locator('[data-media-dialog]');
+    await expect(dialog).toHaveJSProperty('open', true);
+    await expect(dialog).toHaveAttribute('data-native', '');
+    const native = await dialog.locator('img').evaluate((img: HTMLImageElement) => ({ shown: Math.round(img.getBoundingClientRect().width), natural: img.naturalWidth }));
+    expect(native.shown).toBe(native.natural);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveJSProperty('open', false);
+    await expect(dialog).not.toHaveAttribute('data-native', '');
+  }
+});
+
+test('「연락」은 메일 앱이 없어도 주소 · 복사 · 메일 쓰기를 보여 준다', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  for (const path of ['/', '/works/oneandonly/', '/scripts/']) {
+    await page.goto(path);
+    const toggle = page.getByRole('button', { name: '연락', exact: true });
+    await expect(toggle).toBeVisible();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    const panel = page.locator('[data-contact-panel]');
+    await expect(panel).toBeVisible();
+    await expect(panel.locator('[data-contact-address]')).toHaveText('wheniwasy0ung@naver.com');
+    await expect(panel.getByRole('link', { name: '메일 앱으로 쓰기' })).toHaveAttribute('href', 'mailto:wheniwasy0ung@naver.com');
+    const box = await panel.boundingBox();
+    expect(box!.x).toBeGreaterThanOrEqual(0);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(page.viewportSize()!.width + 1);
+    await panel.getByRole('button', { name: '주소 복사' }).click();
+    await expect(panel.locator('[data-contact-status]')).not.toBeEmpty();
+    await page.keyboard.press('Escape');
+    await expect(panel).toBeHidden();
+    await expect(toggle).toBeFocused();
+    await toggle.click();
+    await page.mouse.click(Math.round(page.viewportSize()!.width / 2), 6);
+    await expect(panel).toBeHidden();
+    await noHorizontalOverflow(page);
+  }
+});
+
 test('FI 3단계 자료는 안쪽 끝에서 페이지 휠을 막지 않고 선택과 자료 크기를 보존한다', async ({ page }) => {
   for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 800 }, { width: 390, height: 844 }, { width: 320, height: 740 }]) {
     await page.setViewportSize(viewport);

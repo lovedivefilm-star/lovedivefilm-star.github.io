@@ -3,10 +3,9 @@ import { applyEdits } from './edits';
 import type { PageLine } from './pages';
 
 export type PipelineImage = { src:string; w:number; h:number; alt:string; caption:string };
-export type PipelineTimeline = {
-  label:string; start:number; end:number; note?:string;
-  tracks:{label:string;layer:string;items:{label:string;start:number;end:number}[]}[];
-};
+/** A real editing-tool screen (Premiere / After Effects) captured from a working copy of the
+ *  project, shown as-is. `title` + `body` explain how to read it in plain words. */
+export type PipelineScreen = { label:string; src:string; w:number; h:number; alt:string; title:string; body:string };
 export type PipelineStep = {
   key:'script'|'sheet'|'segment'|'generate'|'edit'; label:string; decision:string;
   thumbnail?:{src:string;w:number;h:number}; note?:string;
@@ -15,7 +14,7 @@ export type PipelineStep = {
   segmentLabel?:string; segmentUnit?:string; segments?:{cut:string;size:string;action:string}[];
   generated?:{src:string;poster:string;w:number;h:number;label:string;note?:string};
   guide?:{src:string;poster:string;w:number;h:number;label:string};
-  timeline?:PipelineTimeline;
+  screens?:PipelineScreen[];
 };
 export type ProductionPipelineData = {slug:string;title:string;role:string;steps:PipelineStep[]};
 
@@ -32,450 +31,6 @@ function scriptExcerpt(slug:string):NonNullable<PipelineStep['script']>{
   const lines=[...prepend,...study.script.lines.slice(start,panel.contextEnd)].map(line=>({...line,s:applyEdits(slug,line.s)}));
   return {label:study.script.label,lines,focus:lines.map((_,index)=>index).filter(index=>(panel.focus??study.script.focus).includes(index-prepend.length+start))};
 }
-
-const OO_TIMELINE:PipelineTimeline={
-  "label": "실제 편집 데이터로 재구성한 타임라인",
-  "start": 149.5833333333,
-  "end": 177.125,
-  "tracks": [
-    {
-      "label": "영상 1",
-      "layer": "마스터",
-      "items": [
-        {
-          "label": "영상 1",
-          "start": 155,
-          "end": 157.16666666666666
-        },
-        {
-          "label": "영상 2",
-          "start": 165.58333333333334,
-          "end": 167.41666666666666
-        },
-        {
-          "label": "영상 3",
-          "start": 173.33333333333334,
-          "end": 175.625
-        }
-      ]
-    },
-    {
-      "label": "오디오 1",
-      "layer": "마스터",
-      "items": [
-        {
-          "label": "오디오 1",
-          "start": 146.25,
-          "end": 176
-        },
-        {
-          "label": "오디오 2",
-          "start": 176,
-          "end": 179.29166666666666
-        }
-      ]
-    },
-    {
-      "label": "오디오 2",
-      "layer": "마스터",
-      "items": [
-        {
-          "label": "오디오 1",
-          "start": 127.875,
-          "end": 150.375
-        }
-      ]
-    },
-    {
-      "label": "오디오 3",
-      "layer": "마스터",
-      "items": [
-        {
-          "label": "오디오 1",
-          "start": 149.08333333333334,
-          "end": 150.58333333333334
-        },
-        {
-          "label": "오디오 2",
-          "start": 156.41666666666666,
-          "end": 157.66666666666666
-        }
-      ]
-    },
-    {
-      "label": "영상 2",
-      "layer": "컷 편집",
-      "items": [
-        {
-          "label": "영상 1",
-          "start": 142.66666666666666,
-          "end": 149.58333333333334
-        },
-        {
-          "label": "영상 2",
-          "start": 149.58333333333334,
-          "end": 155.25
-        },
-        {
-          "label": "영상 3",
-          "start": 155.25,
-          "end": 157.16666666666666
-        },
-        {
-          "label": "영상 4",
-          "start": 157.16666666666666,
-          "end": 160.5
-        },
-        {
-          "label": "영상 5",
-          "start": 160.5,
-          "end": 163.16666666666666
-        },
-        {
-          "label": "영상 6",
-          "start": 163.16666666666666,
-          "end": 170.20833333333334
-        },
-        {
-          "label": "영상 7",
-          "start": 170.20833333333334,
-          "end": 175.125
-        },
-        {
-          "label": "영상 8",
-          "start": 175.125,
-          "end": 177.125
-        }
-      ]
-    },
-    {
-      "label": "영상 3",
-      "layer": "컷 편집",
-      "items": [
-        {
-          "label": "영상 1",
-          "start": 149.58333333333334,
-          "end": 155.91666666666666
-        },
-        {
-          "label": "영상 2",
-          "start": 160.5,
-          "end": 161.83333333333334
-        },
-        {
-          "label": "영상 3",
-          "start": 162.875,
-          "end": 163.625
-        }
-      ]
-    },
-    {
-      "label": "영상 4",
-      "layer": "컷 편집",
-      "items": [
-        {
-          "label": "영상 1",
-          "start": 162.95833333333334,
-          "end": 163.83333333333334
-        }
-      ]
-    },
-    {
-      "label": "오디오 4",
-      "layer": "컷 편집",
-      "items": [
-        {
-          "label": "오디오 1",
-          "start": 148.08333333333334,
-          "end": 149.75
-        },
-        {
-          "label": "오디오 2",
-          "start": 160.5,
-          "end": 162.91666666666666
-        },
-        {
-          "label": "오디오 3",
-          "start": 162.91666666666666,
-          "end": 163.16666666666666
-        },
-        {
-          "label": "오디오 4",
-          "start": 163.16666666666666,
-          "end": 170.20833333333334
-        },
-        {
-          "label": "오디오 5",
-          "start": 170.20833333333334,
-          "end": 171.125
-        },
-        {
-          "label": "오디오 6",
-          "start": 171.125,
-          "end": 172.95833333333334
-        },
-        {
-          "label": "오디오 7",
-          "start": 172.95833333333334,
-          "end": 175.125
-        },
-        {
-          "label": "오디오 8",
-          "start": 175.125,
-          "end": 177.33333333333334
-        }
-      ]
-    },
-    {
-      "label": "오디오 5",
-      "layer": "컷 편집",
-      "items": [
-        {
-          "label": "오디오 1",
-          "start": 149.58333333333334,
-          "end": 155.25
-        },
-        {
-          "label": "오디오 2",
-          "start": 157.16666666666666,
-          "end": 160.5
-        },
-        {
-          "label": "오디오 3",
-          "start": 160.5,
-          "end": 161.83333333333334
-        },
-        {
-          "label": "오디오 4",
-          "start": 162.91666666666666,
-          "end": 163.41666666666666
-        },
-        {
-          "label": "오디오 5",
-          "start": 177.04166666666666,
-          "end": 180.04166666666666
-        }
-      ]
-    },
-    {
-      "label": "오디오 6",
-      "layer": "컷 편집",
-      "items": [
-        {
-          "label": "오디오 1",
-          "start": 154.20833333333334,
-          "end": 157.79166666666666
-        }
-      ]
-    }
-  ]
-};
-
-const FI_TIMELINE:PipelineTimeline={
-  "label": "실제 편집 데이터로 재구성한 타임라인",
-  "start": 25.125,
-  "end": 34.7083333333,
-  "tracks": [
-    {
-      "label": "영상 1",
-      "layer": "마스터",
-      "items": [
-        {
-          "label": "영상 1",
-          "start": 34.375,
-          "end": 36.75
-        }
-      ]
-    },
-    {
-      "label": "오디오 1",
-      "layer": "마스터",
-      "items": [
-        {
-          "label": "오디오 1",
-          "start": 31.875,
-          "end": 64.58333333333333
-        }
-      ]
-    },
-    {
-      "label": "오디오 2",
-      "layer": "마스터",
-      "items": [
-        {
-          "label": "오디오 1",
-          "start": 34.375,
-          "end": 36.041666666666664
-        }
-      ]
-    },
-    {
-      "label": "영상 2",
-      "layer": "컷 편집",
-      "items": [
-        {
-          "label": "영상 1",
-          "start": 25.125,
-          "end": 34.833333333333336
-        }
-      ]
-    },
-    {
-      "label": "오디오 3",
-      "layer": "컷 편집",
-      "items": [
-        {
-          "label": "오디오 1",
-          "start": 25.125,
-          "end": 32.625
-        }
-      ]
-    },
-    {
-      "label": "오디오 4",
-      "layer": "컷 편집",
-      "items": [
-        {
-          "label": "오디오 1",
-          "start": 23.083333333333332,
-          "end": 26.125
-        },
-        {
-          "label": "오디오 2",
-          "start": 33.666666666666664,
-          "end": 35.125
-        }
-      ]
-    }
-  ]
-};
-
-const BUTTER_TIMELINE:PipelineTimeline={
-  "label": "실제 편집 데이터로 재구성한 타임라인",
-  "start": 84,
-  "end": 103.875,
-  "tracks": [
-    {
-      "label": "영상 1",
-      "layer": "컷 편집",
-      "items": [
-        {
-          "label": "영상 1",
-          "start": 84,
-          "end": 98.29166666666667
-        },
-        {
-          "label": "영상 2",
-          "start": 98.29166666666667,
-          "end": 98.83333333333333
-        },
-        {
-          "label": "영상 3",
-          "start": 98.83333333333333,
-          "end": 103.875
-        }
-      ]
-    },
-    {
-      "label": "영상 2",
-      "layer": "컷 편집",
-      "items": [
-        {
-          "label": "영상 1",
-          "start": 0,
-          "end": 104.75
-        }
-      ]
-    },
-    {
-      "label": "영상 3",
-      "layer": "컷 편집",
-      "items": [
-        {
-          "label": "영상 1",
-          "start": 0,
-          "end": 104.75
-        }
-      ]
-    },
-    {
-      "label": "오디오 1",
-      "layer": "컷 편집",
-      "items": [
-        {
-          "label": "오디오 1",
-          "start": 84,
-          "end": 98.29166666666667
-        },
-        {
-          "label": "오디오 2",
-          "start": 98.83333333333333,
-          "end": 103.95833333333333
-        }
-      ]
-    },
-    {
-      "label": "오디오 2",
-      "layer": "컷 편집",
-      "items": [
-        {
-          "label": "오디오 1",
-          "start": 70.45833333333333,
-          "end": 100.95833333333333
-        },
-        {
-          "label": "오디오 2",
-          "start": 100.95833333333333,
-          "end": 111.25
-        }
-      ]
-    },
-    {
-      "label": "영상 4",
-      "layer": "고백 확장",
-      "items": [
-        {
-          "label": "영상 1",
-          "start": 98.8333333333,
-          "end": 102.87499999996668
-        }
-      ]
-    },
-    {
-      "label": "영상 5",
-      "layer": "고백 확장",
-      "items": [
-        {
-          "label": "영상 1",
-          "start": 102.87499999996668,
-          "end": 103.875
-        }
-      ]
-    },
-    {
-      "label": "오디오 3",
-      "layer": "고백 확장",
-      "items": [
-        {
-          "label": "오디오 1",
-          "start": 98.8333333333,
-          "end": 102.87499999996668
-        }
-      ]
-    },
-    {
-      "label": "오디오 4",
-      "layer": "고백 확장",
-      "items": [
-        {
-          "label": "오디오 1",
-          "start": 102.3749895833,
-          "end": 103.875
-        }
-      ]
-    }
-  ]
-};
 
 // Public facts only. The source audit, paths, prompts and project IDs stay private.
 export const PRODUCTION_PIPELINES:Record<string,ProductionPipelineData>={
@@ -506,7 +61,22 @@ export const PRODUCTION_PIPELINES:Record<string,ProductionPipelineData>={
       {key:'generate',label:'영상 생성',decision:'한복 시트를 참조해 옆얼굴 영상을 생성했습니다.',
        thumbnail:{src:'/media/process/oneandonly/pipeline_generated.jpg',w:1080,h:1920},
        generated:{src:'/media/process/oneandonly/pipeline_generated.mp4',poster:'/media/process/oneandonly/pipeline_generated.jpg',w:1080,h:1920,label:'실제 생성 소스 · 옆얼굴 4.04초',note:'설계 2초 → 생성 4.04초 → 저장된 편집에서 3.33초 사용'}},
-      {key:'edit',label:'후반 작업',decision:'생성 소스를 잘라 영상·오디오 트랙에 배치했습니다.',timeline:OO_TIMELINE},
+      {key:'edit',label:'후반 작업',decision:'생성 소스를 잘라 영상·오디오 트랙에 배치했습니다.',
+       thumbnail:{src:'/media/process/oneandonly/edit_thumb.jpg',w:320,h:240},
+       screens:[
+         {label:'전체 · 영상 편집',src:'/media/process/oneandonly/edit_cut_full.png',w:1760,h:820,
+          alt:'Premiere Pro 「컷편집」 시퀀스 3분 전체. V1에 생성 클립 42개가 이어져 있고 V2·V3에 덧댄 클립, A1–A4에 소리 클립이 있다. 2:29.6–2:57.1 구간이 밝은 띠로 표시되어 있다.',
+          title:'프리미어 프로 · 「컷편집」 시퀀스, 처음부터 끝까지(3분)',
+          body:'가로는 시간, 가로줄 한 칸이 층 하나입니다. 위쪽 V1–V3은 화면, 아래쪽 A1–A4는 소리입니다. V1에 생성 클립 42개를 잘라 잇고, 그 위 V2·V3에 덧댈 화면을, 아래 소리 줄에 대사와 효과음을 나눠 얹었습니다. 오른쪽의 밝은 띠가 위에서 본 대본 장면(2:29.6–2:57.1)입니다.'},
+         {label:'전체 · 자막과 소리',src:'/media/process/oneandonly/edit_main_full.png',w:1760,h:875,
+          alt:'Premiere Pro 「메인」 시퀀스 3분 전체. V2에 자막 클립이 촘촘하고, A2–A7에 음악 · 공간 소리 · 움직임 소리 클립과 볼륨 선이 층층이 있다. 맨 아래 V1은 「컷편집」 시퀀스 한 덩어리다.',
+          title:'프리미어 프로 · 「메인」 시퀀스(3분) — 편집한 영상 위에 자막과 소리를 얹은 층',
+          body:'맨 아래 영상 한 줄(V1)은 첫 번째 화면의 「컷편집」을 통째로 올린 것이고, 그 위 V2의 보라색 조각들이 자막입니다. 아래 A2–A7에는 음악, 바람·숲 같은 공간의 소리, 옷자락·나무·칼이 가르는 바람 같은 움직임 소리를 줄마다 나눠 깔았고, 클립 위의 가는 선은 볼륨을 올리고 내린 자리입니다.'},
+         {label:'이 장면',src:'/media/process/oneandonly/edit_cut_scene.png',w:1920,h:820,
+          alt:'Premiere Pro 「컷편집」 2분 18초–3분 10초 확대. 2:43 컷 위에 흰 화면(V2)과 필름번(V3)이 겹쳐 있고, 소리 트랙 사이에 크로스페이드가 보인다. 끝에 애프터 이펙트 타이틀 클립이 있다.',
+          title:'같은 「컷편집」에서 이 장면만 크게(2:18–3:10)',
+          body:'2:43, 눈동자에서 회상으로 넘어가는 컷 위에 흰 화면(V2)과 필름이 타는 효과(V3)를 겹쳐 한순간 번쩍이게 했습니다. 소리 줄에서 대각선이 그어진 작은 칸은 앞뒤 소리를 서서히 섞은 자리이고, 끝의 보라색 클립은 애프터 이펙트로 만든 타이틀입니다.'},
+       ]},
     ],
   },
   firstimpression:{
@@ -538,7 +108,18 @@ export const PRODUCTION_PIPELINES:Record<string,ProductionPipelineData>={
       {key:'generate',label:'영상 생성',decision:'키스 뒤, 같은 문신이 함께 드러나는 생성 장면 소스입니다.',
        thumbnail:{src:'/media/process/firstimpression/pipeline_generated.jpg',w:720,h:1280},
        generated:{src:'/media/process/firstimpression/pipeline_generated.mp4',poster:'/media/process/firstimpression/pipeline_generated.jpg',w:720,h:1280,label:'생성 영상 소스 · 9.71초',note:'편집에 사용한 변환본'}},
-      {key:'edit',label:'후반 작업',decision:'생성 장면과 음악·효과음을 별도 트랙에 배치했습니다.',timeline:FI_TIMELINE},
+      {key:'edit',label:'후반 작업',decision:'생성 장면과 음악·효과음을 별도 트랙에 배치했습니다.',
+       thumbnail:{src:'/media/process/firstimpression/edit_thumb.jpg',w:320,h:240},
+       screens:[
+         {label:'전체',src:'/media/process/firstimpression/edit_s1_full.png',w:1760,h:820,
+          alt:'Premiere Pro 「S1」 시퀀스 56초 전체. V1에 컷 15개, V2에 덧댄 클립, V3에 조정 레이어, A1–A3에 소리 클립. 0:25.1–0:34.8 구간이 밝은 띠로 표시되어 있다.',
+          title:'프리미어 프로 · 「S1」 시퀀스, 처음부터 끝까지(56초)',
+          body:'가로는 시간, 가로줄 한 칸이 층 하나입니다. 위쪽 V1에 컷 15개를 잇고, V2에 겹칠 화면을, V3에 아래 화면 전체에 효과를 거는 조정 레이어를 얹었습니다. 아래쪽 A1–A3은 대사와 효과음입니다. 가운데 밝은 띠가 위에서 본 대본 장면(0:25.1–0:34.8)입니다.'},
+         {label:'이 장면',src:'/media/process/firstimpression/edit_s1_scene.png',w:1920,h:820,
+          alt:'Premiere Pro 「S1」 0:14–0:45 확대. 0:24 무렵 영상이 빈 검은 구간 아래로 A2 셔터 소리가 이어지고, 0:25.1부터 자르지 않은 원테이크 클립 하나가 0:34.8까지 놓여 있다.',
+          title:'같은 「S1」에서 이 장면만 크게(0:14–0:45)',
+          body:'0:24 무렵 화면이 잠깐 까맣게 비는 동안에도 A2의 셔터 소리는 끊기지 않고 다음 컷까지 이어집니다. 그 뒤 V1의 긴 클립 하나가 자르지 않은 9.7초 원테이크이고, 끝에서는 차 문이 미끄러지는 소리로 다음 장면에 넘어갑니다.'},
+       ]},
     ],
   },
   butter:{
@@ -573,7 +154,22 @@ export const PRODUCTION_PIPELINES:Record<string,ProductionPipelineData>={
       {key:'generate',label:'영상 생성',decision:'인물이 다투는 동안 공간이 전환되는 실제 생성본입니다.',
        thumbnail:{src:'/media/process/butter/pipeline_generated.jpg',w:1920,h:1080},
        generated:{src:'/media/process/butter/pipeline_generated.mp4',poster:'/media/process/butter/pipeline_generated.jpg',w:1920,h:1080,label:'세계 붕괴 생성본 · 15초'}},
-      {key:'edit',label:'후반 작업',decision:'붕괴 장면의 얼굴 블러 합성과 고백의 생성형 확장을 편집에 연결했습니다.',timeline:BUTTER_TIMELINE},
+      {key:'edit',label:'후반 작업',decision:'붕괴 장면의 얼굴 블러 합성과 고백의 생성형 확장을 편집에 연결했습니다.',
+       thumbnail:{src:'/media/process/butter/edit_thumb.jpg',w:320,h:240},
+       screens:[
+         {label:'전체',src:'/media/process/butter/edit_pr_full.png',w:1440,h:700,
+          alt:'Premiere Pro 본 시퀀스 1분 51초 전체. 영상 V1–V7, 소리 A1–A10에 클립이 촘촘하게 쌓여 있다. 1:24.0–1:43.9 구간이 밝은 띠로 표시되어 있다.',
+          title:'프리미어 프로 · 본 시퀀스, 처음부터 끝까지(1분 51초)',
+          body:'가로는 시간, 가로줄 한 칸이 층 하나입니다. 위쪽 V1–V7은 화면(생성 클립, 위아래 검은 띠, 글자), 아래쪽 A1–A10은 소리 — 생성본 원음, 내레이션, 공간의 소리, 음악을 줄마다 나눠 쌓았습니다. 오른쪽의 밝은 띠가 위에서 본 대본 장면(1:24.0–1:43.9)입니다.'},
+         {label:'이 장면',src:'/media/process/butter/edit_pr_scene.png',w:1920,h:700,
+          alt:'Premiere Pro 1분 17초–1분 56초 확대. V1의 분홍 막대가 애프터 이펙트 컴포지션으로 연결되어 있고 끝에서 사라진다. 짧은 검은 화면 뒤 고백 장면이 이어지고, A10 음악에 볼륨 선이 있다.',
+          title:'같은 시퀀스에서 이 장면만 크게(1:17–1:56)',
+          body:'V1의 분홍 막대는 애프터 이펙트 합성을 프리미어로 바로 불러온 클립입니다. 붕괴 장면이 서서히 사라지고 0.5초 검은 화면 뒤 고백 장면이 떠오르며, 고백 장면의 마지막 1초는 생성형 확장으로 늘렸습니다. 아래 A10 음악의 볼륨 선이 이 흐름을 따라 내려갑니다.'},
+         {label:'애프터 이펙트',src:'/media/process/butter/edit_ae_full.png',w:1920,h:1012,
+          alt:'After Effects 작업 화면. 왼쪽 Effect Controls에 Fractal Noise(Noise Type Block)와 Posterize, 가운데 뷰어에 얼굴이 모자이크된 해변 장면, 아래 타임라인에 조정 레이어 · 흰 솔리드 · 원본 클립 등 여덟 레이어와 프레임마다 찍힌 마스크 키프레임.',
+          title:'애프터 이펙트 · 그 분홍 막대의 컴포지션 전체(16초 · 레이어 8개)',
+          body:'흰 판에 블록 모양 노이즈(Fractal Noise)를 깔고 흑과 백 두 단계(Posterize)로 나눈 뒤, 그 무늬를 매트로 써서 모자이크가 칸 단위로 켜졌다 꺼지게 했습니다. 얼굴을 덮는 마스크는 프레임마다 다시 맞췄습니다(타임라인의 촘촘한 점). 가운데 화면이 1:36.5의 결과입니다.'},
+       ]},
     ],
   },
 };

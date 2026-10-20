@@ -1,7 +1,8 @@
 ---
 import { SCRIPT_INTRODUCTIONS } from '../data/script-introductions';
-import { CONTACT_EMAIL, SITE } from '../data/site';
+import { SITE } from '../data/site';
 import ScreenplayLines from '../components/ScreenplayLines.astro';
+import ContactMenu from '../components/ContactMenu.astro';
 import '../styles/remy-fonts.css';
 import '../styles/remy-scripts.css';
 const count = SCRIPT_INTRODUCTIONS.length;
@@ -28,7 +29,7 @@ const canonical = new URL('/scripts/', SITE.url).href;
         <p class="scripts-tagline">AI CREATOR<br />&amp; SCREENWRITER</p>
         <nav aria-label="주요 메뉴">
           <a href="/?work=scripts" data-scripts-return aria-label="작품 선택으로 돌아가기">작품</a>
-          <a href={`mailto:${CONTACT_EMAIL}`}>연락</a>
+          <ContactMenu />
         </nav>
       </header>
       <h1 class="scripts-sr-only">대본 소개</h1>

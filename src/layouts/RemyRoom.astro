@@ -1,5 +1,6 @@
 ---
 import { SITE, CONTACT_EMAIL } from '../data/site';
+import ContactMenu from '../components/ContactMenu.astro';
 import '../styles/remy-fonts.css';
 import '../styles/remy-room.css';
 import '../styles/floating-film.css';
@@ -29,7 +30,7 @@ const canonical = new URL(canonicalPath ?? (page === 'tools' ? '/tools/' : `/wor
     <header class="room-header">
       <a class="room-name" href={returnHref} data-room-return>{SITE.name}</a>
       <div class="room-title"><h1 data-title>{title}</h1>{subtitle && <p>{subtitle}</p>}</div>
-      <nav class="room-nav" aria-label="주요 메뉴"><a href={returnHref} data-room-return>작품 선택</a><a href="/scripts/">대본</a>{CONTACT_EMAIL && <a href={'mailto:' + CONTACT_EMAIL}>연락</a>}</nav>
+      <nav class="room-nav" aria-label="주요 메뉴"><a href={returnHref} data-room-return>작품 선택</a><a href="/scripts/">대본</a><ContactMenu /></nav>
     </header>
     <slot />
     <footer class="room-footer"><a href={returnHref} data-room-return>작품 선택으로</a>{CONTACT_EMAIL && <a href={'mailto:' + CONTACT_EMAIL}>{CONTACT_EMAIL}</a>}</footer>

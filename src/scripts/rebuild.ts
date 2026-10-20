@@ -98,7 +98,7 @@ dialog?.addEventListener('keydown', event => {
   if (event.shiftKey && (active === first || !dialog.contains(active))) { event.preventDefault(); last.focus(); }
   else if (!event.shiftKey && (active === last || !dialog.contains(active))) { event.preventDefault(); first.focus(); }
 });
-dialog?.addEventListener('close', () => { resetStage(); stage?.removeAttribute('data-ratio'); returnFocus?.focus({preventScroll:true}); returnFocus = null; });
+dialog?.addEventListener('close', () => { resetStage(); stage?.removeAttribute('data-ratio'); delete dialog.dataset.native; returnFocus?.focus({preventScroll:true}); returnFocus = null; });
 
 document.addEventListener('click', async event => {
   const target = event.target instanceof Element ? event.target : null;
@@ -112,7 +112,10 @@ document.addEventListener('click', async event => {
   const large = target.closest<HTMLElement>('[data-film-large]');
   if(large){const root=large.closest<HTMLElement>('[data-film-root]');if(root)expandFilmInline(root,!root.classList.contains('is-film-expanded'));return;}
   const image = target.closest<HTMLElement>('[data-enlarge-src]');
-  if(image){filmRoots().forEach(resetFilm);announceFilm();if(openModal(image.dataset.enlargeAlt||'제작 자료',image)){const img=document.createElement('img');img.src=image.dataset.enlargeSrc!;img.alt=image.dataset.enlargeAlt||'제작 자료';stage!.append(img);}return;}
+  if(image){filmRoots().forEach(resetFilm);announceFilm();if(openModal(image.dataset.enlargeTitle||image.dataset.enlargeAlt||'제작 자료',image)){const img=document.createElement('img');img.src=image.dataset.enlargeSrc!;img.alt=image.dataset.enlargeAlt||'제작 자료';
+    // Tool screens open at their captured size (1:1) and scroll, so track names stay readable.
+    if(image.hasAttribute('data-enlarge-native'))dialog!.dataset.native='';else delete dialog!.dataset.native;
+    stage!.append(img);}return;}
   const copy=target.closest<HTMLElement>('[data-copy]');
   if(copy){const status=document.querySelector<HTMLElement>('[data-copy-status]');const label=copy.querySelector<HTMLElement>('[data-copy-label]');try{await navigator.clipboard.writeText(copy.dataset.copy||'');if(label)label.textContent='복사됨';if(status)status.textContent='메일 주소를 복사했어요.';window.setTimeout(()=>{if(label)label.textContent='주소 복사';},2000);}catch{if(status)status.textContent='메일 주소를 길게 눌러 복사해 주세요.';}return;}
 });
