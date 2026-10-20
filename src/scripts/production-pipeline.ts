@@ -68,18 +68,15 @@ document.querySelectorAll<HTMLElement>('[data-production-pipeline]').forEach(roo
       wipe.addEventListener('pointermove', event => { if (dragging) at(event); });
       for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) wipe.addEventListener(type, () => { dragging = false; });
     });
+    // Muted side-by-side loop (data-pv-ambient): plays by itself while on screen, stops off screen.
+    // It never pauses the film or other clips, and they leave it alone. With reduced motion it waits
+    // for a click on either video.
     group.querySelectorAll<HTMLElement>('[data-pv-duo]').forEach(duo => {
       const lead = duo.querySelector<HTMLVideoElement>('[data-pv-lead]')!;
       const follow = duo.querySelector<HTMLVideoElement>('[data-pv-follow]')!;
-      const play = duo.querySelector<HTMLButtonElement>('[data-pv-play]')!;
       const cuts = Array.from(duo.querySelectorAll<HTMLButtonElement>('[data-pv-seek]'));
-      let frame = 0;
-      const paint = () => {
-        const on = !lead.paused;
-        play.textContent = on ? '멈춤' : '재생';
-        play.setAttribute('aria-label', on ? '두 영상 멈춤' : '두 영상 함께 재생');
-        duo.classList.toggle('is-playing', on);
-      };
+      const motion = matchMedia('(prefers-reduced-motion: reduce)');
+      let want = !motion.matches, seen = false, frame = 0;
       const mark = () => {
         const t = lead.currentTime;
         cuts.forEach(cut => cut.setAttribute('aria-current', String(t >= Number(cut.dataset.pvSeek) && t < Number(cut.dataset.pvEnd))));
@@ -90,25 +87,24 @@ document.querySelectorAll<HTMLElement>('[data-production-pipeline]').forEach(roo
         mark();
         if (!lead.paused) frame = requestAnimationFrame(tick);
       };
-      const start = () => {
-        document.dispatchEvent(new CustomEvent('portfolio:film-play'));
-        follow.currentTime = lead.currentTime;
-        for (const video of [lead, follow]) void video.play().catch(() => {});
+      const sync = () => {
+        if (want && seen && !document.hidden) {
+          if (lead.paused) { follow.currentTime = lead.currentTime; for (const video of [lead, follow]) void video.play().catch(() => {}); }
+        } else if (!lead.paused) { lead.pause(); follow.pause(); }
       };
-      const stop = () => { lead.pause(); follow.pause(); };
-      play.addEventListener('click', () => { if (lead.paused) start(); else stop(); });
-      for (const video of [lead, follow]) video.addEventListener('click', () => { if (lead.paused) start(); else stop(); });
-      lead.addEventListener('play', () => { paint(); if (follow.paused) void follow.play().catch(() => {}); if (!frame) frame = requestAnimationFrame(tick); });
-      lead.addEventListener('pause', () => { paint(); follow.pause(); mark(); });
+      for (const video of [lead, follow]) video.addEventListener('click', () => { want = lead.paused; sync(); });
+      lead.addEventListener('play', () => { if (follow.paused) void follow.play().catch(() => {}); if (!frame) frame = requestAnimationFrame(tick); });
+      lead.addEventListener('pause', () => { follow.pause(); mark(); });
       lead.addEventListener('seeked', () => { follow.currentTime = lead.currentTime; mark(); });
       cuts.forEach(cut => cut.addEventListener('click', () => {
         lead.currentTime = Number(cut.dataset.pvSeek) + 0.04;
         follow.currentTime = lead.currentTime;
         mark();
-        if (lead.paused) start();
+        want = true; sync();
       }));
-      new IntersectionObserver(entries => { if (!entries[0].isIntersecting) stop(); }, { threshold: 0 }).observe(duo);
-      paint();
+      new IntersectionObserver(entries => { seen = entries.some(entry => entry.isIntersecting && entry.intersectionRatio >= .25); sync(); }, { threshold: [0, .25] }).observe(duo);
+      document.addEventListener('visibilitychange', sync);
+      motion.addEventListener('change', () => { want = !motion.matches; sync(); });
     });
   });
   root.querySelector('[data-pipeline-tabs]')?.setAttribute('role', 'tablist');
@@ -202,7 +198,7 @@ document.querySelectorAll<HTMLElement>('[data-production-pipeline]').forEach(roo
     video.addEventListener('loadedmetadata', cap);
     video.addEventListener('play', () => {
       document.dispatchEvent(new CustomEvent('portfolio:film-play'));
-      document.querySelectorAll<HTMLVideoElement>('video').forEach(other => { if (other !== video) other.pause(); });
+      document.querySelectorAll<HTMLVideoElement>('video:not([data-pv-ambient])').forEach(other => { if (other !== video) other.pause(); });
     });
     new IntersectionObserver(entries => { if (!entries[0].isIntersecting) video.pause(); }, { threshold: 0 }).observe(video);
   });

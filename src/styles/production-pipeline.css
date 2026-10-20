@@ -142,8 +142,6 @@
 .pv-duo-media figure{margin:0}
 .pv-duo-media figcaption{font-size:12.5px;margin-bottom:4px}
 .pv-duo-media video{display:block;height:var(--pv-tall);width:auto;aspect-ratio:9/16;object-fit:cover;background:var(--media-bg);cursor:pointer}
-.pv-duo-play{grid-column:1/-1;justify-self:start;min-height:40px;margin-top:6px;padding:0 18px;font-size:13px;color:var(--fg);border:1px solid #ffffff59;border-radius:20px}
-.pv-duo-play:hover{border-color:var(--fg)}
 .pv-cuts{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule)}
 .pv-cuts li{border-bottom:1px solid var(--rule)}
 .pv-cuts button{width:100%;display:grid;grid-template-columns:24px 128px minmax(0,1fr);gap:10px;align-items:baseline;text-align:left;padding:8px 4px;min-height:40px;font-size:14px;color:var(--muted)}

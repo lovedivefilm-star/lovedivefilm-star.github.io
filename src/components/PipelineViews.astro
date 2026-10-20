@@ -54,9 +54,8 @@ const ratio = (w: number, h: number) => +(w / h).toFixed(4);
 
     {view.kind === 'duo' && <div class="pv-duo" data-pv-duo>
       <div class="pv-duo-media">
-        <figure><figcaption>{view.left.name}</figcaption><video data-pv-follow src={view.left.src} poster={view.left.poster} muted loop playsinline preload="none" width="720" height="1280" aria-label={view.left.alt}></video></figure>
-        <figure><figcaption>{view.right.name}</figcaption><video data-pv-lead src={view.right.src} poster={view.right.poster} muted loop playsinline preload="none" width="720" height="1280" aria-label={view.right.alt}></video></figure>
-        <button type="button" class="pv-duo-play" data-pv-play aria-label="두 영상 함께 재생">재생</button>
+        <figure><figcaption>{view.left.name}</figcaption><video data-pv-follow data-pv-ambient src={view.left.src} poster={view.left.poster} muted loop playsinline preload="metadata" width="720" height="1280" aria-label={view.left.alt}></video></figure>
+        <figure><figcaption>{view.right.name}</figcaption><video data-pv-lead data-pv-ambient src={view.right.src} poster={view.right.poster} muted loop playsinline preload="metadata" width="720" height="1280" aria-label={view.right.alt}></video></figure>
       </div>
       <div class="pv-duo-text">
         <ol class="pv-cuts">{view.cuts.map((cut, index) => <li><button type="button" data-pv-seek={cut.t} data-pv-end={cut.end} aria-current={index === 0 ? 'true' : 'false'}><span class="pv-cut-no">{index + 1}</span><span class="pv-cut-name">{cut.name}</span><span class="pv-cut-note">{cut.note}</span></button></li>)}</ol>

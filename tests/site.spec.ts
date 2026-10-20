@@ -369,19 +369,36 @@ test('02 인물·장소 · 03 장면 설계는 실제 자료를 하나씩 바꿔
       }
     }
   }
-  await page.goto('/works/firstimpression/');
-  const pipeline = page.locator('[data-production-pipeline]');
-  await pipeline.locator('[data-pipeline-tab="segment"]').click();
-  const duo = pipeline.locator('[data-pv-duo]');
-  await duo.locator('[data-pv-play]').click();
-  await expect.poll(() => duo.evaluate(node => {
+  const playingTogether = (duo: Locator) => duo.evaluate(node => {
     const lead = node.querySelector<HTMLVideoElement>('[data-pv-lead]')!, follow = node.querySelector<HTMLVideoElement>('[data-pv-follow]')!;
     return !lead.paused && !follow.paused && lead.currentTime > 0.5 && Math.abs(lead.currentTime - follow.currentTime) < 0.15;
-  }), { timeout: 10_000 }).toBe(true);
+  });
+  const allPaused = (duo: Locator) => duo.evaluate(node => [...node.querySelectorAll('video')].every(video => video.paused));
+  // Without reduced motion the pair plays and loops by itself while on screen; no play button.
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/works/firstimpression/');
+  let pipeline = page.locator('[data-production-pipeline]');
+  await pipeline.locator('[data-pipeline-tab="segment"]').click();
+  let duo = pipeline.locator('[data-pv-duo]');
+  await expect(duo.locator('button', { hasText: /재생|멈춤/ })).toHaveCount(0);
+  await expect.poll(() => playingTogether(duo), { timeout: 10_000 }).toBe(true);
+  await expect.poll(() => duo.locator('[data-pv-lead]').evaluate((video: HTMLVideoElement) => video.loop)).toBe(true);
   await duo.locator('[data-pv-seek]').nth(3).click();
   await expect(duo.locator('[data-pv-seek]').nth(3)).toHaveAttribute('aria-current', 'true');
-  await duo.locator('[data-pv-play]').click();
-  await expect.poll(() => duo.evaluate(node => [...node.querySelectorAll('video')].every(video => video.paused))).toBe(true);
+  await pipeline.locator('[data-pipeline-tab="sheet"]').click();
+  await expect.poll(() => allPaused(duo)).toBe(true);
+  // With reduced motion it waits for a click on either video.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/works/firstimpression/');
+  pipeline = page.locator('[data-production-pipeline]');
+  await pipeline.locator('[data-pipeline-tab="segment"]').click();
+  duo = pipeline.locator('[data-pv-duo]');
+  await page.waitForTimeout(600);
+  expect(await allPaused(duo)).toBe(true);
+  await duo.locator('[data-pv-lead]').click();
+  await expect.poll(() => playingTogether(duo), { timeout: 10_000 }).toBe(true);
+  await duo.locator('[data-pv-lead]').click();
+  await expect.poll(() => allPaused(duo)).toBe(true);
 });
 
 test('「연락」은 메일 앱이 없어도 주소 · 복사 · 메일 쓰기를 보여 준다', async ({ page, context }) => {

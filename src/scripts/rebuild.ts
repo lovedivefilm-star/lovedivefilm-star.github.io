@@ -16,7 +16,7 @@ function resetFilm(root: HTMLElement) {
 function announceFilm() {
   pauseFilmMedia();
   document.dispatchEvent(new CustomEvent('portfolio:film-play'));
-  document.querySelectorAll<HTMLVideoElement>('video').forEach(v => v.pause());
+  document.querySelectorAll<HTMLVideoElement>('video:not([data-pv-ambient])').forEach(v => v.pause());
 }
 function makeFrame(root: HTMLElement, start = 0) {
   const local = root.dataset.localSrc;
@@ -69,12 +69,12 @@ document.addEventListener('portfolio:film-media-play', event => {
   if (!(element instanceof HTMLVideoElement || element instanceof HTMLIFrameElement)) return;
   pauseFilmMedia(element);
   document.dispatchEvent(new CustomEvent('portfolio:film-play'));
-  document.querySelectorAll<HTMLVideoElement>('video').forEach(video => { if(video!==element)video.pause(); });
+  document.querySelectorAll<HTMLVideoElement>('video:not([data-pv-ambient])').forEach(video => { if(video!==element)video.pause(); });
 });
 // A process clip takes over the full player, including an API request still loading.
 document.addEventListener('play', event => {
   const video=event.target;
-  if(!(video instanceof HTMLVideoElement))return;
+  if(!(video instanceof HTMLVideoElement)||video.matches('[data-pv-ambient]'))return; // muted loops never stop the film
   if(video.matches('[data-process-video],[data-pipeline-video]')){filmRoots().forEach(resetFilm);resetStage();}
   pauseFilmMedia(video);
 },true);
@@ -135,7 +135,7 @@ document.querySelectorAll<HTMLVideoElement>('[data-process-video]').forEach(vide
   video.addEventListener('play',()=>{
     filmRoots().forEach(resetFilm);
     document.dispatchEvent(new CustomEvent('portfolio:film-play'));
-    document.querySelectorAll<HTMLVideoElement>('video').forEach(other=>{if(other!==video)other.pause();});
+    document.querySelectorAll<HTMLVideoElement>('video:not([data-pv-ambient])').forEach(other=>{if(other!==video)other.pause();});
   });
   document.addEventListener('visibilitychange',()=>{if(document.hidden)video.pause();});
   new IntersectionObserver(entries=>{if(!entries[0].isIntersecting)video.pause();},{threshold:0}).observe(video);

@@ -76,7 +76,7 @@ for(const root of document.querySelectorAll<HTMLElement>('[data-film-follow]')){
   if(Math.min(a.right,b.right)>Math.max(a.left,b.left)&&Math.min(a.bottom,b.bottom)>Math.max(a.top,b.top))windowControl.avoid(a);
  });
  function otherPlayback(element:unknown){if(playback&&element!==playback.element){dismissed=true;playback.pause();floating(false);}}
- document.addEventListener('play',event=>{if(event.target instanceof HTMLVideoElement)otherPlayback(event.target);},true);
+ document.addEventListener('play',event=>{if(event.target instanceof HTMLVideoElement&&!event.target.matches('[data-pv-ambient]'))otherPlayback(event.target);},true);
  document.addEventListener('portfolio:film-media-play',event=>otherPlayback((event as CustomEvent<{element:FilmMediaElement}>).detail?.element));
  window.addEventListener('pagehide',()=>{playback?.pause();floating(false);});bind();
 }
