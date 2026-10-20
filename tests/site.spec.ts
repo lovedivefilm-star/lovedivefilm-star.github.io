@@ -341,6 +341,49 @@ test('05 후반 작업은 실제 툴 화면을 하나씩 바꿔 보여 주고, �
   }
 });
 
+test('02 인물·장소 · 03 장면 설계는 실제 자료를 하나씩 바꿔 보여 주고, 첫 인상 비교 영상은 같은 시각으로 함께 돈다', async ({ page }) => {
+  const expected: Record<string, [string[], string[]]> = {
+    butter: [['지현', '한주 · 가상 세계', '세 세계', '무너지는 방식'], ['넣은 참조 8장', '세계 참조 가공', '15초 계획 → 생성 결과']],
+    firstimpression: [['선희', '서진', '장소 · 은행 통로'], []],
+    oneandonly: [['정경부인', '장소 · 해 질 녘 산길', '한 번에 넣은 14장'], ['① 등장', '② 신분 확인', '③ 얼굴 공개', '④ 알아보는 눈']],
+  };
+  for (const [slug, [sheet, segment]] of Object.entries(expected)) {
+    await page.goto(`/works/${slug}/`);
+    const pipeline = page.locator('[data-production-pipeline]');
+    await expect(pipeline.locator('[data-pipeline-tab="sheet"] .pipeline-step-name')).toHaveText('인물·장소');
+    for (const [key, labels] of [['sheet', sheet], ['segment', segment]] as const) {
+      await pipeline.locator(`[data-pipeline-tab="${key}"]`).click();
+      const panel = pipeline.locator(`[data-pipeline-panel="${key}"]`);
+      const choices = panel.locator('[data-pv-choice]');
+      await expect(choices).toHaveText(labels);
+      const count = Math.max(labels.length, 1);
+      for (let i = 0; i < count; i++) {
+        if (labels.length) { await choices.nth(i).click(); await expect(choices.nth(i)).toHaveAttribute('aria-pressed', 'true'); }
+        const shown = panel.locator('[data-pv-view]:not([hidden])');
+        await expect(shown).toHaveCount(1);
+        for (const img of await shown.locator('img').all()) {
+          await img.scrollIntoViewIfNeeded();
+          await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true);
+        }
+        await noHorizontalOverflow(page);
+      }
+    }
+  }
+  await page.goto('/works/firstimpression/');
+  const pipeline = page.locator('[data-production-pipeline]');
+  await pipeline.locator('[data-pipeline-tab="segment"]').click();
+  const duo = pipeline.locator('[data-pv-duo]');
+  await duo.locator('[data-pv-play]').click();
+  await expect.poll(() => duo.evaluate(node => {
+    const lead = node.querySelector<HTMLVideoElement>('[data-pv-lead]')!, follow = node.querySelector<HTMLVideoElement>('[data-pv-follow]')!;
+    return !lead.paused && !follow.paused && lead.currentTime > 0.5 && Math.abs(lead.currentTime - follow.currentTime) < 0.15;
+  }), { timeout: 10_000 }).toBe(true);
+  await duo.locator('[data-pv-seek]').nth(3).click();
+  await expect(duo.locator('[data-pv-seek]').nth(3)).toHaveAttribute('aria-current', 'true');
+  await duo.locator('[data-pv-play]').click();
+  await expect.poll(() => duo.evaluate(node => [...node.querySelectorAll('video')].every(video => video.paused))).toBe(true);
+});
+
 test('「연락」은 메일 앱이 없어도 주소 · 복사 · 메일 쓰기를 보여 준다', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   for (const path of ['/', '/works/oneandonly/', '/scripts/']) {

@@ -30,6 +30,87 @@ document.querySelectorAll<HTMLElement>('[data-production-pipeline]').forEach(roo
     bar.hidden = false;
     show(0);
   });
+  // 02 · 03 material views: the same toggle pattern, plus a before/after drag compare and two
+  // videos that play side by side on one clock (the right one leads, the left one follows).
+  root.querySelectorAll<HTMLElement>('[data-pipeline-views]').forEach(group => {
+    const choices = Array.from(group.querySelectorAll<HTMLButtonElement>('[data-pv-choice]'));
+    const views = Array.from(group.querySelectorAll<HTMLElement>('[data-pv-view]'));
+    const bar = group.querySelector<HTMLElement>('[data-pv-switch]');
+    if (bar && choices.length === views.length && choices.length > 1) {
+      const show = (index: number) => {
+        views.forEach((view, i) => {
+          view.hidden = i !== index;
+          if (i !== index) view.querySelectorAll<HTMLVideoElement>('video').forEach(video => video.pause());
+        });
+        choices.forEach((choice, i) => choice.setAttribute('aria-pressed', String(i === index)));
+      };
+      choices.forEach((choice, index) => choice.addEventListener('click', () => show(index)));
+      bar.hidden = false;
+      show(0);
+    }
+    group.querySelectorAll<HTMLElement>('[data-pv-wipe]').forEach(wipe => {
+      const range = wipe.querySelector<HTMLInputElement>('input')!;
+      const set = (value: number) => {
+        const p = Math.max(0, Math.min(100, value));
+        range.value = String(p);
+        wipe.style.setProperty('--x', p + '%');
+        range.setAttribute('aria-valuetext', `왼쪽 ${Math.round(p)}%`);
+      };
+      set(50);
+      range.addEventListener('input', () => set(Number(range.value)));
+      let dragging = false;
+      const at = (event: PointerEvent) => { const box = wipe.getBoundingClientRect(); set((event.clientX - box.left) / box.width * 100); };
+      wipe.addEventListener('pointerdown', event => {
+        dragging = true;
+        try { wipe.setPointerCapture(event.pointerId); } catch { /* not capturable */ }
+        at(event); range.focus({ preventScroll: true }); event.preventDefault();
+      });
+      wipe.addEventListener('pointermove', event => { if (dragging) at(event); });
+      for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) wipe.addEventListener(type, () => { dragging = false; });
+    });
+    group.querySelectorAll<HTMLElement>('[data-pv-duo]').forEach(duo => {
+      const lead = duo.querySelector<HTMLVideoElement>('[data-pv-lead]')!;
+      const follow = duo.querySelector<HTMLVideoElement>('[data-pv-follow]')!;
+      const play = duo.querySelector<HTMLButtonElement>('[data-pv-play]')!;
+      const cuts = Array.from(duo.querySelectorAll<HTMLButtonElement>('[data-pv-seek]'));
+      let frame = 0;
+      const paint = () => {
+        const on = !lead.paused;
+        play.textContent = on ? '멈춤' : '재생';
+        play.setAttribute('aria-label', on ? '두 영상 멈춤' : '두 영상 함께 재생');
+        duo.classList.toggle('is-playing', on);
+      };
+      const mark = () => {
+        const t = lead.currentTime;
+        cuts.forEach(cut => cut.setAttribute('aria-current', String(t >= Number(cut.dataset.pvSeek) && t < Number(cut.dataset.pvEnd))));
+      };
+      const tick = () => {
+        frame = 0;
+        if (Math.abs(follow.currentTime - lead.currentTime) > 0.05) follow.currentTime = lead.currentTime;
+        mark();
+        if (!lead.paused) frame = requestAnimationFrame(tick);
+      };
+      const start = () => {
+        document.dispatchEvent(new CustomEvent('portfolio:film-play'));
+        follow.currentTime = lead.currentTime;
+        for (const video of [lead, follow]) void video.play().catch(() => {});
+      };
+      const stop = () => { lead.pause(); follow.pause(); };
+      play.addEventListener('click', () => { if (lead.paused) start(); else stop(); });
+      for (const video of [lead, follow]) video.addEventListener('click', () => { if (lead.paused) start(); else stop(); });
+      lead.addEventListener('play', () => { paint(); if (follow.paused) void follow.play().catch(() => {}); if (!frame) frame = requestAnimationFrame(tick); });
+      lead.addEventListener('pause', () => { paint(); follow.pause(); mark(); });
+      lead.addEventListener('seeked', () => { follow.currentTime = lead.currentTime; mark(); });
+      cuts.forEach(cut => cut.addEventListener('click', () => {
+        lead.currentTime = Number(cut.dataset.pvSeek) + 0.04;
+        follow.currentTime = lead.currentTime;
+        mark();
+        if (lead.paused) start();
+      }));
+      new IntersectionObserver(entries => { if (!entries[0].isIntersecting) stop(); }, { threshold: 0 }).observe(duo);
+      paint();
+    });
+  });
   root.querySelector('[data-pipeline-tabs]')?.setAttribute('role', 'tablist');
   tabs.forEach((tab, index) => {
     tab.setAttribute('role', 'tab'); tab.setAttribute('aria-controls', panels[index].id);

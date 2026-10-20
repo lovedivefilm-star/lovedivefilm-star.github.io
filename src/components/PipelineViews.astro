@@ -1,0 +1,81 @@
+---
+/**
+ * 02 · 03 material views (see PipelineView in data/production-pipelines). One view shows at a time,
+ * picked with toggle buttons; without script every view stays listed. Images open in the shared
+ * media dialog (data-enlarge-src, handled in scripts/rebuild.ts).
+ */
+import type { PipelineView } from '../data/production-pipelines';
+const { views } = Astro.props as { views: PipelineView[] };
+const kinds = new Set(views.map(view => view.kind));
+const hint = kinds.has('duo') ? '두 영상은 같은 시각으로 함께 재생됩니다.' : kinds.size === 1 && kinds.has('pair') ? '왼쪽 콘티 → 오른쪽 완성본 · 그림을 누르면 크게' : '그림을 누르면 크게 볼 수 있습니다.';
+const ratio = (w: number, h: number) => +(w / h).toFixed(4);
+---
+<div class="pv" data-pipeline-views>
+  <div class="pv-bar">
+    {views.length > 1 && <div class="pv-switch" role="group" aria-label="볼 자료 고르기" data-pv-switch hidden>{views.map((view, index) => <button type="button" aria-pressed={index === 0 ? 'true' : 'false'} data-pv-choice={index}>{view.label}</button>)}</div>}
+    <p class="pv-hint">{hint}</p>
+  </div>
+  {views.map((view, index) => <section class:list={['pv-view', 'pv-kind-' + view.kind]} data-pv-view={index} aria-label={view.label}>
+    {view.kind === 'row' && <div class="pv-row">{view.items.map(item => <figure class="pv-fig" style={`--a:${ratio(item.w, item.h)}`}>
+      <button type="button" class="pv-zoom" data-enlarge-src={item.src} data-enlarge-alt={item.alt} data-enlarge-title={item.name} aria-label={item.name + ' 크게 보기'}><img src={item.src} width={item.w} height={item.h} alt={item.alt} loading="lazy" decoding="async" /></button>
+      <figcaption><b>{item.name}</b>{item.note && <span> · {item.note}</span>}</figcaption>
+    </figure>)}</div>}
+
+    {view.kind === 'grid' && <div class="pv-grid-wrap">
+      <div class:list={['pv-grid', view.items.length > 8 && 'pv-grid-5']}>{view.items.map(item => <figure class="pv-cell">
+        <button type="button" class="pv-zoom" data-enlarge-src={item.src} data-enlarge-alt={item.alt} data-enlarge-title={item.name} aria-label={item.name + ' 크게 보기'}><img src={item.thumb ?? item.src} width={item.w} height={item.h} alt={item.alt} loading="lazy" decoding="async" /></button>
+        <figcaption><b>{item.name}</b>{item.note && <span> · {item.note}</span>}</figcaption>
+      </figure>)}</div>
+      {view.extra && <div class="pv-grid-extra">{view.extra.items.map(item => <figure class="pv-cell pv-cell-tall">
+        <button type="button" class="pv-zoom" data-enlarge-src={item.src} data-enlarge-alt={item.alt} data-enlarge-title={item.name} aria-label={item.name + ' 크게 보기'}><img src={item.thumb ?? item.src} width={item.w} height={item.h} alt={item.alt} loading="lazy" decoding="async" /></button>
+        <figcaption>{item.name}</figcaption>
+      </figure>)}<p class="pv-extra-note">{view.extra.note}</p></div>}
+    </div>}
+
+    {view.kind === 'process' && <div class="pv-process">{view.items.map(item => <figure class="pv-proc">
+      <figcaption class="pv-proc-name">{item.name}</figcaption>
+      <button type="button" class="pv-zoom pv-crop-host" data-enlarge-src={item.before.src} data-enlarge-alt={item.before.alt} data-enlarge-title={item.name + ' · 원본'} aria-label={item.name + ' 원본 크게 보기'}><img src={item.before.src} width={item.before.w} height={item.before.h} alt={item.before.alt} loading="lazy" decoding="async" /><span class="pv-crop" aria-hidden="true" style={`left:${item.crop[0]}%;top:${item.crop[1]}%;width:${item.crop[2]}%;height:${item.crop[3]}%`}></span></button>
+      <p class="pv-proc-arrow">↓ {item.arrow}</p>
+      <button type="button" class="pv-zoom pv-proc-after" data-enlarge-src={item.after.src} data-enlarge-alt={item.after.alt} data-enlarge-title={item.name + ' · 가공본'} aria-label={item.name + ' 가공본 크게 보기'}><img src={item.after.src} width={item.after.w} height={item.after.h} alt={item.after.alt} loading="lazy" decoding="async" /></button>
+    </figure>)}</div>}
+
+    {view.kind === 'beats' && <ol class="pv-beats">{view.items.map(item => <li>
+      <p class="pv-beat-top"><b>{item.no}</b> · {item.time} · {item.place}<br />{item.action}</p>
+      <button type="button" class="pv-zoom" data-enlarge-src={item.src} data-enlarge-alt={item.alt} data-enlarge-title={`${item.no} · ${item.place} — 생성 결과`} aria-label={`${item.no}번 생성 결과 크게 보기`}><img src={item.src} width={item.w} height={item.h} alt={item.alt} loading="lazy" decoding="async" /></button>
+    </li>)}</ol>}
+
+    {view.kind === 'wipe' && <div class="pv-wipe-wrap"><div class="pv-wipe" role="group" aria-label={`${view.before.name}와 ${view.after.name} 비교`} data-pv-wipe style={`--a:${ratio(view.after.w, view.after.h)}`}>
+      <div class="pv-layer"><img src={view.before.src} width={view.before.w} height={view.before.h} alt={view.before.alt} loading="lazy" decoding="async" /></div>
+      <div class="pv-layer pv-after"><img src={view.after.src} width={view.after.w} height={view.after.h} alt={view.after.alt} loading="lazy" decoding="async" /></div>
+      <span class="pv-tag pv-tag-l">{view.before.name}</span><span class="pv-tag pv-tag-r">{view.after.name}</span>
+      <input type="range" min="0" max="100" step="0.5" value="50" aria-label="비교 손잡이 위치" />
+      <span class="pv-handle" aria-hidden="true"><span class="pv-grip"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 5L3 10l4.5 5M12.5 5L17 10l-4.5 5"/></svg></span></span>
+    </div><p class="pv-wipe-hint">손잡이를 끌어 비교</p></div>}
+
+    {view.kind === 'duo' && <div class="pv-duo" data-pv-duo>
+      <div class="pv-duo-media">
+        <figure><figcaption>{view.left.name}</figcaption><video data-pv-follow src={view.left.src} poster={view.left.poster} muted loop playsinline preload="none" width="720" height="1280" aria-label={view.left.alt}></video></figure>
+        <figure><figcaption>{view.right.name}</figcaption><video data-pv-lead src={view.right.src} poster={view.right.poster} muted loop playsinline preload="none" width="720" height="1280" aria-label={view.right.alt}></video></figure>
+        <button type="button" class="pv-duo-play" data-pv-play aria-label="두 영상 함께 재생">재생</button>
+      </div>
+      <div class="pv-duo-text">
+        <ol class="pv-cuts">{view.cuts.map((cut, index) => <li><button type="button" data-pv-seek={cut.t} data-pv-end={cut.end} aria-current={index === 0 ? 'true' : 'false'}><span class="pv-cut-no">{index + 1}</span><span class="pv-cut-name">{cut.name}</span><span class="pv-cut-note">{cut.note}</span></button></li>)}</ol>
+        {view.body && <p class="pv-why">{view.title && <b>{view.title} — </b>}{view.body}</p>}
+      </div>
+    </div>}
+
+    {view.kind === 'pair' && <div class="pv-pair">
+      <div class="pv-pair-media">
+        <button type="button" class="pv-zoom" data-enlarge-src={view.plan.src} data-enlarge-alt={view.plan.alt} data-enlarge-title={view.heading + ' · 콘티'} aria-label={view.heading + ' 콘티 크게 보기'}><img src={view.plan.src} width={view.plan.w} height={view.plan.h} alt={view.plan.alt} loading="lazy" decoding="async" /></button>
+        <span class="pv-pair-to" aria-hidden="true">→</span>
+        <button type="button" class="pv-zoom" data-enlarge-src={view.result.src} data-enlarge-alt={view.result.alt} data-enlarge-title={view.heading + ' · 완성본'} aria-label={view.heading + ' 완성본 크게 보기'}><img src={view.result.src} width={view.result.w} height={view.result.h} alt={view.result.alt} loading="lazy" decoding="async" /></button>
+      </div>
+      <div class="pv-pair-text">
+        <h4>{view.heading}</h4><p class="pv-pair-when">{view.when}</p>
+        <dl>{view.rows.map(row => <><dt>{row.term}</dt><dd class:list={[row.strong && 'pv-strong']}>{row.text}</dd></>)}</dl>
+      </div>
+    </div>}
+
+    {view.title && view.kind !== 'duo' && view.kind !== 'pair' && <div class="pv-cap"><strong>{view.title}</strong>{view.body}</div>}
+  </section>)}
+</div>

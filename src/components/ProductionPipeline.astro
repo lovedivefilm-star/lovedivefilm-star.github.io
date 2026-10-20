@@ -1,6 +1,7 @@
 ---
 import type { ProductionPipelineData } from '../data/production-pipelines';
 import ScriptLine from './ScriptLine.astro';
+import PipelineViews from './PipelineViews.astro';
 import '../styles/production-pipeline.css';
 const { pipeline } = Astro.props as { pipeline: ProductionPipelineData };
 const prefix = 'pipeline-' + pipeline.slug;
@@ -42,6 +43,7 @@ const prefix = 'pipeline-' + pipeline.slug;
           {step.images && <div class:list={['pipeline-images',step.images.length===1&&'pipeline-images-single',step.images.length===3&&'pipeline-images-three',step.images.length===4&&'pipeline-images-four']}>{step.images.map(image=><figure><button type="button" class="pipeline-image-button" data-enlarge-src={image.src} data-enlarge-alt={image.alt} aria-label={image.caption+' 크게 보기'}><img src={image.src} alt={image.alt} width={image.w} height={image.h} data-native-cap loading="lazy" decoding="async" /></button><figcaption>{image.caption}</figcaption></figure>)}</div>}
         {step.guide && <details class="pipeline-guide"><summary>{step.guide.label} 보기</summary><video controls playsinline preload="none" width={step.guide.w} height={step.guide.h} poster={step.guide.poster} src={step.guide.src} data-pipeline-video data-native-cap aria-label={step.guide.label} /></details>}
         {step.generated && <figure class="pipeline-generated"><video controls playsinline preload="none" width={step.generated.w} height={step.generated.h} poster={step.generated.poster} src={step.generated.src} data-pipeline-video data-native-cap aria-label={step.generated.label} /><figcaption>{step.generated.label}{step.generated.note && <span>{step.generated.note}</span>}</figcaption></figure>}
+        {step.views && <PipelineViews views={step.views} />}
         {step.screens && <div class="pipeline-screens" data-pipeline-screens>
           <div class="pipeline-screen-bar">
             {step.screens.length > 1 && <div class="pipeline-screen-switch" role="group" aria-label="볼 화면 고르기" data-screen-switch hidden>{step.screens.map((screen,index)=><button type="button" aria-pressed={index===0?'true':'false'} data-screen-choice={index}>{screen.label}</button>)}</div>}
