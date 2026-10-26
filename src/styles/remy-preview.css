@@ -58,6 +58,9 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--remy-cream);outline
 .remy-inner-layer>img,.remy-inner-video,.remy-inner-snapshot{display:block;width:100%;height:100%;object-fit:contain}
 .remy-inner-video{position:absolute;inset:0;opacity:0;transition:opacity .3s;pointer-events:none}
 .remy-inner-video.is-ready{opacity:1}
+/* Once a technical clip is on screen, hide the still underneath it. At fractional device-pixel offsets the video and the still round differently, and the still's top row showed as a 1px light line above the clip. The delay matches the clip's .3s fade-in. */
+.remy-inner-layer>img{transition:visibility 0s}
+.remy-inner-layer:has(>.remy-inner-video.is-ready)>img{visibility:hidden;transition:visibility 0s .3s}
 .remy-inner-snapshot{position:absolute;inset:0;z-index:3;opacity:1;transition:opacity .3s;pointer-events:none}
 .remy-inner-snapshot.is-fading{opacity:0}
 .remy-select-copy{display:grid;gap:6px;min-width:0}
