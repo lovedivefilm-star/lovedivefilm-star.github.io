@@ -107,7 +107,7 @@ export const WORKS: Work[] = [
   },
   {
     slug: 'firstimpression',
-    title: '첫 인상은 백점, 첫 마디는 엎드려',
+    title: '첫 인상은 백점, 첫 마디는 엎드려 EP.01',
     group: 'main',
     ratio: '9:16',
     youtubeId: '1XMjpYyastE',

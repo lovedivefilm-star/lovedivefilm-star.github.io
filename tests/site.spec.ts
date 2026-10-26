@@ -5,7 +5,7 @@ const canonicalOrigin = 'https://lovedivefilm-star.github.io';
 const scripts = [
   ['madeinhongdae', '메이드 인 홍대'], ['boundary', '경계선'], ['butter', '버터! [VirTer!]'],
   ['human-birth', '사람은 탄생하라'], ['understeer', '언더스티어'],
-  ['oneandonly', '오직 당신의 것 EP.01'], ['firstimpression', '첫 인상은 백점, 첫 마디는 엎드려'],
+  ['oneandonly', '오직 당신의 것 EP.01'], ['firstimpression', '첫 인상은 백점, 첫 마디는 엎드려 EP.01'],
 ] as const;
 const films = scripts.slice(5).concat([scripts[2]]);
 const tools = [

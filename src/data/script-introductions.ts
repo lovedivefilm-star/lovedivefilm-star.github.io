@@ -566,7 +566,7 @@ export const SCRIPT_INTRODUCTIONS: ScriptIntroduction[] = [
   },
   {
     "id": "firstimpression",
-    "title": "첫 인상은 백점, 첫 마디는 엎드려",
+    "title": "첫 인상은 백점, 첫 마디는 엎드려 EP.01",
     "format": "범죄 느와르 로맨스 (1980년대 시대극)",
     "credit": "대본 김영건",
     "introduction": "1986년 서울, 한국의 보니앤클라이드라 불린 연인 강도.\n인질에서 공범으로, 두려움에서 사랑으로, 평범했던 그녀가 서울의 악몽이 되기까지.",

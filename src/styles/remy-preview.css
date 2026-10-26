@@ -105,4 +105,6 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--remy-cream);outline
  .remy-footer{height:36px}
  .remy-open-marker{right:10px;bottom:10px;width:30px;height:30px;font-size:20px}
 }
+/* 320px: the longest title (첫 인상은 백점, 첫 마디는 엎드려 EP.01) wraps to two lines, so reserve its caption height up front — selection must not resize the cards. */
+@media(max-width:359px){.remy-stage{--remy-caption-base:104px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}.remy-card.is-active .remy-cover{opacity:1}}
